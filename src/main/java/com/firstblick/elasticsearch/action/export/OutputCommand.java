@@ -60,7 +60,7 @@ public class OutputCommand {
             }
             outputConsumer.waitFor();
             result.stdOut = outputConsumer.getBufferedOutput();
-            outputConsumer.waitFor();
+            errorConsumer.waitFor();
             result.stdErr = errorConsumer.getBufferedOutput();
         }
         return result;
