@@ -11,6 +11,7 @@ public class ShardExportInfo {
 
     String index;
     int shardId;
+    String cmd;
     String stderr;
     String stdout;
     int exitcode;
@@ -21,8 +22,9 @@ public class ShardExportInfo {
         this.shardId = shardId;
     }
 
-    public ShardExportInfo(String index, int shardId, ShardExportResponse shardExportResponse) {
-        this(index, shardId);
+    public ShardExportInfo(ShardExportResponse shardExportResponse) {
+        this(shardExportResponse.getIndex(), shardExportResponse.getShardId());
+        this.cmd = shardExportResponse.getCmd();
         this.stderr = shardExportResponse.getStderr();
         this.stdout = shardExportResponse.getStdout();
         this.exitcode = shardExportResponse.getExitCode();
@@ -40,6 +42,7 @@ public class ShardExportInfo {
         if (exception != null) {
             ret.put("error", exception);
         } else {
+            ret.put("cmd", cmd);
             ret.put("stderr", stderr);
             ret.put("stdout", stdout);
             ret.put("exitcode", exitcode);

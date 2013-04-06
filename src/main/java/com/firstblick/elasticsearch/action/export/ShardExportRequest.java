@@ -39,6 +39,8 @@ class ShardExportRequest extends BroadcastShardOperationRequest {
         this.querySource = request.querySource();
         this.types = request.types();
         this.filteringAliases = filteringAliases;
+        this.outputCmd = request.outputCmd();
+        this.outputFile = request.outputFile();
     }
 
     public String outputCmd() {

@@ -1,8 +1,6 @@
 package com.firstblick.elasticsearch.action.export;
 
 import org.elasticsearch.ElasticSearchException;
-import org.elasticsearch.action.ShardOperationFailedException;
-import org.elasticsearch.action.support.DefaultShardOperationFailedException;
 import org.elasticsearch.action.support.broadcast.BroadcastShardOperationFailedException;
 import org.elasticsearch.action.support.broadcast.TransportBroadcastOperationAction;
 import org.elasticsearch.cluster.ClusterService;
@@ -13,7 +11,6 @@ import org.elasticsearch.cluster.routing.GroupShardsIterator;
 import org.elasticsearch.cluster.routing.ShardRouting;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.inject.Inject;
-import org.elasticsearch.common.lucene.Lucene;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.index.query.QueryParseContext;
 import org.elasticsearch.index.service.IndexService;
@@ -119,9 +116,7 @@ public class TransportExportAction extends TransportBroadcastOperationAction<Exp
                 } else {
                     successfulShards++;
                 }
-                shardInfos.add(new ShardExportInfo(shardExportResponse.getIndex(),
-                        shardExportResponse.getShardId(),
-                        shardExportResponse));
+                shardInfos.add(new ShardExportInfo(shardExportResponse));
             }
         }
         return new ExportResponse(shardsResponses.length(), successfulShards, failedShards, shardInfos);
@@ -151,13 +146,14 @@ public class TransportExportAction extends TransportBroadcastOperationAction<Exp
             }
             context.preProcess();
             try {
+                String cmd = "";          // executed cmd
                 String stderr = "";
                 String stdout = "";
                 int exitCode = 0;
 
                 logger.info("### export command goes here");
 
-                return new ShardExportResponse(request.index(), request.shardId(), stderr, stdout, exitCode);
+                return new ShardExportResponse(request.index(), request.shardId(), cmd, stderr, stdout, exitCode);
             } catch (Exception e) {
                 throw new QueryPhaseExecutionException(context, "failed to execute export", e);
             }

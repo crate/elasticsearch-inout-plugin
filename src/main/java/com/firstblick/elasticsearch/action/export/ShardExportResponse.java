@@ -16,16 +16,21 @@ class ShardExportResponse extends BroadcastShardOperationResponse {
     private String stderr;
     private String stdout;
     private int exitCode;
+    private String cmd;
 
     ShardExportResponse() {
-
     }
 
-    public ShardExportResponse(String index, int shardId, String stderr, String stdout, int exitCode) {
+    public ShardExportResponse(String index, int shardId, String cmd, String stderr, String stdout, int exitCode) {
         super(index, shardId);
+        this.cmd = cmd;
         this.stderr = stderr;
         this.stdout = stdout;
         this.exitCode = exitCode;
+    }
+
+    public String getCmd() {
+        return cmd;
     }
 
     public String getStderr() {
@@ -43,6 +48,7 @@ class ShardExportResponse extends BroadcastShardOperationResponse {
     @Override
     public void readFrom(StreamInput in) throws IOException {
         super.readFrom(in);
+        cmd = in.readString();
         stderr = in.readString();
         stdout = in.readString();
         exitCode = in.readInt();
@@ -51,6 +57,7 @@ class ShardExportResponse extends BroadcastShardOperationResponse {
     @Override
     public void writeTo(StreamOutput out) throws IOException {
         super.writeTo(out);
+        out.writeString(cmd);
         out.writeString(stderr);
         out.writeString(stdout);
         out.writeInt(exitCode);
