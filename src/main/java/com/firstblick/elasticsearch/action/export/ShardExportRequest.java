@@ -1,12 +1,13 @@
 package com.firstblick.elasticsearch.action.export;
 
-import org.elasticsearch.action.count.CountRequest;
 import org.elasticsearch.action.support.broadcast.BroadcastShardOperationRequest;
 import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
+import org.elasticsearch.common.logging.ESLogger;
+import org.elasticsearch.common.logging.Loggers;
 
 import java.io.IOException;
 
@@ -16,7 +17,9 @@ import java.io.IOException;
  */
 class ShardExportRequest extends BroadcastShardOperationRequest {
 
-    private float minScore;
+    private String outputCmd;
+
+    private String outputFile;
 
     private BytesReference querySource;
 
@@ -31,14 +34,19 @@ class ShardExportRequest extends BroadcastShardOperationRequest {
 
     public ShardExportRequest(String index, int shardId, @Nullable String[] filteringAliases, ExportRequest request) {
         super(index, shardId, request);
-        this.minScore = request.minScore();
+        this.outputCmd = request.outputCmd();
+        this.outputFile = request.outputFile();
         this.querySource = request.querySource();
         this.types = request.types();
         this.filteringAliases = filteringAliases;
     }
 
-    public float minScore() {
-        return minScore;
+    public String outputCmd() {
+        return outputCmd;
+    }
+
+    public String outputFile() {
+        return outputFile;
     }
 
     public BytesReference querySource() {
@@ -56,12 +64,14 @@ class ShardExportRequest extends BroadcastShardOperationRequest {
     @Override
     public void readFrom(StreamInput in) throws IOException {
         super.readFrom(in);
-        minScore = in.readFloat();
+        outputCmd = in.readString();
+        outputFile = in.readString();
     }
 
     @Override
     public void writeTo(StreamOutput out) throws IOException {
         super.writeTo(out);
-        System.out.printf("### Exporting: Cluster:", "XX", "Index:", index(), "Shard:", shardId());
+        System.out.printf("### Exporting:   Cluster: " + "XX" + "   Index: " + index() + "   Shard: " + shardId() + "\n");
+        out.writeString("blub");
     }
 }

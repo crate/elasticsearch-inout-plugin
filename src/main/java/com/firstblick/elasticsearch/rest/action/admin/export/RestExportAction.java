@@ -3,6 +3,7 @@ package com.firstblick.elasticsearch.rest.action.admin.export;
 import com.firstblick.elasticsearch.action.export.ExportAction;
 import com.firstblick.elasticsearch.action.export.ExportRequest;
 import com.firstblick.elasticsearch.action.export.ExportResponse;
+import org.elasticsearch.ElasticSearchIllegalArgumentException;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.support.IgnoreIndices;
 import org.elasticsearch.action.support.broadcast.BroadcastOperationThreading;
@@ -11,11 +12,14 @@ import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.rest.*;
 import org.elasticsearch.rest.action.support.RestActions;
 import org.elasticsearch.rest.action.support.RestXContentBuilder;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 import static org.elasticsearch.action.count.CountRequest.DEFAULT_MIN_SCORE;
 import static org.elasticsearch.rest.RestRequest.Method.POST;
@@ -40,6 +44,7 @@ public class RestExportAction extends BaseRestHandler {
     @Override
     public void handleRequest(final RestRequest request, final RestChannel channel) {
         ExportRequest exportRequest = new ExportRequest(RestActions.splitIndices(request.param("index")));
+
         if (request.hasParam("ignore_indices")) {
             exportRequest.ignoreIndices(IgnoreIndices.fromString(request.param("ignore_indices")));
         }
@@ -64,8 +69,9 @@ public class RestExportAction extends BaseRestHandler {
                     }
                 }
             }
+            exportRequest.outputCmd("TODO");
+            exportRequest.outputFile("TODO");
             exportRequest.routing(request.param("routing"));
-            exportRequest.minScore(request.paramAsFloat("min_score", DEFAULT_MIN_SCORE));
             exportRequest.types(splitTypes(request.param("type")));
             exportRequest.preference(request.param("preference"));
         } catch (Exception e) {
@@ -85,7 +91,7 @@ public class RestExportAction extends BaseRestHandler {
                 try {
                     XContentBuilder builder = RestXContentBuilder.restContentBuilder(request);
                     builder.startObject();
-                    builder.field("ok", true);
+                    builder.field("infos", response.getShardInfos());
 
                     buildBroadcastShardsHeader(builder, response);
 

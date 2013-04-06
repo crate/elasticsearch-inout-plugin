@@ -28,8 +28,6 @@ public class ExportRequest extends BroadcastOperationRequest<ExportRequest> {
 
     public static final float DEFAULT_MIN_SCORE = -1f;
 
-    private float minScore = DEFAULT_MIN_SCORE;
-
     @Nullable
     protected String routing;
 
@@ -40,6 +38,10 @@ public class ExportRequest extends BroadcastOperationRequest<ExportRequest> {
     private boolean querySourceUnsafe;
 
     private String[] types = Strings.EMPTY_ARRAY;
+
+    private String outputCmd;
+
+    private String outputFile;
 
     ExportRequest() {
     }
@@ -66,19 +68,21 @@ public class ExportRequest extends BroadcastOperationRequest<ExportRequest> {
         }
     }
 
-    /**
-     * The minimum score of the documents to include in the count.
-     */
-    float minScore() {
-        return minScore;
+    String outputCmd() {
+        return outputCmd;
     }
 
-    /**
-     * The minimum score of the documents to include in the count. Defaults to <tt>-1</tt> which means all
-     * documents will be included in the count.
-     */
-    public ExportRequest minScore(float minScore) {
-        this.minScore = minScore;
+    String outputFile() {
+        return outputFile;
+    }
+
+    public ExportRequest outputCmd(String outputCmd) {
+        this.outputCmd = outputCmd;
+        return this;
+    }
+
+    public ExportRequest outputFile(String outputFile) {
+        this.outputFile = outputFile;
         return this;
     }
 
@@ -206,7 +210,8 @@ public class ExportRequest extends BroadcastOperationRequest<ExportRequest> {
     @Override
     public void readFrom(StreamInput in) throws IOException {
         super.readFrom(in);
-        minScore = in.readFloat();
+        outputCmd = in.readString();
+        outputFile = in.readString();
         routing = in.readOptionalString();
         preference = in.readOptionalString();
         querySourceUnsafe = false;
@@ -217,7 +222,8 @@ public class ExportRequest extends BroadcastOperationRequest<ExportRequest> {
     @Override
     public void writeTo(StreamOutput out) throws IOException {
         super.writeTo(out);
-        out.writeFloat(minScore);
+        out.writeString(outputCmd);
+        out.writeString(outputFile);
         out.writeOptionalString(routing);
         out.writeOptionalString(preference);
         out.writeBytesReference(querySource);

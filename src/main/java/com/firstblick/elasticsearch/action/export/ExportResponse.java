@@ -6,7 +6,9 @@ import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * The response of the count action.
@@ -15,13 +17,23 @@ import java.util.List;
  */
 public class ExportResponse extends BroadcastOperationResponse {
 
+    List<ShardExportInfo> shardExportInfos;
 
     ExportResponse() {
 
     }
 
-    ExportResponse(long count, int totalShards, int successfulShards, int failedShards, List<ShardOperationFailedException> shardFailures) {
-        super(totalShards, successfulShards, failedShards, shardFailures);
+    ExportResponse(int totalShards, int successfulShards, int failedShards, List<ShardExportInfo> shardExportInfos) {
+        super(totalShards, successfulShards, failedShards, null);
+        this.shardExportInfos = shardExportInfos;
+    }
+
+    public List<Map<String, Object>> getShardInfos() {
+        List<Map<String, Object>> ret = new ArrayList<Map<String, Object>>();
+        for (ShardExportInfo sei : this.shardExportInfos) {
+            ret.add(sei.asMap());
+        }
+        return ret;
     }
 
     /**

@@ -13,30 +13,46 @@ import java.io.IOException;
  */
 class ShardExportResponse extends BroadcastShardOperationResponse {
 
-    private long count;
+    private String stderr;
+    private String stdout;
+    private int exitCode;
 
     ShardExportResponse() {
 
     }
 
-    public ShardExportResponse(String index, int shardId, long count) {
+    public ShardExportResponse(String index, int shardId, String stderr, String stdout, int exitCode) {
         super(index, shardId);
-        this.count = count;
+        this.stderr = stderr;
+        this.stdout = stdout;
+        this.exitCode = exitCode;
     }
 
-    public long getCount() {
-        return this.count;
+    public String getStderr() {
+        return stderr;
+    }
+
+    public String getStdout() {
+        return stdout;
+    }
+
+    public int getExitCode() {
+        return exitCode;
     }
 
     @Override
     public void readFrom(StreamInput in) throws IOException {
         super.readFrom(in);
-        count = in.readVLong();
+        stderr = in.readString();
+        stdout = in.readString();
+        exitCode = in.readInt();
     }
 
     @Override
     public void writeTo(StreamOutput out) throws IOException {
         super.writeTo(out);
-        out.writeVLong(count);
+        out.writeString(stderr);
+        out.writeString(stdout);
+        out.writeInt(exitCode);
     }
 }

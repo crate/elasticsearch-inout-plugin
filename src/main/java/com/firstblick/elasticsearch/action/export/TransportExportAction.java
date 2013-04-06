@@ -102,24 +102,29 @@ public class TransportExportAction extends TransportBroadcastOperationAction<Exp
     protected ExportResponse newResponse(ExportRequest request, AtomicReferenceArray shardsResponses, ClusterState clusterState) {
         int successfulShards = 0;
         int failedShards = 0;
-        long count = 0;
-        List<ShardOperationFailedException> shardFailures = null;
+        List<ShardExportInfo> shardInfos = newArrayList();
         for (int i = 0; i < shardsResponses.length(); i++) {
+
             Object shardResponse = shardsResponses.get(i);
             if (shardResponse == null) {
                 failedShards++;
             } else if (shardResponse instanceof BroadcastShardOperationFailedException) {
                 failedShards++;
-                if (shardFailures == null) {
-                    shardFailures = newArrayList();
-                }
-                shardFailures.add(new DefaultShardOperationFailedException((BroadcastShardOperationFailedException) shardResponse));
+                BroadcastShardOperationFailedException ex = (BroadcastShardOperationFailedException) shardResponse;
+                shardInfos.add(new ShardExportInfo(ex));
             } else {
-                count += ((ShardExportResponse) shardResponse).getCount();
-                successfulShards++;
+                ShardExportResponse shardExportResponse = (ShardExportResponse)shardResponse;
+                if (shardExportResponse.getExitCode() != 0) {
+                    failedShards++;
+                } else {
+                    successfulShards++;
+                }
+                shardInfos.add(new ShardExportInfo(shardExportResponse.getIndex(),
+                        shardExportResponse.getShardId(),
+                        shardExportResponse));
             }
         }
-        return new ExportResponse(count, shardsResponses.length(), successfulShards, failedShards, shardFailures);
+        return new ExportResponse(shardsResponses.length(), successfulShards, failedShards, shardInfos);
     }
 
     @Override
@@ -135,10 +140,6 @@ public class TransportExportAction extends TransportBroadcastOperationAction<Exp
         SearchContext.setCurrent(context);
 
         try {
-            // TODO: min score should move to be "null" as a value that is not initialized...
-            if (request.minScore() != -1) {
-                context.minimumScore(request.minScore());
-            }
             BytesReference querySource = request.querySource();
             if (querySource != null && querySource.length() > 0) {
                 try {
@@ -150,10 +151,15 @@ public class TransportExportAction extends TransportBroadcastOperationAction<Exp
             }
             context.preProcess();
             try {
-                long count = Lucene.count(context.searcher(), context.query());
-                return new ShardExportResponse(request.index(), request.shardId(), count);
+                String stderr = "";
+                String stdout = "";
+                int exitCode = 0;
+
+                logger.info("### export command goes here");
+
+                return new ShardExportResponse(request.index(), request.shardId(), stderr, stdout, exitCode);
             } catch (Exception e) {
-                throw new QueryPhaseExecutionException(context, "failed to execute count", e);
+                throw new QueryPhaseExecutionException(context, "failed to execute export", e);
             }
         } finally {
             // this will also release the index searcher
