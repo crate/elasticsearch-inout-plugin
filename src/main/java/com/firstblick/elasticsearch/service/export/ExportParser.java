@@ -30,7 +30,6 @@ public class ExportParser {
         exportFileParseElement = new ExportFileParseElement();
         Map<String, SearchParseElement> elementParsers = new HashMap<String, SearchParseElement>();
         elementParsers.putAll(queryPhase.parseElements());
-        //elementParsers.putAll(fetchPhase.parseElements());
         elementParsers.put("fields", new FieldsParseElement());
         elementParsers.put("output_cmd", exportCmdParseElement);
         elementParsers.put("output_file", exportFileParseElement);
