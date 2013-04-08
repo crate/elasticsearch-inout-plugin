@@ -11,12 +11,10 @@ import java.util.Collection;
 
 
 public class ExportPlugin extends AbstractPlugin {
-    @Override
     public String name() {
         return "export";
     }
 
-    @Override
     public String description() {
         return "Export plugin";
     }
