@@ -32,4 +32,17 @@ public class ExportContext extends SearchContext {
     public void outputFile(String outputFile) {
         this.outputFile = outputFile;
     }
+
+    public List<String> outputCmdArray() {
+        return outputCmdArray;
+    }
+
+    public String outputCmd() {
+        return outputCmd;
+    }
+
+    public String outputFile() {
+        return outputFile;
+    }
+
 }

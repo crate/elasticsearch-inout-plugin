@@ -16,18 +16,36 @@ import java.util.Map;
 
 public class ExportParser {
 
+    private final ExportCmdParseElement exportCmdParseElement;
+    private final ExportFileParseElement exportFileParseElement;
+
     private final ImmutableMap<String, SearchParseElement> elementParsers;
 
 
     @Inject
     public ExportParser(QueryPhase queryPhase, FetchPhase fetchPhase) {
 
+        exportCmdParseElement = new ExportCmdParseElement();
+        exportFileParseElement = new ExportFileParseElement();
         Map<String, SearchParseElement> elementParsers = new HashMap<String, SearchParseElement>();
         elementParsers.putAll(queryPhase.parseElements());
         elementParsers.putAll(fetchPhase.parseElements());
-        elementParsers.put("output_cmd", new ExportCmdParseElement());
-        elementParsers.put("output_file", new ExportFileParseElement());
+        elementParsers.put("output_cmd", exportCmdParseElement);
+        elementParsers.put("output_file", exportFileParseElement);
         this.elementParsers = ImmutableMap.copyOf(elementParsers);
+    }
+
+    private void validateOutputCmd(ExportContext context) {
+        if (exportCmdParseElement.getLastValue() != null && exportFileParseElement.getLastValue() != null) {
+            throw new SearchParseException(context, "Concurrent definition of 'output_cmd' and 'output_file'");
+        } else if (exportCmdParseElement.getLastValue() == null && exportFileParseElement.getLastValue() == null){
+            throw new SearchParseException(context, "'output_cmd' or 'output_file' has not been defined");
+        }
+    }
+
+    private void reset() {
+        exportCmdParseElement.reset();
+        exportFileParseElement.reset();
     }
 
     public void parseSource(ExportContext context, BytesReference source) throws SearchParseException {
@@ -35,6 +53,7 @@ public class ExportParser {
         if (source == null || source.length() == 0) {
             return;
         }
+        reset();
         XContentParser parser = null;
         try {
             parser = XContentFactory.xContent(source).createParser(source);
@@ -52,6 +71,7 @@ public class ExportParser {
                     break;
                 }
             }
+            validateOutputCmd(context);
         } catch (Exception e) {
             String sSource = "_na_";
             try {
