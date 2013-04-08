@@ -51,15 +51,15 @@ public class RestExportAction extends BaseRestHandler {
             }
             exportRequest.operationThreading(operationThreading);
             if (request.hasContent()) {
-                exportRequest.query(request.content(), request.contentUnsafe());
+                exportRequest.source(request.content(), request.contentUnsafe());
             } else {
                 String source = request.param("source");
                 if (source != null) {
-                    exportRequest.query(source);
+                    exportRequest.source(source);
                 } else {
                     BytesReference querySource = RestActions.parseQuerySource(request);
                     if (querySource != null) {
-                        exportRequest.query(querySource, false);
+                        exportRequest.source(querySource, false);
                     }
                 }
             }

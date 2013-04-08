@@ -71,68 +71,14 @@ public class ExportRequest extends BroadcastOperationRequest<ExportRequest> {
         return source;
     }
 
-    /**
-     * The query source to execute.
-     *
-     * @see org.elasticsearch.index.query.QueryBuilders
-     */
     @Required
-    public ExportRequest query(QueryBuilder queryBuilder) {
-        this.source = queryBuilder.buildAsBytes();
-        this.querySourceUnsafe = false;
-        return this;
+    public ExportRequest source(String source) {
+        return this.source(new BytesArray(source), false);
     }
 
-    /**
-     * The query source to execute in the form of a map.
-     */
-    @Required
-    public ExportRequest query(Map querySource) {
-        try {
-            XContentBuilder builder = XContentFactory.contentBuilder(contentType);
-            builder.map(querySource);
-            return query(builder);
-        } catch (IOException e) {
-            throw new ElasticSearchGenerationException("Failed to generate [" + querySource + "]", e);
-        }
-    }
 
     @Required
-    public ExportRequest query(XContentBuilder builder) {
-        this.source = builder.bytes();
-        this.querySourceUnsafe = false;
-        return this;
-    }
-
-    /**
-     * The query source to execute. It is preferable to use either {@link #query(byte[])}
-     * or {@link #query(org.elasticsearch.index.query.QueryBuilder)}.
-     */
-    @Required
-    public ExportRequest query(String source) {
-        this.source = new BytesArray(source);
-        this.querySourceUnsafe = false;
-        return this;
-    }
-
-    /**
-     * The query source to execute.
-     */
-    @Required
-    public ExportRequest query(byte[] source) {
-        return query(source, 0, source.length, false);
-    }
-
-    /**
-     * The query source to execute.
-     */
-    @Required
-    public ExportRequest query(byte[] source, int offset, int length, boolean unsafe) {
-        return query(new BytesArray(source, offset, length), unsafe);
-    }
-
-    @Required
-    public ExportRequest query(BytesReference source, boolean unsafe) {
+    public ExportRequest source(BytesReference source, boolean unsafe) {
         this.source = source;
         this.querySourceUnsafe = unsafe;
         return this;
