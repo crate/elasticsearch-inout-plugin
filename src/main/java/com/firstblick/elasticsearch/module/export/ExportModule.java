@@ -3,6 +3,7 @@ package com.firstblick.elasticsearch.module.export;
 
 import com.firstblick.elasticsearch.action.export.ExportAction;
 import com.firstblick.elasticsearch.action.export.TransportExportAction;
+import com.firstblick.elasticsearch.service.export.ExportParser;
 import org.elasticsearch.action.GenericAction;
 import org.elasticsearch.action.count.CountAction;
 import org.elasticsearch.action.count.TransportCountAction;
@@ -15,6 +16,8 @@ public class ExportModule extends AbstractModule {
     @Override
     protected void configure() {
         bind(TransportExportAction.class).asEagerSingleton();
+
+        bind(ExportParser.class).asEagerSingleton();
 
         MapBinder<GenericAction, TransportAction> transportActionsBinder =
                 MapBinder.newMapBinder(binder(), GenericAction.class, TransportAction.class);

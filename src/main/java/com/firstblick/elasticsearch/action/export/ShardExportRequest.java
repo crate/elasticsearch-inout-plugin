@@ -6,8 +6,6 @@ import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
-import org.elasticsearch.common.logging.ESLogger;
-import org.elasticsearch.common.logging.Loggers;
 
 import java.io.IOException;
 
@@ -21,7 +19,7 @@ class ShardExportRequest extends BroadcastShardOperationRequest {
 
     private String outputFile;
 
-    private BytesReference querySource;
+    private BytesReference source;
 
     private String[] types = Strings.EMPTY_ARRAY;
 
@@ -34,13 +32,9 @@ class ShardExportRequest extends BroadcastShardOperationRequest {
 
     public ShardExportRequest(String index, int shardId, @Nullable String[] filteringAliases, ExportRequest request) {
         super(index, shardId, request);
-        this.outputCmd = request.outputCmd();
-        this.outputFile = request.outputFile();
-        this.querySource = request.querySource();
+        this.source = request.source();
         this.types = request.types();
         this.filteringAliases = filteringAliases;
-        this.outputCmd = request.outputCmd();
-        this.outputFile = request.outputFile();
     }
 
     public String outputCmd() {
@@ -51,8 +45,8 @@ class ShardExportRequest extends BroadcastShardOperationRequest {
         return outputFile;
     }
 
-    public BytesReference querySource() {
-        return querySource;
+    public BytesReference source() {
+        return source;
     }
 
     public String[] types() {

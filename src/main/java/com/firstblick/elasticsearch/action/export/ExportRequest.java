@@ -34,14 +34,10 @@ public class ExportRequest extends BroadcastOperationRequest<ExportRequest> {
     @Nullable
     private String preference;
 
-    private BytesReference querySource;
+    private BytesReference source;
     private boolean querySourceUnsafe;
 
     private String[] types = Strings.EMPTY_ARRAY;
-
-    private String outputCmd;
-
-    private String outputFile;
 
     ExportRequest() {
     }
@@ -63,34 +59,16 @@ public class ExportRequest extends BroadcastOperationRequest<ExportRequest> {
     @Override
     protected void beforeStart() {
         if (querySourceUnsafe) {
-            querySource = querySource.copyBytesArray();
+            source = source.copyBytesArray();
             querySourceUnsafe = false;
         }
-    }
-
-    String outputCmd() {
-        return outputCmd;
-    }
-
-    String outputFile() {
-        return outputFile;
-    }
-
-    public ExportRequest outputCmd(String outputCmd) {
-        this.outputCmd = outputCmd;
-        return this;
-    }
-
-    public ExportRequest outputFile(String outputFile) {
-        this.outputFile = outputFile;
-        return this;
     }
 
     /**
      * The query source to execute.
      */
-    BytesReference querySource() {
-        return querySource;
+    BytesReference source() {
+        return source;
     }
 
     /**
@@ -100,7 +78,7 @@ public class ExportRequest extends BroadcastOperationRequest<ExportRequest> {
      */
     @Required
     public ExportRequest query(QueryBuilder queryBuilder) {
-        this.querySource = queryBuilder.buildAsBytes();
+        this.source = queryBuilder.buildAsBytes();
         this.querySourceUnsafe = false;
         return this;
     }
@@ -121,7 +99,7 @@ public class ExportRequest extends BroadcastOperationRequest<ExportRequest> {
 
     @Required
     public ExportRequest query(XContentBuilder builder) {
-        this.querySource = builder.bytes();
+        this.source = builder.bytes();
         this.querySourceUnsafe = false;
         return this;
     }
@@ -131,8 +109,8 @@ public class ExportRequest extends BroadcastOperationRequest<ExportRequest> {
      * or {@link #query(org.elasticsearch.index.query.QueryBuilder)}.
      */
     @Required
-    public ExportRequest query(String querySource) {
-        this.querySource = new BytesArray(querySource);
+    public ExportRequest query(String source) {
+        this.source = new BytesArray(source);
         this.querySourceUnsafe = false;
         return this;
     }
@@ -141,21 +119,21 @@ public class ExportRequest extends BroadcastOperationRequest<ExportRequest> {
      * The query source to execute.
      */
     @Required
-    public ExportRequest query(byte[] querySource) {
-        return query(querySource, 0, querySource.length, false);
+    public ExportRequest query(byte[] source) {
+        return query(source, 0, source.length, false);
     }
 
     /**
      * The query source to execute.
      */
     @Required
-    public ExportRequest query(byte[] querySource, int offset, int length, boolean unsafe) {
-        return query(new BytesArray(querySource, offset, length), unsafe);
+    public ExportRequest query(byte[] source, int offset, int length, boolean unsafe) {
+        return query(new BytesArray(source, offset, length), unsafe);
     }
 
     @Required
-    public ExportRequest query(BytesReference querySource, boolean unsafe) {
-        this.querySource = querySource;
+    public ExportRequest query(BytesReference source, boolean unsafe) {
+        this.source = source;
         this.querySourceUnsafe = unsafe;
         return this;
     }
@@ -210,23 +188,19 @@ public class ExportRequest extends BroadcastOperationRequest<ExportRequest> {
     @Override
     public void readFrom(StreamInput in) throws IOException {
         super.readFrom(in);
-        outputCmd = in.readString();
-        outputFile = in.readString();
         routing = in.readOptionalString();
         preference = in.readOptionalString();
         querySourceUnsafe = false;
-        querySource = in.readBytesReference();
+        source = in.readBytesReference();
         types = in.readStringArray();
     }
 
     @Override
     public void writeTo(StreamOutput out) throws IOException {
         super.writeTo(out);
-        out.writeString(outputCmd);
-        out.writeString(outputFile);
         out.writeOptionalString(routing);
         out.writeOptionalString(preference);
-        out.writeBytesReference(querySource);
+        out.writeBytesReference(source);
         out.writeStringArray(types);
     }
 
@@ -234,7 +208,7 @@ public class ExportRequest extends BroadcastOperationRequest<ExportRequest> {
     public String toString() {
         String sSource = "_na_";
         try {
-            sSource = XContentHelper.convertToJson(querySource, false);
+            sSource = XContentHelper.convertToJson(source, false);
         } catch (Exception e) {
             // ignore
         }

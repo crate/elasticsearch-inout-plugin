@@ -69,8 +69,6 @@ public class RestExportAction extends BaseRestHandler {
                     }
                 }
             }
-            exportRequest.outputCmd("TODO");
-            exportRequest.outputFile("TODO");
             exportRequest.routing(request.param("routing"));
             exportRequest.types(splitTypes(request.param("type")));
             exportRequest.preference(request.param("preference"));

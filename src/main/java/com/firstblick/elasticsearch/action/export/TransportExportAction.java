@@ -1,5 +1,7 @@
 package com.firstblick.elasticsearch.action.export;
 
+import com.firstblick.elasticsearch.service.export.ExportContext;
+import com.firstblick.elasticsearch.service.export.ExportParser;
 import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.action.support.broadcast.BroadcastShardOperationFailedException;
 import org.elasticsearch.action.support.broadcast.TransportBroadcastOperationAction;
@@ -40,12 +42,15 @@ public class TransportExportAction extends TransportBroadcastOperationAction<Exp
 
     private final ScriptService scriptService;
 
+    private final ExportParser exportParser;
+
     @Inject
     public TransportExportAction(Settings settings, ThreadPool threadPool, ClusterService clusterService, TransportService transportService,
-                                IndicesService indicesService, ScriptService scriptService) {
+                                IndicesService indicesService, ScriptService scriptService, ExportParser exportParser) {
         super(settings, threadPool, clusterService, transportService);
         this.indicesService = indicesService;
         this.scriptService = scriptService;
+        this.exportParser = exportParser;
     }
 
     @Override
@@ -124,25 +129,21 @@ public class TransportExportAction extends TransportBroadcastOperationAction<Exp
 
     @Override
     protected ShardExportResponse shardOperation(ShardExportRequest request) throws ElasticSearchException {
+
         IndexService indexService = indicesService.indexServiceSafe(request.index());
         IndexShard indexShard = indexService.shardSafe(request.shardId());
 
         SearchShardTarget shardTarget = new SearchShardTarget(clusterService.localNode().id(), request.index(), request.shardId());
-        SearchContext context = new SearchContext(0,
+        ExportContext context = new ExportContext(0,
                 new ShardSearchRequest().types(request.types()).filteringAliases(request.filteringAliases()),
                 shardTarget, indexShard.searcher(), indexService, indexShard,
                 scriptService);
-        SearchContext.setCurrent(context);
+        ExportContext.setCurrent(context);
 
         try {
-            BytesReference querySource = request.querySource();
-            if (querySource != null && querySource.length() > 0) {
-                try {
-                    QueryParseContext.setTypes(request.types());
-                    context.parsedQuery(indexService.queryParserService().parse(querySource));
-                } finally {
-                    QueryParseContext.removeTypes();
-                }
+            BytesReference source = request.source();
+            if (source != null && source.length() > 0) {
+                exportParser.parseSource(context, source);
             }
             context.preProcess();
             try {
@@ -152,6 +153,7 @@ public class TransportExportAction extends TransportBroadcastOperationAction<Exp
                 int exitCode = 0;
 
                 logger.info("### export command goes here");
+                //Exporter.export(logger, context);
 
                 return new ShardExportResponse(request.index(), request.shardId(), cmd, stderr, stdout, exitCode);
             } catch (Exception e) {

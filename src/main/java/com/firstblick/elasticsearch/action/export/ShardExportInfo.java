@@ -38,7 +38,7 @@ public class ShardExportInfo {
     public Map<String, Object> asMap() {
         Map<String, Object> ret = new HashMap<String, Object>();
         ret.put("index", index);
-        ret.put("shardId", shardId);
+        ret.put("shard", shardId);
         if (exception != null) {
             ret.put("error", exception);
         } else {
