@@ -98,7 +98,7 @@ public class OutputCommandTest {
     @Test
     public void testCommandList() {
         // For multiple commands use the list constructor.
-        List<String> cmds = Arrays.asList("/bin/sh", "_someunknowncommand");
+        List<String> cmds = Arrays.asList("/bin/sh", "-c", "_someunknowncommand");
         OutputCommand outputCommand = new OutputCommand(cmds);
 
         // Start the process
@@ -127,7 +127,8 @@ public class OutputCommandTest {
         assertEquals(127, result.exit);
 
         // The error output is captured
-        assertTrue(result.stdErr.contains("No such file or directory"));
+        System.out.println(result.stdErr);
+        assertTrue(result.stdErr.contains("command not found"));
 
         // The standard output of the process is empty
         assertEquals("", result.stdOut);
