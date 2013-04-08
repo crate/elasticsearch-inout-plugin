@@ -98,4 +98,16 @@ public class OutputCommand {
         }
         return null;
     }
+
+    /**
+     * TODO: remove me!
+     * @return
+     */
+    public Result mock() {
+        Result res = new Result();
+        res.exit = -1;
+        res.stdErr = "Command failed";
+        res.stdOut = "";
+        return res;
+    }
 }

@@ -11,11 +11,8 @@ public class ShardExportInfo {
 
     String index;
     int shardId;
-    String cmd;
-    String stderr;
-    String stdout;
-    int exitcode;
     ShardOperationFailedException exception;
+    ShardExportResponse response;
 
     protected ShardExportInfo(String index, int shardId) {
         this.index = index;
@@ -24,10 +21,7 @@ public class ShardExportInfo {
 
     public ShardExportInfo(ShardExportResponse shardExportResponse) {
         this(shardExportResponse.getIndex(), shardExportResponse.getShardId());
-        this.cmd = shardExportResponse.getCmd();
-        this.stderr = shardExportResponse.getStderr();
-        this.stdout = shardExportResponse.getStdout();
-        this.exitcode = shardExportResponse.getExitCode();
+        this.response = shardExportResponse;
     }
 
     public ShardExportInfo(BroadcastShardOperationFailedException exception) {
@@ -42,10 +36,14 @@ public class ShardExportInfo {
         if (exception != null) {
             ret.put("error", exception);
         } else {
-            ret.put("cmd", cmd);
-            ret.put("stderr", stderr);
-            ret.put("stdout", stdout);
-            ret.put("exitcode", exitcode);
+            if (response.geFile() != null) {
+                ret.put("output_file", response.geFile());
+            } else {
+                ret.put("output_cmd", response.getCmd() != null ? response.getCmd() : response.getCmdArray());
+                ret.put("stderr", response.getStderr());
+                ret.put("stdout", response.getStdout());
+                ret.put("exitcode", response.getExitCode());
+            }
         }
         return ret;
     }
