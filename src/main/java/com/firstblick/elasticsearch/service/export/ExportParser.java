@@ -1,20 +1,14 @@
 package com.firstblick.elasticsearch.service.export;
 
 import com.google.common.collect.ImmutableMap;
-import org.elasticsearch.ElasticSearchException;
-import org.elasticsearch.cluster.ClusterService;
 import org.elasticsearch.common.bytes.BytesReference;
-import org.elasticsearch.common.component.AbstractLifecycleComponent;
 import org.elasticsearch.common.inject.Inject;
-import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentHelper;
 import org.elasticsearch.common.xcontent.XContentParser;
-import org.elasticsearch.indices.IndicesService;
 import org.elasticsearch.search.SearchParseElement;
 import org.elasticsearch.search.SearchParseException;
 import org.elasticsearch.search.fetch.FetchPhase;
-import org.elasticsearch.search.internal.SearchContext;
 import org.elasticsearch.search.query.QueryPhase;
 
 import java.util.HashMap;

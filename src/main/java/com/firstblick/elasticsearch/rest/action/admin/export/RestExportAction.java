@@ -3,7 +3,6 @@ package com.firstblick.elasticsearch.rest.action.admin.export;
 import com.firstblick.elasticsearch.action.export.ExportAction;
 import com.firstblick.elasticsearch.action.export.ExportRequest;
 import com.firstblick.elasticsearch.action.export.ExportResponse;
-import org.elasticsearch.ElasticSearchIllegalArgumentException;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.support.IgnoreIndices;
 import org.elasticsearch.action.support.broadcast.BroadcastOperationThreading;
@@ -12,16 +11,12 @@ import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.rest.*;
 import org.elasticsearch.rest.action.support.RestActions;
 import org.elasticsearch.rest.action.support.RestXContentBuilder;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
 
-import static org.elasticsearch.action.count.CountRequest.DEFAULT_MIN_SCORE;
 import static org.elasticsearch.rest.RestRequest.Method.POST;
 import static org.elasticsearch.rest.RestStatus.BAD_REQUEST;
 import static org.elasticsearch.rest.RestStatus.OK;

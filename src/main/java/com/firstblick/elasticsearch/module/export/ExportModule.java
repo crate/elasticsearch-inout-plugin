@@ -5,8 +5,6 @@ import com.firstblick.elasticsearch.action.export.ExportAction;
 import com.firstblick.elasticsearch.action.export.TransportExportAction;
 import com.firstblick.elasticsearch.service.export.ExportParser;
 import org.elasticsearch.action.GenericAction;
-import org.elasticsearch.action.count.CountAction;
-import org.elasticsearch.action.count.TransportCountAction;
 import org.elasticsearch.action.support.TransportAction;
 import org.elasticsearch.common.inject.AbstractModule;
 import org.elasticsearch.common.inject.multibindings.MapBinder;
