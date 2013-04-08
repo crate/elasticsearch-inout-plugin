@@ -73,18 +73,18 @@ public class OutputCommand {
      * Stop writing to the process' standard in and wait until the
      * process is finished.
      *
-     * @return a result object conatining the process exit status
-     *         and the forst 8K of the process' output and error log.
+     * @return a result object containing the process exit status
+     *         and the first 8K of the process' output and error log.
      * @throws IOException
      */
     public Result end() throws IOException {
-        result = new Result();
         if (printWriter != null) {
             printWriter.flush();
             printWriter.close();
         }
 
         if (process != null) {
+            result = new Result();
             try {
                 result.exit = process.waitFor();
             } catch (InterruptedException e) {
@@ -94,7 +94,8 @@ public class OutputCommand {
             result.stdOut = outputConsumer.getBufferedOutput();
             errorConsumer.waitFor();
             result.stdErr = errorConsumer.getBufferedOutput();
+            return result;
         }
-        return result;
+        return null;
     }
 }
