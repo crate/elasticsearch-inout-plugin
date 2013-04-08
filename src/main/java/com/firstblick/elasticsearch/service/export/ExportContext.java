@@ -22,34 +22,42 @@ public class ExportContext extends SearchContext {
     private List<String> outputCmdArray;
     private String outputCmd;
     private String outputFile;
+    private boolean forceOverride = false;
 
     public ExportContext(long id, ShardSearchRequest request, SearchShardTarget shardTarget, Engine.Searcher engineSearcher, IndexService indexService, IndexShard indexShard, ScriptService scriptService) {
         super(id, request, shardTarget, engineSearcher, indexService, indexShard, scriptService);
-
-    }
-
-    public void outputCmdArray(List<String> outputCmdArray) {
-        this.outputCmdArray = applyVars(outputCmdArray);
-    }
-
-    public void outputCmd(String outputCmd) {
-        this.outputCmd = applyVars(outputCmd);
-    }
-
-    public void outputFile(String outputFile) {
-        this.outputFile = applyVars(outputFile);
     }
 
     public List<String> outputCmdArray() {
         return outputCmdArray;
     }
 
+    public void outputCmdArray(List<String> outputCmdArray) {
+        this.outputCmdArray = applyVars(outputCmdArray);
+    }
+
     public String outputCmd() {
         return outputCmd;
     }
 
+    public void outputCmd(String outputCmd) {
+        this.outputCmd = applyVars(outputCmd);
+    }
+
     public String outputFile() {
         return outputFile;
+    }
+
+    public void outputFile(String outputFile) {
+        this.outputFile = applyVars(outputFile);
+    }
+
+    public boolean forceOverride() {
+        return forceOverride;
+    }
+
+    public void forceOverride(boolean forceOverride) {
+        this.forceOverride = forceOverride;
     }
 
     private List<String> applyVars(List<String> templateArray) {

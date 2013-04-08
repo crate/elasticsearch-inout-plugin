@@ -36,8 +36,8 @@ public class ShardExportInfo {
         if (exception != null) {
             ret.put("error", exception);
         } else {
-            if (response.geFile() != null) {
-                ret.put("output_file", response.geFile());
+            if (response.getFile() != null) {
+                ret.put("output_file", response.getFile());
             } else {
                 ret.put("output_cmd", response.getCmd() != null ? response.getCmd() : response.getCmdArray());
                 ret.put("stderr", response.getStderr());

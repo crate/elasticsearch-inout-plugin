@@ -115,7 +115,7 @@ public class TransportExportAction extends TransportBroadcastOperationAction<Exp
                 shardInfos.add(new ShardExportInfo(ex));
             } else {
                 ShardExportResponse shardExportResponse = (ShardExportResponse)shardResponse;
-                if (shardExportResponse.getExitCode() != 0) {
+                if (shardExportResponse.getFile() == null && shardExportResponse.getExitCode() != 0) {
                     failedShards++;
                 } else {
                     successfulShards++;

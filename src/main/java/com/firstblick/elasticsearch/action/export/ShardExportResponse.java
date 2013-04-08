@@ -42,7 +42,7 @@ class ShardExportResponse extends BroadcastShardOperationResponse {
         return cmdArray;
     }
 
-    public String geFile() {
+    public String getFile() {
         return file;
     }
 
