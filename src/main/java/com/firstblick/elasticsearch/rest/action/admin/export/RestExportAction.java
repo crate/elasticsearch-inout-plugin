@@ -41,7 +41,6 @@ public class RestExportAction extends BaseRestHandler {
         controller.registerHandler(POST, "/{index}/{type}/_export", this);
     }
 
-    @Override
     public void handleRequest(final RestRequest request, final RestChannel channel) {
         ExportRequest exportRequest = new ExportRequest(RestActions.splitIndices(request.param("index")));
 
@@ -81,10 +80,9 @@ public class RestExportAction extends BaseRestHandler {
             }
             return;
         }
-    
+
         client.execute(ExportAction.INSTANCE, exportRequest, new ActionListener<ExportResponse>() {
 
-            @Override
             public void onResponse(ExportResponse response) {
                 try {
                     XContentBuilder builder = RestXContentBuilder.restContentBuilder(request);
@@ -100,7 +98,6 @@ public class RestExportAction extends BaseRestHandler {
                 }
             }
 
-            @Override
             public void onFailure(Throwable e) {
                 try {
                     channel.sendResponse(new XContentThrowableRestResponse(request, e));
