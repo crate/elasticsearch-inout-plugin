@@ -9,6 +9,7 @@ import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.search.SearchParseElement;
 import org.elasticsearch.search.SearchParseException;
 import org.elasticsearch.search.fetch.FetchPhase;
+import org.elasticsearch.search.fetch.FieldsParseElement;
 import org.elasticsearch.search.query.QueryPhase;
 
 import java.util.HashMap;
@@ -29,12 +30,18 @@ public class ExportParser {
         exportFileParseElement = new ExportFileParseElement();
         Map<String, SearchParseElement> elementParsers = new HashMap<String, SearchParseElement>();
         elementParsers.putAll(queryPhase.parseElements());
-        elementParsers.putAll(fetchPhase.parseElements());
+        //elementParsers.putAll(fetchPhase.parseElements());
+        elementParsers.put("fields", new FieldsParseElement());
         elementParsers.put("output_cmd", exportCmdParseElement);
         elementParsers.put("output_file", exportFileParseElement);
         this.elementParsers = ImmutableMap.copyOf(elementParsers);
     }
 
+    /**
+     * validates output_cmd and output_file to make sure exactly one of both has been defined
+     *
+     * @param context
+     */
     private void validateOutputCmd(ExportContext context) {
         if (exportCmdParseElement.getLastValue() != null && exportFileParseElement.getLastValue() != null) {
             throw new SearchParseException(context, "Concurrent definition of 'output_cmd' and 'output_file'");
@@ -43,9 +50,28 @@ public class ExportParser {
         }
     }
 
+    private void validateFields(ExportContext context) {
+        if (!context.hasFieldNames()) {
+            throw new SearchParseException(context, "No export fields defined");
+        }
+        for (String field : context.fieldNames()) {
+            if (context.mapperService().name(field) == null) {
+                throw new SearchParseException(context, "Export field [" + field + "] does not exist in the mapping");
+            }
+        }
+    }
+
+    /**
+     * reset custom parseElements
+     */
     private void reset() {
         exportCmdParseElement.reset();
         exportFileParseElement.reset();
+    }
+
+    private void validate(ExportContext context) {
+        validateOutputCmd(context);
+        validateFields(context);
     }
 
     public void parseSource(ExportContext context, BytesReference source) throws SearchParseException {
@@ -71,7 +97,7 @@ public class ExportParser {
                     break;
                 }
             }
-            validateOutputCmd(context);
+            validate(context);
         } catch (Exception e) {
             String sSource = "_na_";
             try {
