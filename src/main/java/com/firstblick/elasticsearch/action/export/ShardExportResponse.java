@@ -21,12 +21,14 @@ class ShardExportResponse extends BroadcastShardOperationResponse {
     private String cmd;
     private String file;
     private boolean dryRun = false;
+    private String node;
 
     ShardExportResponse() {
     }
 
-    public ShardExportResponse(String index, int shardId, String cmd, List<String> cmdArray, String file, String stderr, String stdout, int exitCode) {
+    public ShardExportResponse(String node, String index, int shardId, String cmd, List<String> cmdArray, String file, String stderr, String stdout, int exitCode) {
         super(index, shardId);
+        this.node = node;
         this.cmd = cmd;
         this.cmdArray = cmdArray;
         this.file = file;
@@ -38,8 +40,9 @@ class ShardExportResponse extends BroadcastShardOperationResponse {
     /**
      * Constructor for dry runs. Does not contain any execution infos
      */
-    public ShardExportResponse(String index, int shardId, String cmd, List<String> cmdArray, String file) {
+    public ShardExportResponse(String node, String index, int shardId, String cmd, List<String> cmdArray, String file) {
         super(index, shardId);
+        this.node = node;
         this.cmd = cmd;
         this.cmdArray = cmdArray;
         this.file = file;
@@ -72,6 +75,10 @@ class ShardExportResponse extends BroadcastShardOperationResponse {
 
     public boolean dryRun() {
         return dryRun;
+    }
+
+    public String getNode() {
+        return node;
     }
 
     @Override
