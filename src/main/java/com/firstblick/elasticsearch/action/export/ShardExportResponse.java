@@ -9,8 +9,6 @@ import java.util.List;
 
 /**
  * Internal export response of a shard export request executed directly against a specific shard.
- *
- *
  */
 class ShardExportResponse extends BroadcastShardOperationResponse {
 
@@ -26,6 +24,19 @@ class ShardExportResponse extends BroadcastShardOperationResponse {
     ShardExportResponse() {
     }
 
+    /**
+     * Constructor for regular cases
+     *
+     * @param node Name of the Node
+     * @param index Name of the index
+     * @param shardId ID of the shard
+     * @param cmd executed command (might be null)
+     * @param cmdArray executed command array (might be null)
+     * @param file written file (might be null)
+     * @param stderr output written to standard error by the executed command
+     * @param stdout output written to standard out by the executed command
+     * @param exitCode exit code of the executed command
+     */
     public ShardExportResponse(String node, String index, int shardId, String cmd, List<String> cmdArray, String file, String stderr, String stdout, int exitCode) {
         super(index, shardId);
         this.node = node;
@@ -39,6 +50,13 @@ class ShardExportResponse extends BroadcastShardOperationResponse {
 
     /**
      * Constructor for dry runs. Does not contain any execution infos
+     *
+     * @param node Name of the Node
+     * @param index Name of the index
+     * @param shardId ID of the shard
+     * @param cmd executed command (might be null)
+     * @param cmdArray executed command array (might be null)
+     * @param file written file (might be null)
      */
     public ShardExportResponse(String node, String index, int shardId, String cmd, List<String> cmdArray, String file) {
         super(index, shardId);
