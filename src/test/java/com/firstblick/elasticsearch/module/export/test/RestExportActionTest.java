@@ -12,9 +12,6 @@ import java.util.concurrent.TimeUnit;
 import junit.framework.TestCase;
 
 import org.elasticsearch.action.ActionListener;
-import org.elasticsearch.action.admin.cluster.health.ClusterHealthAction;
-import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
-import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -98,13 +95,7 @@ public class RestExportActionTest extends TestCase {
      */
     @Test
     public void testNoExportFields() {
-        ExportRequest exportRequest = new ExportRequest();
-        exportRequest.source("{\"output_cmd\": \"cat\"}");
-        ActionListener<ExportResponse> listener = new ExportResponseActionListener();
-        esSetup.client()
-                .execute(ExportAction.INSTANCE, exportRequest, listener);
-
-        waitForAsyncCallback(4000);
+        executeExportRequest("{\"output_cmd\": \"cat\"}");
 
         List<Map<String, Object>> infos = response.getShardInfos();
         assertEquals(2, infos.size());
@@ -119,14 +110,7 @@ public class RestExportActionTest extends TestCase {
      */
     @Test
     public void testBadParserArgument() {
-        ExportRequest exportRequest = new ExportRequest();
-        exportRequest
-                .source("{\"output_cmd\": \"cat\", \"fields\": [\"name\"], \"badparam\":\"somevalue\"}");
-        ActionListener<ExportResponse> listener = new ExportResponseActionListener();
-        esSetup.client()
-                .execute(ExportAction.INSTANCE, exportRequest, listener);
-
-        waitForAsyncCallback(4000);
+        executeExportRequest("{\"output_cmd\": \"cat\", \"fields\": [\"name\"], \"badparam\":\"somevalue\"}");
 
         List<Map<String, Object>> infos = response.getShardInfos();
         assertEquals(2, infos.size());
@@ -144,14 +128,7 @@ public class RestExportActionTest extends TestCase {
      */
     @Test
     public void testSingleOutputCommand() {
-        ExportRequest exportRequest = new ExportRequest();
-        exportRequest
-                .source("{\"output_cmd\": \"cat\", \"fields\": [\"name\"]}");
-        ActionListener<ExportResponse> listener = new ExportResponseActionListener();
-        esSetup.client()
-                .execute(ExportAction.INSTANCE, exportRequest, listener);
-
-        waitForAsyncCallback(4000);
+        executeExportRequest("{\"output_cmd\": \"cat\", \"fields\": [\"name\"]}");
 
         List<Map<String, Object>> infos = response.getShardInfos();
         assertEquals(2, infos.size());
@@ -167,14 +144,7 @@ public class RestExportActionTest extends TestCase {
      */
     @Test
     public void testOutputCommandList() {
-        ExportRequest exportRequest = new ExportRequest();
-        exportRequest
-                .source("{\"output_cmd\": [\"/bin/sh\", \"-c\", \"cat\"], \"fields\": [\"name\"]}");
-        ActionListener<ExportResponse> listener = new ExportResponseActionListener();
-        esSetup.client()
-                .execute(ExportAction.INSTANCE, exportRequest, listener);
-
-        waitForAsyncCallback(4000);
+        executeExportRequest("{\"output_cmd\": [\"/bin/sh\", \"-c\", \"cat\"], \"fields\": [\"name\"]}");
 
         List<Map<String, Object>> infos = response.getShardInfos();
         assertEquals(2, infos.size());
@@ -201,14 +171,7 @@ public class RestExportActionTest extends TestCase {
         String clusterName = esSetup.client().admin().cluster().prepareHealth().
                 setWaitForGreenStatus().execute().actionGet().getClusterName();
 
-        ExportRequest exportRequest = new ExportRequest();
-        exportRequest
-                .source("{\"output_file\": \"/tmp/${cluster}.${shard}.${index}.export\", \"fields\": [\"name\"]}");
-        ActionListener<ExportResponse> listener = new ExportResponseActionListener();
-        esSetup.client()
-                .execute(ExportAction.INSTANCE, exportRequest, listener);
-
-        waitForAsyncCallback(4000);
+        executeExportRequest("{\"output_file\": \"/tmp/${cluster}.${shard}.${index}.export\", \"fields\": [\"name\"]}");
 
         List<Map<String, Object>> infos = response.getShardInfos();
         assertEquals(2, infos.size());
@@ -229,14 +192,7 @@ public class RestExportActionTest extends TestCase {
      */
     @Test
     public void testOutputFileAndOutputCommand() {
-        ExportRequest exportRequest = new ExportRequest();
-        exportRequest
-                .source("{\"output_file\": \"/filename\", \"output_cmd\": \"cat\", \"fields\": [\"name\"]}");
-        ActionListener<ExportResponse> listener = new ExportResponseActionListener();
-        esSetup.client()
-                .execute(ExportAction.INSTANCE, exportRequest, listener);
-
-        waitForAsyncCallback(4000);
+        executeExportRequest("{\"output_file\": \"/filename\", \"output_cmd\": \"cat\", \"fields\": [\"name\"]}");
 
         List<Map<String, Object>> infos = response.getShardInfos();
         assertEquals(2, infos.size());
@@ -252,14 +208,7 @@ public class RestExportActionTest extends TestCase {
      */
     @Test
     public void testForceOverride() {
-        ExportRequest exportRequest = new ExportRequest();
-        exportRequest
-                .source("{\"output_file\": \"/tmp/filename.export\", \"fields\": [\"name\"], \"force_override\": \"true\"}");
-        ActionListener<ExportResponse> listener = new ExportResponseActionListener();
-        esSetup.client()
-                .execute(ExportAction.INSTANCE, exportRequest, listener);
-
-        waitForAsyncCallback(4000);
+        executeExportRequest("{\"output_file\": \"/tmp/filename.export\", \"fields\": [\"name\"], \"force_override\": \"true\"}");
 
         List<Map<String, Object>> infos = response.getShardInfos();
         assertEquals(2, infos.size());
@@ -274,14 +223,7 @@ public class RestExportActionTest extends TestCase {
      */
     @Test
     public void testExplain() {
-        ExportRequest exportRequest = new ExportRequest();
-        exportRequest
-                .source("{\"output_cmd\": \"cat\", \"fields\": [\"name\"], \"explain\": \"true\"}");
-        ActionListener<ExportResponse> listener = new ExportResponseActionListener();
-        esSetup.client()
-                .execute(ExportAction.INSTANCE, exportRequest, listener);
-
-        waitForAsyncCallback(4000);
+        executeExportRequest("{\"output_cmd\": \"cat\", \"fields\": [\"name\"], \"explain\": \"true\"}");
 
         List<Map<String, Object>> infos = response.getShardInfos();
         assertEquals(2, infos.size());
@@ -289,6 +231,21 @@ public class RestExportActionTest extends TestCase {
         assertFalse(shard_info.containsKey("stderr"));
         assertFalse(shard_info.containsKey("stdout"));
         assertFalse(shard_info.containsKey("exitcode"));
+        assertSame(shard_info.keySet(), infos.get(0).keySet());
+    }
+
+    /**
+     * Execute an export request with a JSON string as source query.
+     * Waits for async callback and writes result in response member variable.
+     * @param source
+     */
+    private void executeExportRequest(String source) {
+        ExportRequest exportRequest = new ExportRequest();
+        exportRequest.source(source);
+        ActionListener<ExportResponse> listener = new ExportResponseActionListener();
+        esSetup.client()
+                .execute(ExportAction.INSTANCE, exportRequest, listener);
+        waitForAsyncCallback(4000);
     }
 
     /**
