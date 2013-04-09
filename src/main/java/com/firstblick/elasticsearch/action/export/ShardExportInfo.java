@@ -9,28 +9,31 @@ import java.util.Map;
 
 public class ShardExportInfo {
 
+    String node;
     String index;
     int shardId;
     ShardOperationFailedException exception;
     ShardExportResponse response;
 
-    protected ShardExportInfo(String index, int shardId) {
+    protected ShardExportInfo(String node, String index, int shardId) {
+        this.node = node;
         this.index = index;
         this.shardId = shardId;
     }
 
     public ShardExportInfo(ShardExportResponse shardExportResponse) {
-        this(shardExportResponse.getIndex(), shardExportResponse.getShardId());
+        this(shardExportResponse.getNode(), shardExportResponse.getIndex(), shardExportResponse.getShardId());
         this.response = shardExportResponse;
     }
 
-    public ShardExportInfo(BroadcastShardOperationFailedException exception) {
-        this(exception.shardId().index().getName(), exception.shardId().getId());
+    public ShardExportInfo(String node, BroadcastShardOperationFailedException exception) {
+        this(node, exception.shardId().index().getName(), exception.shardId().getId());
         this.exception = new DefaultShardOperationFailedException(exception);
     }
 
     public Map<String, Object> asMap() {
         Map<String, Object> ret = new HashMap<String, Object>();
+        ret.put("node", node);
         ret.put("index", index);
         ret.put("shard", shardId);
         if (exception != null) {

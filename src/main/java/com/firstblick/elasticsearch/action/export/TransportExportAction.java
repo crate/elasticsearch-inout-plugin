@@ -111,7 +111,7 @@ public class TransportExportAction extends TransportBroadcastOperationAction<Exp
             } else if (shardResponse instanceof BroadcastShardOperationFailedException) {
                 failedShards++;
                 BroadcastShardOperationFailedException ex = (BroadcastShardOperationFailedException) shardResponse;
-                shardInfos.add(new ShardExportInfo(ex));
+                shardInfos.add(new ShardExportInfo(this.nodeName(), ex));
             } else {
                 ShardExportResponse shardExportResponse = (ShardExportResponse) shardResponse;
                 if (shardExportResponse.getFile() == null && shardExportResponse.getExitCode() != 0) {
@@ -144,13 +144,13 @@ public class TransportExportAction extends TransportBroadcastOperationAction<Exp
             context.preProcess();
             try {
                 if (context.explain()) {
-                    return new ShardExportResponse(request.index(), request.shardId(), context.outputCmd(),
+                    return new ShardExportResponse(this.nodeName(), request.index(), request.shardId(), context.outputCmd(),
                             context.outputCmdArray(), context.outputFile());
                 } else {
                     //OutputCommand.Result res = Exporter.export(logger, context);
                     OutputCommand.Result res = new OutputCommand("blub").mock();
 
-                    return new ShardExportResponse(request.index(), request.shardId(), context.outputCmd(),
+                    return new ShardExportResponse(this.nodeName(), request.index(), request.shardId(), context.outputCmd(),
                             context.outputCmdArray(), context.outputFile(), res.stdErr, res.stdOut, res.exit);
                 }
 
