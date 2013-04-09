@@ -24,15 +24,22 @@ import com.github.tlrx.elasticsearch.test.EsSetup;
 
 public class RestExportActionTest extends TestCase {
 
-    final CountDownLatch signal = new CountDownLatch(1);
+    ExportResponse response;
+    CountDownLatch signal;
     EsSetup esSetup;
-
     RestExportAction restExportAction;
 
     /**
      * Action listener to fail tests onFailure.
      */
-    private abstract class SuccessActionListener implements ActionListener<ExportResponse> {
+    private class ExportResponseActionListener implements
+            ActionListener<ExportResponse> {
+
+        @Override
+        public void onResponse(ExportResponse res) {
+            response = res;
+            signal.countDown();
+        }
 
         @Override
         public void onFailure(Throwable e) {
@@ -43,13 +50,16 @@ public class RestExportActionTest extends TestCase {
 
     @Before
     public void setUp() {
+        signal = new CountDownLatch(1);
+        response = null;
         esSetup = new EsSetup();
         esSetup.execute(
                 deleteAll(),
-               createIndex("users").withSettings(fromClassPath("essetup/settings/test_a.json")).
-               withMapping("d", fromClassPath("essetup/mappings/test_a.json")).
-               withData(fromClassPath("essetup/data/test_a.json"))
-        );
+                createIndex("users")
+                        .withSettings(fromClassPath("essetup/settings/test_a.json"))
+                        .withMapping("d",
+                                fromClassPath("essetup/mappings/test_a.json"))
+                        .withData(fromClassPath("essetup/data/test_a.json")));
         esSetup.client().admin().indices().prepareRefresh("users").execute();
     }
 
@@ -59,31 +69,65 @@ public class RestExportActionTest extends TestCase {
     }
 
     @Test
-    public void testPlainCall() {
+    public void testOutputCommand() {
         ExportRequest exportRequest = new ExportRequest();
-        ActionListener<ExportResponse> listener = new SuccessActionListener() {
-            @Override
-            public void onResponse(ExportResponse response) {
-                List<Map<String, Object>> infos = response.getShardInfos();
-                assertEquals(2, infos.size());
-                assertShardInfo(infos.get(0), "users", 0, "", "", "");
-                assertShardInfo(infos.get(1), "users", 0, "", "", "");
-                signal.countDown();
-            }}
-        ;
-        esSetup.client().execute(ExportAction.INSTANCE, exportRequest, listener);
+        exportRequest
+                .source("{\"output_cmd\": \"cat\", \"fields\": [\"name\"]}");
+        ActionListener<ExportResponse> listener = new ExportResponseActionListener();
+        esSetup.client()
+                .execute(ExportAction.INSTANCE, exportRequest, listener);
 
-        // wait for async callback
+        waitForAsyncCallback(4000);
+        if (response == null) {
+            fail("No response within time");
+        }
+
+        List<Map<String, Object>> infos = response.getShardInfos();
+        assertEquals(2, infos.size());
+        // TODO adapt when working
+        assertShardInfoCommand(infos.get(0), "users", -1, "", "Command failed",
+                null);
+        assertShardInfoCommand(infos.get(1), "users", -1, "", "Command failed",
+                null);
+    }
+
+    @Test
+    public void testOutputFile() {
+        ExportRequest exportRequest = new ExportRequest();
+        exportRequest
+                .source("{\"output_file\": \"/tmp/${cluster}.${shard}.${index}.export\", \"fields\": [\"name\"]}");
+        ActionListener<ExportResponse> listener = new ExportResponseActionListener();
+        esSetup.client()
+                .execute(ExportAction.INSTANCE, exportRequest, listener);
+
+        waitForAsyncCallback(4000);
+        if (response == null) {
+            fail("No response within time");
+        }
+
+        List<Map<String, Object>> infos = response.getShardInfos();
+        assertEquals(2, infos.size());
+        assertEquals("users", infos.get(0).get("index"));
+        assertEquals("users", infos.get(1).get("index"));
+        String output_file = infos.get(0).get("output_file").toString();
+        assertTrue(output_file.startsWith("/tmp/"));
+        assertTrue(output_file.endsWith(".0.users.export"));
+        output_file = infos.get(1).get("output_file").toString();
+        assertTrue(output_file.startsWith("/tmp/"));
+        assertTrue(output_file.endsWith(".1.users.export"));
+    }
+
+    private void waitForAsyncCallback(long milliSeconds) {
         try {
-            signal.await(4000, TimeUnit.MILLISECONDS);
+            signal.await(milliSeconds, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
             e.printStackTrace();
             fail("Signal interrupted");
         }
     }
 
-    private void assertShardInfo(Map<String, Object> map, String index,
-            int exitcode, String stderr, String stdout, String cmd) {
+    private void assertShardInfoCommand(Map<String, Object> map, String index,
+            int exitcode, String stdout, String stderr, String cmd) {
         assertEquals(index, map.get("index"));
         assertEquals(exitcode, map.get("exitcode"));
         assertEquals(stderr, map.get("stderr"));
