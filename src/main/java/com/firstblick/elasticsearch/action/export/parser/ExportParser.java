@@ -21,7 +21,6 @@ public class ExportParser {
 
     private final ExportCmdParseElement exportCmdParseElement;
     private final ExportFileParseElement exportFileParseElement;
-
     private final ImmutableMap<String, SearchParseElement> elementParsers;
 
 
@@ -79,26 +78,24 @@ public class ExportParser {
     }
 
     public void parseSource(ExportContext context, BytesReference source) throws SearchParseException {
-        // nothing to parse...
-        if (source == null || source.length() == 0) {
-            return;
-        }
         reset();
         XContentParser parser = null;
         try {
-            parser = XContentFactory.xContent(source).createParser(source);
-            XContentParser.Token token;
-            while ((token = parser.nextToken()) != XContentParser.Token.END_OBJECT) {
-                if (token == XContentParser.Token.FIELD_NAME) {
-                    String fieldName = parser.currentName();
-                    parser.nextToken();
-                    SearchParseElement element = elementParsers.get(fieldName);
-                    if (element == null) {
-                        throw new SearchParseException(context, "No parser for element [" + fieldName + "]");
+            if (source != null) {
+                parser = XContentFactory.xContent(source).createParser(source);
+                XContentParser.Token token;
+                while ((token = parser.nextToken()) != XContentParser.Token.END_OBJECT) {
+                    if (token == XContentParser.Token.FIELD_NAME) {
+                        String fieldName = parser.currentName();
+                        parser.nextToken();
+                        SearchParseElement element = elementParsers.get(fieldName);
+                        if (element == null) {
+                            throw new SearchParseException(context, "No parser for element [" + fieldName + "]");
+                        }
+                        element.parse(parser, context);
+                    } else if (token == null) {
+                        break;
                     }
-                    element.parse(parser, context);
-                } else if (token == null) {
-                    break;
                 }
             }
             validate(context);

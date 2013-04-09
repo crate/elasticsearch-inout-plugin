@@ -140,9 +140,7 @@ public class TransportExportAction extends TransportBroadcastOperationAction<Exp
 
         try {
             BytesReference source = request.source();
-            if (source != null && source.length() > 0) {
-                exportParser.parseSource(context, source);
-            }
+            exportParser.parseSource(context, source);
             context.preProcess();
             try {
                 OutputCommand.Result res;
