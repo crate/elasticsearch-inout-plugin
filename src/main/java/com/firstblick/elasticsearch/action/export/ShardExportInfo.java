@@ -40,9 +40,11 @@ public class ShardExportInfo {
                 ret.put("output_file", response.getFile());
             } else {
                 ret.put("output_cmd", response.getCmd() != null ? response.getCmd() : response.getCmdArray());
-                ret.put("stderr", response.getStderr());
-                ret.put("stdout", response.getStdout());
-                ret.put("exitcode", response.getExitCode());
+                if (!response.dryRun()) {
+                    ret.put("stderr", response.getStderr());
+                    ret.put("stdout", response.getStdout());
+                    ret.put("exitcode", response.getExitCode());
+                }
             }
         }
         return ret;

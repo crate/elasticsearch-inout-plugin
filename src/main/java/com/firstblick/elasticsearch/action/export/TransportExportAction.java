@@ -44,7 +44,7 @@ public class TransportExportAction extends TransportBroadcastOperationAction<Exp
 
     @Inject
     public TransportExportAction(Settings settings, ThreadPool threadPool, ClusterService clusterService, TransportService transportService,
-                                IndicesService indicesService, ScriptService scriptService, ExportParser exportParser) {
+                                 IndicesService indicesService, ScriptService scriptService, ExportParser exportParser) {
         super(settings, threadPool, clusterService, transportService);
         this.indicesService = indicesService;
         this.scriptService = scriptService;
@@ -113,7 +113,7 @@ public class TransportExportAction extends TransportBroadcastOperationAction<Exp
                 BroadcastShardOperationFailedException ex = (BroadcastShardOperationFailedException) shardResponse;
                 shardInfos.add(new ShardExportInfo(ex));
             } else {
-                ShardExportResponse shardExportResponse = (ShardExportResponse)shardResponse;
+                ShardExportResponse shardExportResponse = (ShardExportResponse) shardResponse;
                 if (shardExportResponse.getFile() == null && shardExportResponse.getExitCode() != 0) {
                     failedShards++;
                 } else {
@@ -143,14 +143,17 @@ public class TransportExportAction extends TransportBroadcastOperationAction<Exp
             exportParser.parseSource(context, source);
             context.preProcess();
             try {
-                OutputCommand.Result res;
+                if (context.explain()) {
+                    return new ShardExportResponse(request.index(), request.shardId(), context.outputCmd(),
+                            context.outputCmdArray(), context.outputFile());
+                } else {
+                    //OutputCommand.Result res = Exporter.export(logger, context);
+                    OutputCommand.Result res = new OutputCommand("blub").mock();
 
-                logger.info("### export command goes here");
-                //res = Exporter.export(logger, context);
-                res = new OutputCommand("blub").mock();
+                    return new ShardExportResponse(request.index(), request.shardId(), context.outputCmd(),
+                            context.outputCmdArray(), context.outputFile(), res.stdErr, res.stdOut, res.exit);
+                }
 
-                return new ShardExportResponse(request.index(), request.shardId(), context.outputCmd(),
-                        context.outputCmdArray(), context.outputFile(), res.stdErr, res.stdOut, res.exit);
             } catch (Exception e) {
                 throw new QueryPhaseExecutionException(context, "failed to execute export", e);
             }
