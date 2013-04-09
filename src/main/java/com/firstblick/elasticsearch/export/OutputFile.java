@@ -1,4 +1,4 @@
-package com.firstblick.elasticsearch.action.export;
+package com.firstblick.elasticsearch.export;
 
 import java.io.File;
 import java.io.FileOutputStream;

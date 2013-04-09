@@ -1,9 +1,10 @@
-package com.firstblick.elasticsearch.action.export;
+package com.firstblick.elasticsearch.export;
 
 import static org.junit.Assert.*;
 
 import java.io.ByteArrayInputStream;
 
+import com.firstblick.elasticsearch.export.StreamConsumer;
 import org.junit.Test;
 
 /**

@@ -1,6 +1,9 @@
 package com.firstblick.elasticsearch.action.export;
 
 import com.firstblick.elasticsearch.action.export.parser.ExportOutputFormat;
+import com.firstblick.elasticsearch.export.Output;
+import com.firstblick.elasticsearch.export.OutputCommand;
+import com.firstblick.elasticsearch.export.OutputFile;
 import org.elasticsearch.cluster.ClusterName;
 import org.elasticsearch.index.engine.Engine;
 import org.elasticsearch.index.service.IndexService;

@@ -1,6 +1,5 @@
-package com.firstblick.elasticsearch.action.export;
+package com.firstblick.elasticsearch.export;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;

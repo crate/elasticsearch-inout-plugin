@@ -1,4 +1,4 @@
-package com.firstblick.elasticsearch.action.export;
+package com.firstblick.elasticsearch.export;
 
 import java.io.BufferedReader;
 import java.io.IOException;

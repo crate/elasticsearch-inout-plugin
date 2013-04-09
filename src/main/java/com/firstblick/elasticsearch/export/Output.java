@@ -1,4 +1,4 @@
-package com.firstblick.elasticsearch.action.export;
+package com.firstblick.elasticsearch.export;
 
 import java.io.OutputStream;
 
@@ -6,7 +6,7 @@ public abstract class Output {
 
     private Result result;
 
-    class Result {
+    public class Result {
         public int exit;
         public String stdErr;
         public String stdOut;
