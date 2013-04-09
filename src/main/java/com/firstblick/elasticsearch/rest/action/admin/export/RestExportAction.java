@@ -65,7 +65,7 @@ public class RestExportAction extends BaseRestHandler {
             }
             exportRequest.routing(request.param("routing"));
             exportRequest.types(splitTypes(request.param("type")));
-            exportRequest.preference(request.param("preference"));
+            exportRequest.preference(request.param("preference", "_primary"));
         } catch (Exception e) {
             try {
                 XContentBuilder builder = RestXContentBuilder.restContentBuilder(request);
