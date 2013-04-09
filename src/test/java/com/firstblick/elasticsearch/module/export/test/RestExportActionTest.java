@@ -12,6 +12,9 @@ import java.util.concurrent.TimeUnit;
 import junit.framework.TestCase;
 
 import org.elasticsearch.action.ActionListener;
+import org.elasticsearch.action.admin.cluster.health.ClusterHealthAction;
+import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
+import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -195,6 +198,9 @@ public class RestExportActionTest extends TestCase {
      */
     @Test
     public void testOutputFile() {
+        String clusterName = esSetup.client().admin().cluster().prepareHealth().
+                setWaitForGreenStatus().execute().actionGet().getClusterName();
+
         ExportRequest exportRequest = new ExportRequest();
         exportRequest
                 .source("{\"output_file\": \"/tmp/${cluster}.${shard}.${index}.export\", \"fields\": [\"name\"]}");
@@ -206,14 +212,16 @@ public class RestExportActionTest extends TestCase {
 
         List<Map<String, Object>> infos = response.getShardInfos();
         assertEquals(2, infos.size());
-        assertEquals("users", infos.get(0).get("index"));
-        assertEquals("users", infos.get(1).get("index"));
-        String output_file = infos.get(0).get("output_file").toString();
-        assertTrue(output_file.startsWith("/tmp/"));
-        assertTrue(output_file.endsWith(".0.users.export"));
-        output_file = infos.get(1).get("output_file").toString();
-        assertTrue(output_file.startsWith("/tmp/"));
-        assertTrue(output_file.endsWith(".1.users.export"));
+        Map<String, Object> shard_0 = infos.get(0);
+        Map<String, Object> shard_1 = infos.get(1);
+        assertEquals("users", shard_0.get("index"));
+        assertEquals("users", shard_1.get("index"));
+        String output_file_0 = shard_0.get("output_file").toString();
+        assertEquals("/tmp/" + clusterName + ".0.users.export", output_file_0);
+        String output_file_1 = shard_1.get("output_file").toString();
+        assertEquals("/tmp/" + clusterName + ".1.users.export", output_file_1);
+        assertTrue(shard_0.containsKey("node"));
+        assertTrue(shard_1.containsKey("node"));
     }
 
     /**
@@ -307,5 +315,6 @@ public class RestExportActionTest extends TestCase {
         assertEquals(stderr, map.get("stderr"));
         assertEquals(stdout, map.get("stdout"));
         assertEquals(cmd, map.get("cmd"));
+        assertTrue(map.containsKey("node"));
     }
 }
