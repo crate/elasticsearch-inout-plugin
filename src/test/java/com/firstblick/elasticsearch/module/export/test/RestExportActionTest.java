@@ -138,9 +138,9 @@ public class RestExportActionTest extends TestCase {
 
     /**
      * The 'output_cmd' parameter can be a single command and is executed.
-     * The response shows the index, the executed command, the exit code of
-     * the process and the process' standard out and standard error logs
-     * (first 8K).
+     * The response shows the index, the node name, the shard number, the executed
+     * command, the exit code of the process and the process' standard out and
+     * standard error logs (first 8K) of every shard result.
      */
     @Test
     public void testSingleOutputCommand() {
@@ -193,8 +193,8 @@ public class RestExportActionTest extends TestCase {
      *  - ${index}   : will be replaced with the index name
      *  - ${shard}   : will be replaced with the shard name
      *
-     * The response contains the index, the shard number and the generated
-     * output file name.
+     * The response contains the index, the shard number, the node name and
+     * the generated output file name of every shard result.
      */
     @Test
     public void testOutputFile() {
