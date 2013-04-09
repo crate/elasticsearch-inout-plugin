@@ -115,7 +115,7 @@ public class TransportExportAction extends TransportBroadcastOperationAction<Exp
                 shardInfos.add(new ShardExportInfo(ex));
             } else {
                 ShardExportResponse shardExportResponse = (ShardExportResponse)shardResponse;
-                if (shardExportResponse.getExitCode() != 0) {
+                if (shardExportResponse.getFile() == null && shardExportResponse.getExitCode() != 0) {
                     failedShards++;
                 } else {
                     successfulShards++;
@@ -146,15 +146,14 @@ public class TransportExportAction extends TransportBroadcastOperationAction<Exp
             }
             context.preProcess();
             try {
-                String cmd = "";          // executed cmd
-                String stderr = "";
-                String stdout = "";
-                int exitCode = 0;
+                OutputCommand.Result res;
 
                 logger.info("### export command goes here");
-                //Exporter.export(logger, context);
+                //res = Exporter.export(logger, context);
+                res = new OutputCommand("blub").mock();
 
-                return new ShardExportResponse(request.index(), request.shardId(), cmd, stderr, stdout, exitCode);
+                return new ShardExportResponse(request.index(), request.shardId(), context.outputCmd(),
+                        context.outputCmdArray(), context.outputFile(), res.stdErr, res.stdOut, res.exit);
             } catch (Exception e) {
                 throw new QueryPhaseExecutionException(context, "failed to execute export", e);
             }

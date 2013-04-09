@@ -10,6 +10,7 @@ import org.elasticsearch.search.SearchParseElement;
 import org.elasticsearch.search.SearchParseException;
 import org.elasticsearch.search.fetch.FetchPhase;
 import org.elasticsearch.search.fetch.FieldsParseElement;
+import org.elasticsearch.search.fetch.explain.ExplainParseElement;
 import org.elasticsearch.search.query.QueryPhase;
 
 import java.util.HashMap;
@@ -33,6 +34,8 @@ public class ExportParser {
         elementParsers.put("fields", new FieldsParseElement());
         elementParsers.put("output_cmd", exportCmdParseElement);
         elementParsers.put("output_file", exportFileParseElement);
+        elementParsers.put("force_override", new ExportForceOverrideParseElement());
+        elementParsers.put("explain", new ExplainParseElement());
         this.elementParsers = ImmutableMap.copyOf(elementParsers);
     }
 
