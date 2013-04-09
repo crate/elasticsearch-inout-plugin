@@ -1,18 +1,12 @@
 package com.firstblick.elasticsearch.action.export;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-import org.junit.Test;
-
-import com.firstblick.elasticsearch.action.export.OutputCommand.Result;
+import static org.junit.Assert.*;
 
 /**
  * Tests for the @OutputCommand class. These tests currently call
@@ -29,14 +23,14 @@ public class OutputCommandTest {
         // Before starting the println method has no effect
         outputCommand.println("nothing");
 
-        // The end() method returns null if the output command has not started
-        Result result = null;
         try {
-            result = outputCommand.end();
+            outputCommand.close();
+
         } catch (IOException e) {
             e.printStackTrace();
             fail("Method end() failed due to IOException");
         }
+        Output.Result result = outputCommand.result();
         assertNull(result);
     }
 
@@ -46,7 +40,7 @@ public class OutputCommandTest {
 
         // Start the process
         try {
-            outputCommand.start();
+            outputCommand.open();
         } catch (IOException e) {
             // The command does not exist and should raise an IOException
             return;
@@ -62,7 +56,7 @@ public class OutputCommandTest {
 
         // Start the process
         try {
-            outputCommand.start();
+            outputCommand.open();
         } catch (IOException e) {
             e.printStackTrace();
             fail("Method start() failed due to IOException");
@@ -74,9 +68,10 @@ public class OutputCommandTest {
         }
 
         // Finish the process
-        Result result = null;
+        Output.Result result = null;
         try {
-            result = outputCommand.end();
+            outputCommand.close();
+            result = outputCommand.result();
         } catch (IOException e) {
             e.printStackTrace();
             fail("Method end() failed due to IOException");
@@ -103,7 +98,7 @@ public class OutputCommandTest {
 
         // Start the process
         try {
-            outputCommand.start();
+            outputCommand.open();
         } catch (IOException e) {
             e.printStackTrace();
             fail("Method start() failed due to IOException");
@@ -115,14 +110,13 @@ public class OutputCommandTest {
         }
 
         // Finish the process
-        Result result = null;
         try {
-            result = outputCommand.end();
+            outputCommand.close();
         } catch (IOException e) {
             e.printStackTrace();
             fail("Method end() failed due to IOException");
         }
-
+        Output.Result result = outputCommand.result();
         // The exit status of the process is 127
         assertEquals(127, result.exit);
 

@@ -1,6 +1,8 @@
 package com.firstblick.elasticsearch.action.export;
 
+import java.io.Closeable;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.util.List;
 
@@ -10,15 +12,9 @@ import java.util.List;
  * standard in. Get standard out and standard error messages when
  * process has finished.
  */
-public class OutputCommand {
+public class OutputCommand extends Output{
 
     private static final int BUFFER_LEN = 8192;
-
-    class Result {
-        public int exit;
-        public String stdErr;
-        public String stdOut;
-    }
 
     private final ProcessBuilder builder;
     private PrintWriter printWriter;
@@ -47,7 +43,7 @@ public class OutputCommand {
      *
      * @throws IOException
      */
-    public void start() throws IOException {
+    public void open() throws IOException {
         process = builder.start();
         if (process != null) {
             printWriter = new PrintWriter(process.getOutputStream());
@@ -56,6 +52,10 @@ public class OutputCommand {
             errorConsumer = new StreamConsumer(process.getErrorStream(),
                     BUFFER_LEN);
         }
+    }
+
+    public OutputStream getOutputStream() {
+        return process.getOutputStream();
     }
 
     /**
@@ -71,19 +71,18 @@ public class OutputCommand {
 
     /**
      * Stop writing to the process' standard in and wait until the
-     * process is finished.
+     * process is finished and close all resources.
      *
-     * @return a result object containing the process exit status
-     *         and the first 8K of the process' output and error log.
      * @throws IOException
      */
-    public Result end() throws IOException {
+    public void close() throws IOException {
         if (printWriter != null) {
             printWriter.flush();
             printWriter.close();
         }
 
         if (process != null) {
+            process.getOutputStream().flush();
             result = new Result();
             try {
                 result.exit = process.waitFor();
@@ -94,20 +93,10 @@ public class OutputCommand {
             result.stdOut = outputConsumer.getBufferedOutput();
             errorConsumer.waitFor();
             result.stdErr = errorConsumer.getBufferedOutput();
-            return result;
         }
-        return null;
     }
 
-    /**
-     * TODO: remove me!
-     * @return
-     */
-    public Result mock() {
-        Result res = new Result();
-        res.exit = -1;
-        res.stdErr = "Command failed";
-        res.stdOut = "";
-        return res;
+    public Result result() {
+        return result;
     }
 }

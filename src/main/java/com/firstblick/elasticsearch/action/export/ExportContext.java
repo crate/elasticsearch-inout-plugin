@@ -88,4 +88,16 @@ public class ExportContext extends SearchContext {
     private String clusterName() {
         return ClusterName.clusterNameFromSettings(this.indexShard().indexSettings()).value();
     }
+
+    public Output createOutput() {
+        if (outputFile()!=null){
+            return new OutputFile(outputFile(), forceOverride());
+        } else {
+            if (outputCmd()!=null){
+                return new OutputCommand(outputCmd());
+            } else {
+                return new OutputCommand(outputCmdArray());
+            }
+        }
+    }
 }
