@@ -1,4 +1,4 @@
-package com.firstblick.elasticsearch.service.export;
+package com.firstblick.elasticsearch.action.export.parser;
 
 import org.elasticsearch.search.SearchParseException;
 

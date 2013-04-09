@@ -3,7 +3,7 @@ package com.firstblick.elasticsearch.module.export;
 
 import com.firstblick.elasticsearch.action.export.ExportAction;
 import com.firstblick.elasticsearch.action.export.TransportExportAction;
-import com.firstblick.elasticsearch.service.export.ExportParser;
+import com.firstblick.elasticsearch.action.export.parser.ExportParser;
 import org.elasticsearch.action.GenericAction;
 import org.elasticsearch.action.support.TransportAction;
 import org.elasticsearch.common.inject.AbstractModule;
