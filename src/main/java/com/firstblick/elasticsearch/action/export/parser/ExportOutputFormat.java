@@ -1,9 +1,7 @@
 package com.firstblick.elasticsearch.action.export.parser;
 
-import org.elasticsearch.search.SearchParseException;
-
 /**
- *
+ * Defines the format of the exported content.
  */
 public class ExportOutputFormat {
 
@@ -40,7 +38,7 @@ public class ExportOutputFormat {
     }
 
     public <T> boolean isIn(T t, T... ts) {
-        for(T t2: ts)
+        for (T t2 : ts)
             if (t.equals(t2)) return true;
         return false;
     }

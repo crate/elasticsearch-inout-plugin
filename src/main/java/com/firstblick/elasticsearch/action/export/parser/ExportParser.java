@@ -17,6 +17,9 @@ import org.elasticsearch.search.query.QueryPhase;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Parser for payload given to _export action.
+ */
 public class ExportParser {
 
     private final ExportCmdParseElement exportCmdParseElement;
@@ -53,6 +56,12 @@ public class ExportParser {
         }
     }
 
+    /**
+     * validate ``fields`` to make sure it has been defined and does only contain fields covered by the
+     * mapping.
+     *
+     * @param context
+     */
     private void validateFields(ExportContext context) {
         if (!context.hasFieldNames()) {
             throw new SearchParseException(context, "No export fields defined");
@@ -72,11 +81,23 @@ public class ExportParser {
         exportFileParseElement.reset();
     }
 
+    /**
+     * validate given payload
+     *
+     * @param context
+     */
     private void validate(ExportContext context) {
         validateOutputCmd(context);
         validateFields(context);
     }
 
+    /**
+     * Main method of this class to parse given payload of _export action
+     *
+     * @param context
+     * @param source
+     * @throws SearchParseException
+     */
     public void parseSource(ExportContext context, BytesReference source) throws SearchParseException {
         reset();
         XContentParser parser = null;
