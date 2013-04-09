@@ -24,10 +24,6 @@ import java.util.Map;
 
 public class ExportRequest extends BroadcastOperationRequest<ExportRequest> {
 
-    private static final XContentType contentType = Requests.CONTENT_TYPE;
-
-    public static final float DEFAULT_MIN_SCORE = -1f;
-
     @Nullable
     protected String routing;
 

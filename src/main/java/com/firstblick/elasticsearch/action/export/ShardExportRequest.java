@@ -15,10 +15,6 @@ import java.io.IOException;
  */
 class ShardExportRequest extends BroadcastShardOperationRequest {
 
-    private String outputCmd;
-
-    private String outputFile;
-
     private BytesReference source;
 
     private String[] types = Strings.EMPTY_ARRAY;
@@ -37,14 +33,6 @@ class ShardExportRequest extends BroadcastShardOperationRequest {
         this.filteringAliases = filteringAliases;
     }
 
-    public String outputCmd() {
-        return outputCmd;
-    }
-
-    public String outputFile() {
-        return outputFile;
-    }
-
     public BytesReference source() {
         return source;
     }
@@ -60,14 +48,10 @@ class ShardExportRequest extends BroadcastShardOperationRequest {
     @Override
     public void readFrom(StreamInput in) throws IOException {
         super.readFrom(in);
-        outputCmd = in.readString();
-        outputFile = in.readString();
     }
 
     @Override
     public void writeTo(StreamOutput out) throws IOException {
         super.writeTo(out);
-        System.out.printf("### Exporting:   Cluster: " + "XX" + "   Index: " + index() + "   Shard: " + shardId() + "\n");
-        out.writeString("blub");
     }
 }

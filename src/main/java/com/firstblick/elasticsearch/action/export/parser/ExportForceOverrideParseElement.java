@@ -6,6 +6,7 @@ import org.elasticsearch.search.SearchParseElement;
 import org.elasticsearch.search.internal.SearchContext;
 
 /**
+ * Parser for token ``force_override``. Make sense if output_file was defined.
  */
 public class ExportForceOverrideParseElement implements SearchParseElement {
 

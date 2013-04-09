@@ -11,8 +11,6 @@ import java.util.Map;
 
 /**
  * The response of the count action.
- *
- *
  */
 public class ExportResponse extends BroadcastOperationResponse {
 
@@ -27,19 +25,17 @@ public class ExportResponse extends BroadcastOperationResponse {
         this.shardExportInfos = shardExportInfos;
     }
 
+    /**
+     * Method to retrieve export specific informations per shard
+     *
+     * @return list of shard infos
+     */
     public List<Map<String, Object>> getShardInfos() {
         List<Map<String, Object>> ret = new ArrayList<Map<String, Object>>();
         for (ShardExportInfo sei : this.shardExportInfos) {
             ret.add(sei.asMap());
         }
         return ret;
-    }
-
-    /**
-     * The state of the response
-     */
-    public boolean isOK() {
-        return true;
     }
 
     @Override

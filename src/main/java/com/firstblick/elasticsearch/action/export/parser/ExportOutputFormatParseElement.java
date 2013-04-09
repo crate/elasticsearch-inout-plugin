@@ -6,6 +6,10 @@ import org.elasticsearch.search.SearchParseElement;
 import org.elasticsearch.search.internal.SearchContext;
 
 /**
+ * Parser for token ``output_format``. The value of the token might be a plain String or a json object.
+ * Possible values for format are "json" and "delimited". If the value has been defined as json object
+ * the object might contain the keys "delimiter" and "null_sequence". This information only make sense
+ * if format was set to "delimited".
  *
  * <pre>
  * "output_format": "json"

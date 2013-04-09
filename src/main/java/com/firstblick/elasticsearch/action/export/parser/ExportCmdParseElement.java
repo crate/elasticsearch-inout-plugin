@@ -9,6 +9,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * Parser for token ``export_cmd``. The value of the token might be a String containing the command
+ * or an array containing the command and all arguments as seperated parts. This token MUST NOT be set together
+ * with ``export_file``
+ *
+ * <pre>
+ * "export_cmd": "gzip > /tmp/out"
+ *
+ * or
+ *
+ * "export_cmd": ["gzip", ">" "/tmp/out"]
+ * </pre>
  */
 public class ExportCmdParseElement implements SearchParseElement {
 

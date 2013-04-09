@@ -13,7 +13,9 @@ import org.elasticsearch.search.internal.ShardSearchRequest;
 import java.util.ArrayList;
 import java.util.List;
 
-
+/**
+ * Container class for export specific informations.
+ */
 public class ExportContext extends SearchContext {
 
     private static final String VAR_SHARD = "${shard}";
@@ -70,6 +72,12 @@ public class ExportContext extends SearchContext {
         this.outputFormat = outputFormat;
     }
 
+    /**
+     * Replaces variable placeholder with actual value in all elements of templateArray
+     *
+     * @param templateArray
+     * @return
+     */
     private List<String> applyVars(List<String> templateArray) {
         List<String> ret = new ArrayList<String>();
         for (String part : templateArray) {
@@ -78,6 +86,12 @@ public class ExportContext extends SearchContext {
         return ret;
     }
 
+    /**
+     * Replaces variable placeholder with actual value
+     *
+     * @param template
+     * @return
+     */
     private String applyVars(String template) {
         template = template.replace(VAR_SHARD, String.valueOf(indexShard().shardId().getId()));
         template = template.replace(VAR_INDEX, indexShard().shardId().getIndex());
@@ -85,6 +99,11 @@ public class ExportContext extends SearchContext {
         return template;
     }
 
+    /**
+     * Method to retrieve name of cluster
+     *
+     * @return name of cluster
+     */
     private String clusterName() {
         return ClusterName.clusterNameFromSettings(this.indexShard().indexSettings()).value();
     }
