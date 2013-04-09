@@ -67,7 +67,7 @@ public class ExportRequest extends BroadcastOperationRequest<ExportRequest> {
     /**
      * The query source to execute.
      */
-    BytesReference source() {
+    public BytesReference source() {
         return source;
     }
 

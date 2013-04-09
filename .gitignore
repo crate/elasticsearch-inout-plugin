@@ -6,5 +6,5 @@
 .project
 .settings/
 test-output/
-data
+/data
 target
