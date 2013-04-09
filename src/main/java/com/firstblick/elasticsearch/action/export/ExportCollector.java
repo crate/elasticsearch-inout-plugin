@@ -167,6 +167,7 @@ public class ExportCollector extends Collector {
         XContentBuilder builder = new XContentBuilder(XContentFactory
                 .xContent(XContentType.JSON), cachedEntry.bytes());
         exportFields.toXContent(builder, ToXContent.EMPTY_PARAMS);
+        builder.flush();
         BytesReference bytes = cachedEntry.bytes().bytes();
         out.write(bytes.array(), bytes.arrayOffset(), bytes.length());
         CachedStreamOutput.pushEntry(cachedEntry);

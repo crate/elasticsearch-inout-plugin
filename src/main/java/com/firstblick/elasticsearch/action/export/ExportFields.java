@@ -73,16 +73,14 @@ public class ExportFields implements ToXContent {
                     fc = new FieldExtractor() {
                         @Override
                         public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
-                            builder.field("_id", hit.getId());
-                            return builder;
+                            return builder.field("_id", hit.getId());
                         }
                     };
                 } else if (fn.equals("_type")) {
                     fc = new FieldExtractor() {
                         @Override
                         public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
-                            builder.field("_type", hit.getType());
-                            return builder;
+                            return builder.field("_type", hit.getType());
                         }
                     };
                 }
@@ -99,7 +97,7 @@ public class ExportFields implements ToXContent {
             params) throws IOException {
         builder.startObject();
         for (FieldExtractor fc : fieldExtractors) {
-            builder = fc.toXContent(builder, params);
+            fc.toXContent(builder, params);
         }
         builder.endObject();
         return builder;
