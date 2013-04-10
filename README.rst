@@ -15,8 +15,11 @@ Usage
     curl -X POST 'http://localhost:9200/_export' -d '{"fields":["_id", "_source"], output_file:"/tmp/dump"}'
 
 
+Elements of request body
+------------------------
+
 Fields
-------
+~~~~~~
 
 required
 
@@ -28,7 +31,7 @@ The mapping of fields to export has to be defined with "store": true
 
 
 export_cmd
-----------
+~~~~~~~~~~
 
 required (if export_file has been omitted)
 
@@ -42,7 +45,7 @@ Some variable substitution is possible (see Variable Substitution)
 
 
 export_file
------------
+~~~~~~~~~~~
 
 Required (if export_cmd has been omitted)
 
@@ -54,7 +57,7 @@ variable substitution is possible (see Variable Substitution)
 
 
 force_override
---------------
+~~~~~~~~~~~~~~
 
 optional (default to false)
 
@@ -65,7 +68,7 @@ make sense if export_file has been defined.
 
 
 explain
--------
+~~~~~~~
 
 optional (default to false)
 
@@ -75,7 +78,7 @@ Option to evaluate the command to execute (like dry-run).
 
 
 output_format
--------------
+~~~~~~~~~~~~~
 
 optional (default to json)
 
@@ -109,18 +112,18 @@ NOTE: output_format has not been implemented so far just the dafault
 
 
 query
------
+~~~~~
 
-The query element within the search request body allows to define a
+The query element within the export request body allows to define a
 query using the Query DSL. See
 http://www.elasticsearch.org/guide/reference/query-dsl/
 
 
 Variable Substitution
-=====================
+---------------------
 
 The following placeholders will get replace with the actuall value:
 
-    ${cluster}       The name of the cluster
-    ${index}         The name of the index
-    ${shard}         The id of the shard
+ * ${cluster}       The name of the cluster
+ * ${index}         The name of the index
+ * ${shard}         The id of the shard
