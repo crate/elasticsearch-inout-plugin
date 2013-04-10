@@ -67,7 +67,8 @@ public class ExportParser {
             throw new SearchParseException(context, "No export fields defined");
         }
         for (String field : context.fieldNames()) {
-            if (context.mapperService().name(field) == null) {
+            if (context.mapperService().name(field) == null && !field.equals
+                    ("_version")) {
                 throw new SearchParseException(context, "Export field [" + field + "] does not exist in the mapping");
             }
         }
