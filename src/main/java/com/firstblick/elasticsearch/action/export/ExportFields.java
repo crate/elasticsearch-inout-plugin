@@ -1,8 +1,7 @@
 package com.firstblick.elasticsearch.action.export;
 
-import org.elasticsearch.common.xcontent.ToXContent;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.rest.action.support.RestXContentBuilder;
+import org.elasticsearch.common.bytes.BytesReference;
+import org.elasticsearch.common.xcontent.*;
 import org.elasticsearch.search.SearchHitField;
 import org.elasticsearch.search.internal.InternalSearchHit;
 
@@ -17,6 +16,25 @@ public class ExportFields implements ToXContent {
     private final List<FieldExtractor> fieldExtractors;
 
     abstract class FieldExtractor implements ToXContent {
+    }
+
+    class SourceFieldExtractor extends FieldExtractor {
+
+        @Override
+        public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
+            BytesReference source = hit.sourceRef();
+            XContentType contentType = XContentFactory.xContentType(source);
+            XContentParser parser = XContentFactory.xContent(contentType)
+                    .createParser(source);
+            try {
+                parser.nextToken();
+                builder.field("_source");
+                builder.copyCurrentStructure(parser);
+            } finally {
+                parser.close();
+            }
+            return builder;
+        }
     }
 
     class HitFieldExtractor extends FieldExtractor {
@@ -62,13 +80,7 @@ public class ExportFields implements ToXContent {
             FieldExtractor fc = null;
             if (fn.startsWith("_")) {
                 if (fn.equals("_source")) {
-                    fc = new FieldExtractor() {
-                        @Override
-                        public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
-                            RestXContentBuilder.restDocumentSource(hit.sourceRef(), builder, params);
-                            return builder;
-                        }
-                    };
+                    fc = new SourceFieldExtractor();
                 } else if (fn.equals("_id")) {
                     fc = new FieldExtractor() {
                         @Override
