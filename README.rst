@@ -10,9 +10,16 @@ Usage
 
     curl -X POST 'http://localhost:9200/_export' -d '{"fields":["_id", "_source"], output_cmd:"gzip > /tmp/dump"}'
 
+    curl -X POST 'http://localhost:9200/_export' -d '{"fields":["_id", "_source"], output_cmd:["gzip", ">", "/tmp/dump"]}'
 
-fields
-------
+    curl -X POST 'http://localhost:9200/_export' -d '{"fields":["_id", "_source"], output_file:"/tmp/dump"}'
+
+
+Elements of request body
+------------------------
+
+Fields
+~~~~~~
 
 required
 
@@ -20,8 +27,11 @@ A list of fields to export. Each field must be defined in the mapping.
 
     "fields": ["name", "address"]
 
+The mapping of fields to export has to be defined with "store": true
+
+
 export_cmd
-----------
+~~~~~~~~~~
 
 required (if export_file has been omitted)
 
@@ -29,12 +39,13 @@ required (if export_file has been omitted)
 
     "export_cmd": ["gzip", ">", "/tmp/out"]
 
-The command to execute. Might be defined as string or as array. Some
-variable substitution is possible (see variables)
+The command to execute. Might be defined as string or as array. The
+content to export will get piped to Stdin of the command to execute.
+Some variable substitution is possible (see Variable Substitution)
 
 
 export_file
------------
+~~~~~~~~~~~
 
 Required (if export_cmd has been omitted)
 
@@ -42,22 +53,22 @@ Required (if export_cmd has been omitted)
 
 A path to the resulting output file. The containing directory of the
 give export_file has to exist. The given export_file MUST NOT exist. Some
-variable substitution is possible (see variables)
+variable substitution is possible (see Variable Substitution)
 
 
-force_override
---------------
+force_overwrite
+~~~~~~~~~~~~~~~
 
 optional (default to false)
 
-    "force_override": true
+    "force_overwrite": true
 
 Boolean flag to force overwriting existing export_file. This option only
 make sense if export_file has been defined.
 
 
 explain
--------
+~~~~~~~
 
 optional (default to false)
 
@@ -67,9 +78,9 @@ Option to evaluate the command to execute (like dry-run).
 
 
 output_format
--------------
+~~~~~~~~~~~~~
 
-optional
+optional (default to json)
 
     "output_format": "json"
 
@@ -80,7 +91,7 @@ optional
     "output_format": {"delimited": {"null_sequence":"\\N", "delimiter": "\u0001"}}
 
 The output_format element defines the format of the output to
-produce. In case of "json" each entry to export will be formated as
+produce. In case of "json" each entry to export will be formatted as
 json:
 
     {"name":"quodt", "adress":"Heimat 42"}
@@ -96,12 +107,23 @@ option will only make sense if format was set to "delimited".
 ``null_sequence`` defines the null value representation. This option
 will only make sense if format was set to "delimited".
 
+NOTE: output_format has not been implemented so far just the dafault
+is set to "json"
+
 
 query
------
+~~~~~
 
-The query element within the search request body allows to define a
+The query element within the export request body allows to define a
 query using the Query DSL. See
 http://www.elasticsearch.org/guide/reference/query-dsl/
 
 
+Variable Substitution
+---------------------
+
+The following placeholders will get replace with the actuall value:
+
+* ${cluster}       The name of the cluster
+* ${index}         The name of the index
+* ${shard}         The id of the shard
