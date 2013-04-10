@@ -10,8 +10,12 @@ Usage
 
     curl -X POST 'http://localhost:9200/_export' -d '{"fields":["_id", "_source"], output_cmd:"gzip > /tmp/dump"}'
 
+    curl -X POST 'http://localhost:9200/_export' -d '{"fields":["_id", "_source"], output_cmd:["gzip", ">", "/tmp/dump"]}'
 
-fields
+    curl -X POST 'http://localhost:9200/_export' -d '{"fields":["_id", "_source"], output_file:"/tmp/dump"}'
+
+
+Fields
 ------
 
 required
@@ -19,6 +23,9 @@ required
 A list of fields to export. Each field must be defined in the mapping.
 
     "fields": ["name", "address"]
+
+The mapping of fields to export has to be defined with "store": true
+
 
 export_cmd
 ----------
@@ -29,8 +36,9 @@ required (if export_file has been omitted)
 
     "export_cmd": ["gzip", ">", "/tmp/out"]
 
-The command to execute. Might be defined as string or as array. Some
-variable substitution is possible (see variables)
+The command to execute. Might be defined as string or as array. The
+content to export will get piped to Stdin of the command to execute.
+Some variable substitution is possible (see Variable Substitution)
 
 
 export_file
@@ -42,7 +50,7 @@ Required (if export_cmd has been omitted)
 
 A path to the resulting output file. The containing directory of the
 give export_file has to exist. The given export_file MUST NOT exist. Some
-variable substitution is possible (see variables)
+variable substitution is possible (see Variable Substitution)
 
 
 force_override
@@ -108,3 +116,11 @@ query using the Query DSL. See
 http://www.elasticsearch.org/guide/reference/query-dsl/
 
 
+Variable Substitution
+=====================
+
+The following placeholders will get replace with the actuall value:
+
+    ${cluster}       The name of the cluster
+    ${index}         The name of the index
+    ${shard}         The id of the shard
