@@ -225,13 +225,13 @@ public class RestExportActionTest extends TestCase {
     }
 
     /**
-     * The 'force_override' parameter forces existing files to be overwritten.
+     * The 'force_overwrite' parameter forces existing files to be overwritten.
      */
     @Test
-    public void testForceOverride() {
+    public void testForceOverwrite() {
         String filename = "/tmp/filename.export";
         executeExportRequest("{\"output_file\": \"" + filename +
-                "\", \"fields\": [\"name\"], \"force_override\": \"true\"}");
+                "\", \"fields\": [\"name\"], \"force_overwrite\": \"true\"}");
 
         List<Map<String, Object>> infos = response.getShardInfos();
         assertEquals(2, infos.size());
