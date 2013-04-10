@@ -1,7 +1,6 @@
-package com.firstblick.elasticsearch.action.export;
+package com.firstblick.elasticsearch.export;
 
-import com.firstblick.elasticsearch.export.ExportException;
-import com.firstblick.elasticsearch.export.Output;
+import com.firstblick.elasticsearch.action.export.ExportContext;
 import org.apache.lucene.search.Query;
 import org.elasticsearch.common.logging.ESLogger;
 
