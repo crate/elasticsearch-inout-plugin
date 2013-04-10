@@ -15,8 +15,19 @@ public class ExportFields implements ToXContent {
     private InternalSearchHit hit;
     private final List<FieldExtractor> fieldExtractors;
 
-    abstract class FieldExtractor implements ToXContent {
+    static final class Fields {
+        static final XContentBuilderString _SOURCE = new XContentBuilderString("_source");
+        static final XContentBuilderString _TYPE = new XContentBuilderString("_type");
+        static final XContentBuilderString _INDEX = new XContentBuilderString("_index");
+        static final XContentBuilderString _ID = new XContentBuilderString("_id");
+        static final XContentBuilderString _VERSION = new XContentBuilderString("_version");
     }
+
+    abstract class FieldExtractor implements ToXContent {
+
+
+    }
+
 
     class SourceFieldExtractor extends FieldExtractor {
 
@@ -24,11 +35,10 @@ public class ExportFields implements ToXContent {
         public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
             BytesReference source = hit.sourceRef();
             XContentType contentType = XContentFactory.xContentType(source);
-            XContentParser parser = XContentFactory.xContent(contentType)
-                    .createParser(source);
+            XContentParser parser = XContentFactory.xContent(contentType).createParser(source);
             try {
                 parser.nextToken();
-                builder.field("_source");
+                builder.field(Fields._SOURCE);
                 builder.copyCurrentStructure(parser);
             } finally {
                 parser.close();
@@ -74,8 +84,7 @@ public class ExportFields implements ToXContent {
     }
 
     private List<FieldExtractor> getFieldExtractors() {
-        List<FieldExtractor> extractors = new ArrayList<FieldExtractor>(fields
-                .size());
+        List<FieldExtractor> extractors = new ArrayList<FieldExtractor>(fields.size());
         for (String fn : fields) {
             FieldExtractor fc = null;
             if (fn.startsWith("_")) {
@@ -85,16 +94,32 @@ public class ExportFields implements ToXContent {
                     fc = new FieldExtractor() {
                         @Override
                         public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
-                            return builder.field("_id", hit.getId());
+                            return builder.field(Fields._ID, hit.getId());
+                        }
+                    };
+                } else if (fn.equals("_version")) {
+                    fc = new FieldExtractor() {
+                        @Override
+                        public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
+                            return builder.field(Fields._VERSION, hit.getVersion());
+                        }
+                    };
+                } else if (fn.equals("_index")) {
+                    fc = new FieldExtractor() {
+                        @Override
+                        public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
+                            return builder.field(Fields._INDEX, hit.getIndex());
                         }
                     };
                 } else if (fn.equals("_type")) {
                     fc = new FieldExtractor() {
                         @Override
                         public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
-                            return builder.field("_type", hit.getType());
+                            return builder.field(Fields._TYPE, hit.getType());
                         }
                     };
+                } else {
+                    fc = new HitFieldExtractor(fn);
                 }
             } else {
                 fc = new HitFieldExtractor(fn);
@@ -105,8 +130,7 @@ public class ExportFields implements ToXContent {
     }
 
     @Override
-    public XContentBuilder toXContent(XContentBuilder builder, Params
-            params) throws IOException {
+    public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
         builder.startObject();
         for (FieldExtractor fc : fieldExtractors) {
             fc.toXContent(builder, params);
