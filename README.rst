@@ -127,3 +127,12 @@ The following placeholders will get replace with the actuall value:
 * ${cluster}       The name of the cluster
 * ${index}         The name of the index
 * ${shard}         The id of the shard
+
+
+Installation
+============
+
+If you do not want to work on the repository, just use the standard
+elasticsearch plugin command (inside your elasticsearch/bin directory)
+
+    bin/plugin -install elasticsearch-export-plugin -url file:///path/to/elasticsearch-export-plugin/target/elasticsearch-export-plugin-1.0-SNAPSHOT.jar
