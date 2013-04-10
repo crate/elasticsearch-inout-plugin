@@ -31,7 +31,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.*;
 
-import static com.google.common.collect.Lists.newArrayList;
+import static org.elasticsearch.common.collect.Lists.newArrayList;
+
 
 public class ExportCollector extends Collector {
 

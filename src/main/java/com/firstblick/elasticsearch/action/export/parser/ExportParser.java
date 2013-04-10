@@ -1,8 +1,8 @@
 package com.firstblick.elasticsearch.action.export.parser;
 
 import com.firstblick.elasticsearch.action.export.ExportContext;
-import com.google.common.collect.ImmutableMap;
 import org.elasticsearch.common.bytes.BytesReference;
+import org.elasticsearch.common.collect.ImmutableMap;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentHelper;
