@@ -56,12 +56,12 @@ give export_file has to exist. The given export_file MUST NOT exist. Some
 variable substitution is possible (see Variable Substitution)
 
 
-force_override
-~~~~~~~~~~~~~~
+force_overwrite
+~~~~~~~~~~~~~~~
 
 optional (default to false)
 
-    "force_override": true
+    "force_overwrite": true
 
 Boolean flag to force overwriting existing export_file. This option only
 make sense if export_file has been defined.
@@ -124,6 +124,6 @@ Variable Substitution
 
 The following placeholders will get replace with the actuall value:
 
- * ${cluster}       The name of the cluster
- * ${index}         The name of the index
- * ${shard}         The id of the shard
+* ${cluster}       The name of the cluster
+* ${index}         The name of the index
+* ${shard}         The id of the shard
