@@ -108,7 +108,7 @@ option will only make sense if format was set to "delimited".
 will only make sense if format was set to "delimited".
 
 NOTE: output_format has not been implemented so far just the dafault
-      is set to "json"
+is set to "json"
 
 
 query
