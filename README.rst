@@ -69,7 +69,7 @@ Option to evaluate the command to execute (like dry-run).
 output_format
 -------------
 
-optional
+optional (default to json)
 
     "output_format": "json"
 
@@ -80,7 +80,7 @@ optional
     "output_format": {"delimited": {"null_sequence":"\\N", "delimiter": "\u0001"}}
 
 The output_format element defines the format of the output to
-produce. In case of "json" each entry to export will be formated as
+produce. In case of "json" each entry to export will be formatted as
 json:
 
     {"name":"quodt", "adress":"Heimat 42"}
@@ -95,6 +95,9 @@ option will only make sense if format was set to "delimited".
 
 ``null_sequence`` defines the null value representation. This option
 will only make sense if format was set to "delimited".
+
+NOTE: output_format has not been implemented so far just the dafault
+      is set to "json"
 
 
 query
