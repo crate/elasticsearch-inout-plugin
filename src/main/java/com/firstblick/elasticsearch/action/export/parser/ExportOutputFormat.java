@@ -8,7 +8,7 @@ public class ExportOutputFormat {
     private static final String FORMAT_JSON = "json";
     private static final String FORMAT_DELIMITED = "delimited";
 
-    private String format = FORMAT_DELIMITED;
+    private String format = FORMAT_JSON;
     private Character delimiter = '\u0001';
     private String nullSequence = "\\N";
 
