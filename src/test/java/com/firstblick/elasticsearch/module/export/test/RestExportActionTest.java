@@ -276,47 +276,6 @@ public class RestExportActionTest extends TestCase {
         assertFalse(new File(filename).exists());
     }
 
-    /**
-     * The parameter 'output_format' can have the value 'json' to export to JSON
-     * format.
-     */
-    @Test
-    public void testOutputFormatJSON() {
-        executeExportRequest("{\"output_cmd\": \"cat\", \"fields\": [\"name\"], \"output_format\": \"json\"}");
-
-        List<Map<String, Object>> infos = response.getShardInfos();
-        assertEquals(2, infos.size());
-        assertEquals("{\"name\":\"car\"}\n{\"name\":\"train\"}\n",
-                infos.get(0).get("stdout"));
-    }
-
-    /**
-     * The parameter 'output_format' can have the value 'delimited' to export to
-     * delimited format with default delimiter and null sequence.
-     */
-    @Test
-    public void testOutputFormatDelimitedDefault() {
-        executeExportRequest("{\"output_cmd\": \"cat\", \"fields\": [\"name\"], \"output_format\": \"delimited\"}");
-
-        List<Map<String, Object>> infos = response.getShardInfos();
-        assertEquals(2, infos.size());
-        // TODO: check if stdout has correct output format when delimited is implemented
-    }
-
-    /**
-     * To export to delimited format with a specific delimiter or null sequence
-     * use the following value for 'output_format': "output_format":
-     * {"delimited": {"delimiter": "\u0001", "null_sequence": "\\N" } }
-     */
-    @Test
-    public void testOutputFormatDelimited() {
-        executeExportRequest("{\"output_cmd\": \"cat\", \"fields\": [\"name\"], \"output_format\": "
-                + "{\"delimited\": {\"delimiter\":\",\", \"null_sequence\": \"\\\\N\"}}");
-
-        List<Map<String, Object>> infos = response.getShardInfos();
-        assertEquals(2, infos.size());
-        // TODO: check if stdout has correct output format when delimited is implemented
-    }
 
     /**
      * Execute an export request with a JSON string as source query. Waits for

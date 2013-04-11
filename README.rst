@@ -5,6 +5,8 @@ Elasticsearch Export Plugin
 This Elasticsearch plugin provides the ability to export data by query
 on server side, by outputting the data directly on the according node.
 
+The data will get exported as one json object per line.
+
 Usage
 =====
 
@@ -75,40 +77,6 @@ optional (default to false)
     "explain": true
 
 Option to evaluate the command to execute (like dry-run).
-
-
-output_format
-~~~~~~~~~~~~~
-
-optional (default to json)
-
-    "output_format": "json"
-
-    "output_format": "delimited"
-
-    "output_format": {"delimited": {"delimiter": "\u0001"}}
-
-    "output_format": {"delimited": {"null_sequence":"\\N", "delimiter": "\u0001"}}
-
-The output_format element defines the format of the output to
-produce. In case of "json" each entry to export will be formatted as
-json:
-
-    {"name":"quodt", "adress":"Heimat 42"}
-
-In case of "delimited" each entry will be exported as delimited values:
-
-    quodt\u0001Heimat 42
-
-``delimiter`` is always one character. Since json does not support
-type char the first character of the given string will be taken. This
-option will only make sense if format was set to "delimited".
-
-``null_sequence`` defines the null value representation. This option
-will only make sense if format was set to "delimited".
-
-NOTE: output_format has not been implemented so far just the dafault
-is set to "json"
 
 
 query

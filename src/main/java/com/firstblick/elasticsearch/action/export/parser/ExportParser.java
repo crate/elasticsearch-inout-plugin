@@ -39,7 +39,6 @@ public class ExportParser {
         elementParsers.put("output_file", exportFileParseElement);
         elementParsers.put("force_overwrite", new ExportForceOverwriteParseElement());
         elementParsers.put("explain", new ExplainParseElement());
-        elementParsers.put("output_format", new ExportOutputFormatParseElement());
         this.elementParsers = ImmutableMap.copyOf(elementParsers);
     }
 

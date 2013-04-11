@@ -1,6 +1,5 @@
 package com.firstblick.elasticsearch.action.export;
 
-import com.firstblick.elasticsearch.action.export.parser.ExportOutputFormat;
 import com.firstblick.elasticsearch.export.Output;
 import com.firstblick.elasticsearch.export.OutputCommand;
 import com.firstblick.elasticsearch.export.OutputFile;
@@ -29,7 +28,6 @@ public class ExportContext extends SearchContext {
     private String outputCmd;
     private String outputFile;
     private boolean forceOverride = false;
-    private ExportOutputFormat outputFormat = new ExportOutputFormat();
 
     public ExportContext(long id, ShardSearchRequest request, SearchShardTarget shardTarget, Engine.Searcher engineSearcher, IndexService indexService, IndexShard indexShard, ScriptService scriptService) {
         super(id, request, shardTarget, engineSearcher, indexService, indexShard, scriptService);
@@ -65,14 +63,6 @@ public class ExportContext extends SearchContext {
 
     public void forceOverride(boolean forceOverride) {
         this.forceOverride = forceOverride;
-    }
-
-    public ExportOutputFormat outputFormat() {
-        return outputFormat;
-    }
-
-    public void outputFormat(ExportOutputFormat outputFormat) {
-        this.outputFormat = outputFormat;
     }
 
     /**
