@@ -22,24 +22,23 @@ import java.util.Map;
  */
 public class ExportParser {
 
-    private final ExportCmdParseElement exportCmdParseElement;
-    private final ExportFileParseElement exportFileParseElement;
+    private final ExportOutputCmdParseElement exportOutputCmdParseElement;
+    private final ExportOutputFileParseElement exportOutputFileParseElement;
     private final ImmutableMap<String, SearchParseElement> elementParsers;
 
 
     @Inject
     public ExportParser(QueryPhase queryPhase, FetchPhase fetchPhase) {
 
-        exportCmdParseElement = new ExportCmdParseElement();
-        exportFileParseElement = new ExportFileParseElement();
+        exportOutputCmdParseElement = new ExportOutputCmdParseElement();
+        exportOutputFileParseElement = new ExportOutputFileParseElement();
         Map<String, SearchParseElement> elementParsers = new HashMap<String, SearchParseElement>();
         elementParsers.putAll(queryPhase.parseElements());
         elementParsers.put("fields", new FieldsParseElement());
-        elementParsers.put("output_cmd", exportCmdParseElement);
-        elementParsers.put("output_file", exportFileParseElement);
+        elementParsers.put("output_cmd", exportOutputCmdParseElement);
+        elementParsers.put("output_file", exportOutputFileParseElement);
         elementParsers.put("force_overwrite", new ExportForceOverwriteParseElement());
         elementParsers.put("explain", new ExplainParseElement());
-        elementParsers.put("output_format", new ExportOutputFormatParseElement());
         this.elementParsers = ImmutableMap.copyOf(elementParsers);
     }
 
@@ -49,9 +48,9 @@ public class ExportParser {
      * @param context
      */
     private void validateOutputCmd(ExportContext context) {
-        if (exportCmdParseElement.getLastValue() != null && exportFileParseElement.getLastValue() != null) {
+        if (exportOutputCmdParseElement.getLastValue() != null && exportOutputFileParseElement.getLastValue() != null) {
             throw new SearchParseException(context, "Concurrent definition of 'output_cmd' and 'output_file'");
-        } else if (exportCmdParseElement.getLastValue() == null && exportFileParseElement.getLastValue() == null){
+        } else if (exportOutputCmdParseElement.getLastValue() == null && exportOutputFileParseElement.getLastValue() == null){
             throw new SearchParseException(context, "'output_cmd' or 'output_file' has not been defined");
         }
     }
@@ -78,8 +77,8 @@ public class ExportParser {
      * reset custom parseElements
      */
     private void reset() {
-        exportCmdParseElement.reset();
-        exportFileParseElement.reset();
+        exportOutputCmdParseElement.reset();
+        exportOutputFileParseElement.reset();
     }
 
     /**
