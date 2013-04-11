@@ -1,6 +1,7 @@
 package com.firstblick.elasticsearch.action.export;
 
 import com.firstblick.elasticsearch.action.export.parser.ExportParser;
+import com.firstblick.elasticsearch.export.Exporter;
 import com.firstblick.elasticsearch.export.Output;
 import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.action.support.broadcast.BroadcastShardOperationFailedException;
