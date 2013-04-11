@@ -119,6 +119,22 @@ query using the Query DSL. See
 http://www.elasticsearch.org/guide/reference/query-dsl/
 
 
+get-parameters
+~~~~~~~~~~~~~~
+
+The api provides the general behavior of the rest API. See
+http://www.elasticsearch.org/guide/reference/api/
+
+preference
+++++++++++
+
+Controls a preference of which shard replicas to execute the export
+request on. Different than the search API preference is set to
+"_primary" by default. See
+http://www.elasticsearch.org/guide/reference/api/search/preference/
+
+
+
 Variable Substitution
 ---------------------
 
