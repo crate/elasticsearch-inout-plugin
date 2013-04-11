@@ -36,7 +36,7 @@ public class ExportCollector extends Collector {
 
     private IndexReader currentReader;
     private int docBase;
-    private int counter;
+    private long numExported = 0;
     private final FieldsVisitor fieldsVisitor;
     private final ESLogger logger;
     private final ExportContext context;
@@ -133,9 +133,12 @@ public class ExportCollector extends Collector {
     public void setScorer(Scorer scorer) throws IOException {
     }
 
+    public long numExported(){
+        return numExported;
+    }
+
     @Override
     public void collect(int doc) throws IOException {
-        counter++;
         fieldsVisitor.reset();
         currentReader.document(doc, fieldsVisitor);
 
@@ -172,6 +175,7 @@ public class ExportCollector extends Collector {
         CachedStreamOutput.pushEntry(cachedEntry);
         out.write('\n');
         out.flush();
+        numExported++;
     }
 
 }

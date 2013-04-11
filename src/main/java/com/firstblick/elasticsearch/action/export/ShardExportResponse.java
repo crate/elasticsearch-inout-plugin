@@ -3,6 +3,7 @@ package com.firstblick.elasticsearch.action.export;
 import org.elasticsearch.action.support.broadcast.BroadcastShardOperationResponse;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
+import org.elasticsearch.common.text.Text;
 
 import java.io.IOException;
 import java.util.List;
@@ -19,7 +20,8 @@ class ShardExportResponse extends BroadcastShardOperationResponse {
     private String cmd;
     private String file;
     private boolean dryRun = false;
-    private String node;
+    private Text node;
+    private long numExported;
 
     ShardExportResponse() {
     }
@@ -36,8 +38,13 @@ class ShardExportResponse extends BroadcastShardOperationResponse {
      * @param stderr output written to standard error by the executed command
      * @param stdout output written to standard out by the executed command
      * @param exitCode exit code of the executed command
+     * @param numExported number of exported documents
+     *
      */
-    public ShardExportResponse(String node, String index, int shardId, String cmd, List<String> cmdArray, String file, String stderr, String stdout, int exitCode) {
+    public ShardExportResponse(Text node, String index, int shardId,
+                               String cmd, List<String> cmdArray, String file,
+                               String stderr, String stdout, int exitCode,
+                               long numExported) {
         super(index, shardId);
         this.node = node;
         this.cmd = cmd;
@@ -46,6 +53,7 @@ class ShardExportResponse extends BroadcastShardOperationResponse {
         this.stderr = stderr;
         this.stdout = stdout;
         this.exitCode = exitCode;
+        this.numExported = numExported;
     }
 
     /**
@@ -58,7 +66,7 @@ class ShardExportResponse extends BroadcastShardOperationResponse {
      * @param cmdArray executed command array (might be null)
      * @param file written file (might be null)
      */
-    public ShardExportResponse(String node, String index, int shardId, String cmd, List<String> cmdArray, String file) {
+    public ShardExportResponse(Text node, String index, int shardId, String cmd, List<String> cmdArray, String file) {
         super(index, shardId);
         this.node = node;
         this.cmd = cmd;
@@ -91,11 +99,16 @@ class ShardExportResponse extends BroadcastShardOperationResponse {
         return exitCode;
     }
 
+    public long getNumExported() {
+        return numExported;
+    }
+
+
     public boolean dryRun() {
         return dryRun;
     }
 
-    public String getNode() {
+    public Text getNode() {
         return node;
     }
 
@@ -107,6 +120,7 @@ class ShardExportResponse extends BroadcastShardOperationResponse {
         stderr = in.readString();
         stdout = in.readString();
         exitCode = in.readInt();
+        numExported = in.readLong();
     }
 
     @Override
@@ -117,5 +131,6 @@ class ShardExportResponse extends BroadcastShardOperationResponse {
         out.writeString(stderr);
         out.writeString(stdout);
         out.writeInt(exitCode);
+        out.writeLong(numExported);
     }
 }

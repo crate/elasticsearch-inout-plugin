@@ -3,24 +3,26 @@ package com.firstblick.elasticsearch.action.export;
 import org.elasticsearch.action.ShardOperationFailedException;
 import org.elasticsearch.action.support.DefaultShardOperationFailedException;
 import org.elasticsearch.action.support.broadcast.BroadcastShardOperationFailedException;
+import org.elasticsearch.common.text.Text;
+import org.elasticsearch.common.xcontent.ToXContent;
+import org.elasticsearch.common.xcontent.XContentBuilder;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.io.IOException;
 
 /**
  * Container class holding information about export execution. Might contain proper response informations
  * or a Exception.
  */
-public class ShardExportInfo {
+public class ShardExportInfo implements ToXContent {
 
-    String node;
+    Text node;
     String index;
     int shardId;
     ShardOperationFailedException exception;
     ShardExportResponse response;
+    private long numExported;
 
-    protected ShardExportInfo(String node, String index, int shardId) {
-        this.node = node;
+    protected ShardExportInfo(String index, int shardId) {
         this.index = index;
         this.shardId = shardId;
     }
@@ -31,46 +33,48 @@ public class ShardExportInfo {
      * @param shardExportResponse
      */
     public ShardExportInfo(ShardExportResponse shardExportResponse) {
-        this(shardExportResponse.getNode(), shardExportResponse.getIndex(), shardExportResponse.getShardId());
+        this(shardExportResponse.getIndex(), shardExportResponse.getShardId());
+        this.node = shardExportResponse.getNode();
         this.response = shardExportResponse;
+        this.numExported = response.getNumExported();
     }
 
     /**
      * Constructor for failure case
      *
-     * @param node
      * @param exception
      */
-    public ShardExportInfo(String node, BroadcastShardOperationFailedException exception) {
-        this(node, exception.shardId().index().getName(), exception.shardId().getId());
+    public ShardExportInfo(BroadcastShardOperationFailedException exception) {
+        this(exception.shardId().index().getName(), exception.shardId().getId());
         this.exception = new DefaultShardOperationFailedException(exception);
     }
 
-    /**
-     * Converter method to access object as map. The resulting structure of the map depends on the state of
-     * the {@link ShardExportInfo} object
-     *
-     * @return map containing relevant export information
-     */
-    public Map<String, Object> asMap() {
-        Map<String, Object> ret = new HashMap<String, Object>();
-        ret.put("node", node);
-        ret.put("index", index);
-        ret.put("shard", shardId);
+    public long numExported() {
+        return numExported;
+    }
+
+    @Override
+    public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
+        builder.startObject();
+        builder.field("index", index);
+        builder.field("shard", shardId);
         if (exception != null) {
-            ret.put("error", exception);
+            builder.field("error", exception);
         } else {
+            builder.field("node", node);
+            builder.field("numExported", response.getNumExported());
             if (response.getFile() != null) {
-                ret.put("output_file", response.getFile());
+                builder.field("output_file", response.getFile());
             } else {
-                ret.put("output_cmd", response.getCmd() != null ? response.getCmd() : response.getCmdArray());
+                builder.field("output_cmd", response.getCmd() != null ? response.getCmd() : response.getCmdArray());
                 if (!response.dryRun()) {
-                    ret.put("stderr", response.getStderr());
-                    ret.put("stdout", response.getStdout());
-                    ret.put("exitcode", response.getExitCode());
+                    builder.field("stderr", response.getStderr());
+                    builder.field("stdout", response.getStdout());
+                    builder.field("exitcode", response.getExitCode());
                 }
             }
         }
-        return ret;
+        builder.endObject();
+        return builder;
     }
 }

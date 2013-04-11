@@ -1,7 +1,5 @@
 package com.firstblick.elasticsearch.export;
 
-import com.firstblick.elasticsearch.export.Output;
-import com.firstblick.elasticsearch.export.OutputCommand;
 import org.junit.Test;
 
 import java.io.IOException;

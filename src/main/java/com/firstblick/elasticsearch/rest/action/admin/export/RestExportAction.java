@@ -20,7 +20,6 @@ import java.io.IOException;
 import static org.elasticsearch.rest.RestRequest.Method.POST;
 import static org.elasticsearch.rest.RestStatus.BAD_REQUEST;
 import static org.elasticsearch.rest.RestStatus.OK;
-import static org.elasticsearch.rest.action.support.RestActions.buildBroadcastShardsHeader;
 import static org.elasticsearch.rest.action.support.RestActions.splitTypes;
 
 /**
@@ -81,12 +80,7 @@ public class RestExportAction extends BaseRestHandler {
             public void onResponse(ExportResponse response) {
                 try {
                     XContentBuilder builder = RestXContentBuilder.restContentBuilder(request);
-                    builder.startObject();
-                    builder.field("infos", response.getShardInfos());
-
-                    buildBroadcastShardsHeader(builder, response);
-
-                    builder.endObject();
+                    response.toXContent(builder, request);
                     channel.sendResponse(new XContentRestResponse(request, OK, builder));
                 } catch (Exception e) {
                     onFailure(e);

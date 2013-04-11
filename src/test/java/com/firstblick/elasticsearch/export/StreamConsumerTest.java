@@ -1,11 +1,10 @@
 package com.firstblick.elasticsearch.export;
 
-import static org.junit.Assert.*;
+import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
 
-import com.firstblick.elasticsearch.export.StreamConsumer;
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Unit test for the @StreamConsumer class.

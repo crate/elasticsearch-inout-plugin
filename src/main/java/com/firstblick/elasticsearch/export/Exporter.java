@@ -8,7 +8,13 @@ import java.io.IOException;
 
 public class Exporter {
 
-    public static Output.Result execute(ESLogger logger, ExportContext context) {
+    public static class Result {
+        public Output.Result outputResult;
+        public long numExported;
+    }
+
+    public static Result execute(ESLogger logger,
+                                      ExportContext context) {
         logger.info("exporter execute");
         Query query = context.query();
 
@@ -34,7 +40,10 @@ public class Exporter {
             throw new ExportException(context,
                     "Failed to close output: ", e);
         }
-        return output.result();
+        Result res = new Result();
+        res.outputResult = output.result();
+        res.numExported = collector.numExported();
+        return res;
     }
 
 }
