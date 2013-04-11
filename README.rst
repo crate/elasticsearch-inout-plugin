@@ -32,30 +32,31 @@ A list of fields to export. Each field must be defined in the mapping.
 The mapping of fields to export has to be defined with "store": true
 
 
-export_cmd
+output_cmd
 ~~~~~~~~~~
 
-required (if export_file has been omitted)
+required (if output_file has been omitted)
 
-    "export_cmd": "gzip > /tmp/out"
+    "output_cmd": "gzip > /tmp/out"
 
-    "export_cmd": ["gzip", ">", "/tmp/out"]
+    "output_cmd": ["gzip", ">", "/tmp/out"]
 
 The command to execute. Might be defined as string or as array. The
 content to export will get piped to Stdin of the command to execute.
 Some variable substitution is possible (see Variable Substitution)
 
 
-export_file
+output_file
 ~~~~~~~~~~~
 
-Required (if export_cmd has been omitted)
+Required (if output_cmd has been omitted)
 
-    "export_file": "/tmp/dump"
+    "output_file": "/tmp/dump"
 
 A path to the resulting output file. The containing directory of the
-give export_file has to exist. The given export_file MUST NOT exist. Some
-variable substitution is possible (see Variable Substitution)
+give output_file has to exist. The given output_file MUST NOT
+exist. Some variable substitution is possible (see Variable
+Substitution)
 
 
 force_overwrite
@@ -65,8 +66,8 @@ optional (default to false)
 
     "force_overwrite": true
 
-Boolean flag to force overwriting existing export_file. This option only
-make sense if export_file has been defined.
+Boolean flag to force overwriting existing output_file. This option only
+make sense if output_file has been defined.
 
 
 explain
