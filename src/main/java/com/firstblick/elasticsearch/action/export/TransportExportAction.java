@@ -3,6 +3,8 @@ package com.firstblick.elasticsearch.action.export;
 import com.firstblick.elasticsearch.action.export.parser.ExportParser;
 import com.firstblick.elasticsearch.export.Exporter;
 import org.elasticsearch.ElasticSearchException;
+import org.elasticsearch.action.ShardOperationFailedException;
+import org.elasticsearch.action.support.DefaultShardOperationFailedException;
 import org.elasticsearch.action.support.broadcast.BroadcastShardOperationFailedException;
 import org.elasticsearch.action.support.broadcast.TransportBroadcastOperationAction;
 import org.elasticsearch.cluster.ClusterService;
@@ -25,6 +27,7 @@ import org.elasticsearch.search.query.QueryPhaseExecutionException;
 import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.transport.TransportService;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -45,8 +48,7 @@ public class TransportExportAction extends TransportBroadcastOperationAction<Exp
     private final ExportParser exportParser;
 
     @Inject
-    public TransportExportAction(Settings settings, ThreadPool threadPool, ClusterService clusterService, TransportService transportService,
-                                 IndicesService indicesService, ScriptService scriptService, ExportParser exportParser) {
+    public TransportExportAction(Settings settings, ThreadPool threadPool, ClusterService clusterService, TransportService transportService, IndicesService indicesService, ScriptService scriptService, ExportParser exportParser) {
         super(settings, threadPool, clusterService, transportService);
         this.indicesService = indicesService;
         this.scriptService = scriptService;
@@ -104,28 +106,27 @@ public class TransportExportAction extends TransportBroadcastOperationAction<Exp
     protected ExportResponse newResponse(ExportRequest request, AtomicReferenceArray shardsResponses, ClusterState clusterState) {
         int successfulShards = 0;
         int failedShards = 0;
-        List<ShardExportInfo> shardInfos = newArrayList();
+        long count = 0;
+        List<ShardOperationFailedException> shardFailures = null;
+        List<ShardExportResponse> responses = new ArrayList<ShardExportResponse>();
         for (int i = 0; i < shardsResponses.length(); i++) {
-
             Object shardResponse = shardsResponses.get(i);
             if (shardResponse == null) {
                 failedShards++;
             } else if (shardResponse instanceof BroadcastShardOperationFailedException) {
                 failedShards++;
-                BroadcastShardOperationFailedException ex = (BroadcastShardOperationFailedException) shardResponse;
-                shardInfos.add(new ShardExportInfo(ex));
-            } else {
-                ShardExportResponse shardExportResponse = (ShardExportResponse) shardResponse;
-                if (shardExportResponse.getFile() == null && shardExportResponse.getExitCode() != 0) {
-                    failedShards++;
-                } else {
-                    successfulShards++;
+                if (shardFailures == null) {
+                    shardFailures = newArrayList();
                 }
-                shardInfos.add(new ShardExportInfo(shardExportResponse));
+                shardFailures.add(new DefaultShardOperationFailedException((BroadcastShardOperationFailedException) shardResponse));
+            } else {
+                responses.add((ShardExportResponse) shardResponse);
+                successfulShards++;
             }
         }
-        return new ExportResponse(shardsResponses.length(), successfulShards, failedShards, shardInfos);
+        return new ExportResponse(responses, shardsResponses.length(), successfulShards, failedShards, shardFailures);
     }
+
 
     @Override
     protected ShardExportResponse shardOperation(ShardExportRequest request) throws ElasticSearchException {
@@ -134,10 +135,7 @@ public class TransportExportAction extends TransportBroadcastOperationAction<Exp
         IndexShard indexShard = indexService.shardSafe(request.shardId());
 
         SearchShardTarget shardTarget = new SearchShardTarget(clusterService.localNode().id(), request.index(), request.shardId());
-        ExportContext context = new ExportContext(0,
-                new ShardSearchRequest().types(request.types()).filteringAliases(request.filteringAliases()),
-                shardTarget, indexShard.searcher(), indexService, indexShard,
-                scriptService);
+        ExportContext context = new ExportContext(0, new ShardSearchRequest().types(request.types()).filteringAliases(request.filteringAliases()), shardTarget, indexShard.searcher(), indexService, indexShard, scriptService);
         ExportContext.setCurrent(context);
 
         try {
@@ -146,18 +144,10 @@ public class TransportExportAction extends TransportBroadcastOperationAction<Exp
             context.preProcess();
             try {
                 if (context.explain()) {
-                    return new ShardExportResponse(shardTarget.nodeIdText(),
-                            request.index(), request.shardId(), context.outputCmd(),
-                            context.outputCmdArray(), context.outputFile());
+                    return new ShardExportResponse(shardTarget.nodeIdText(), request.index(), request.shardId(), context.outputCmd(), context.outputCmdArray(), context.outputFile());
                 } else {
                     Exporter.Result res = Exporter.execute(logger, context);
-                    return new ShardExportResponse(shardTarget.nodeIdText(),
-                            request.index(), request.shardId(), context.outputCmd(),
-                            context.outputCmdArray(), context.outputFile(),
-                            res.outputResult.stdErr,
-                            res.outputResult.stdOut,
-                            res.outputResult.exit,
-                            res.numExported);
+                    return new ShardExportResponse(shardTarget.nodeIdText(), request.index(), request.shardId(), context.outputCmd(), context.outputCmdArray(), context.outputFile(), res.outputResult.stdErr, res.outputResult.stdOut, res.outputResult.exit, res.numExported);
                 }
 
             } catch (Exception e) {

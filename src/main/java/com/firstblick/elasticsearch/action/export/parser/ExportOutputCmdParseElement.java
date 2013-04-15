@@ -9,10 +9,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Parser for token ``output_cmd``. The value of the token might be a String containing the command
- * or an array containing the command and all arguments as seperated parts. This token MUST NOT be set together
- * with ``output_file``
- *
+ * Parser for token ``output_cmd``. The value of the token might be a String
+ * containing the command or an array containing the command and all
+ * arguments as seperated parts.
+ * <p/>
  * <pre>
  * "output_cmd": "gzip > /tmp/out"
  *
@@ -23,29 +23,17 @@ import java.util.List;
  */
 public class ExportOutputCmdParseElement implements SearchParseElement {
 
-    private Object lastValue;
-
     @Override
     public void parse(XContentParser parser, SearchContext context) throws Exception {
         XContentParser.Token token = parser.currentToken();
         if (token.isValue()) {
-            ((ExportContext)context).outputCmd(parser.text());
-            lastValue = ((ExportContext)context).outputCmd();
+            ((ExportContext) context).outputCmd(parser.text());
         } else if (token == XContentParser.Token.START_ARRAY) {
             List<String> cmds = new ArrayList<String>(4);
             while ((token = parser.nextToken()) != XContentParser.Token.END_ARRAY) {
                 cmds.add(parser.text());
             }
-            ((ExportContext)context).outputCmdArray(cmds);
-            lastValue = ((ExportContext)context).outputCmdArray();
+            ((ExportContext) context).outputCmdArray(cmds);
         }
-    }
-
-    public void reset() {
-        lastValue = null;
-    }
-
-    public Object getLastValue() {
-        return lastValue;
     }
 }

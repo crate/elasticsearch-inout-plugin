@@ -7,6 +7,7 @@ import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentHelper;
 import org.elasticsearch.common.xcontent.XContentParser;
+import org.elasticsearch.index.mapper.FieldMappers;
 import org.elasticsearch.search.SearchParseElement;
 import org.elasticsearch.search.SearchParseException;
 import org.elasticsearch.search.fetch.FetchPhase;
@@ -22,63 +23,18 @@ import java.util.Map;
  */
 public class ExportParser {
 
-    private final ExportOutputCmdParseElement exportOutputCmdParseElement;
-    private final ExportOutputFileParseElement exportOutputFileParseElement;
     private final ImmutableMap<String, SearchParseElement> elementParsers;
-
 
     @Inject
     public ExportParser(QueryPhase queryPhase, FetchPhase fetchPhase) {
-
-        exportOutputCmdParseElement = new ExportOutputCmdParseElement();
-        exportOutputFileParseElement = new ExportOutputFileParseElement();
         Map<String, SearchParseElement> elementParsers = new HashMap<String, SearchParseElement>();
         elementParsers.putAll(queryPhase.parseElements());
         elementParsers.put("fields", new FieldsParseElement());
-        elementParsers.put("output_cmd", exportOutputCmdParseElement);
-        elementParsers.put("output_file", exportOutputFileParseElement);
+        elementParsers.put("output_cmd", new ExportOutputCmdParseElement());
+        elementParsers.put("output_file", new ExportOutputFileParseElement());
         elementParsers.put("force_overwrite", new ExportForceOverwriteParseElement());
         elementParsers.put("explain", new ExplainParseElement());
         this.elementParsers = ImmutableMap.copyOf(elementParsers);
-    }
-
-    /**
-     * validates output_cmd and output_file to make sure exactly one of both has been defined
-     *
-     * @param context
-     */
-    private void validateOutputCmd(ExportContext context) {
-        if (exportOutputCmdParseElement.getLastValue() != null && exportOutputFileParseElement.getLastValue() != null) {
-            throw new SearchParseException(context, "Concurrent definition of 'output_cmd' and 'output_file'");
-        } else if (exportOutputCmdParseElement.getLastValue() == null && exportOutputFileParseElement.getLastValue() == null){
-            throw new SearchParseException(context, "'output_cmd' or 'output_file' has not been defined");
-        }
-    }
-
-    /**
-     * validate ``fields`` to make sure it has been defined and does only contain fields covered by the
-     * mapping.
-     *
-     * @param context
-     */
-    private void validateFields(ExportContext context) {
-        if (!context.hasFieldNames()) {
-            throw new SearchParseException(context, "No export fields defined");
-        }
-        for (String field : context.fieldNames()) {
-            if (context.mapperService().name(field) == null && !field.equals
-                    ("_version")) {
-                throw new SearchParseException(context, "Export field [" + field + "] does not exist in the mapping");
-            }
-        }
-    }
-
-    /**
-     * reset custom parseElements
-     */
-    private void reset() {
-        exportOutputCmdParseElement.reset();
-        exportOutputFileParseElement.reset();
     }
 
     /**
@@ -87,8 +43,24 @@ public class ExportParser {
      * @param context
      */
     private void validate(ExportContext context) {
-        validateOutputCmd(context);
-        validateFields(context);
+
+        if (!context.hasFieldNames()) {
+            throw new SearchParseException(context, "No export fields defined");
+        }
+        for (String field : context.fieldNames()) {
+            if (context.mapperService().name(field) == null && !field.equals("_version")) {
+                throw new SearchParseException(context, "Export field [" + field + "] does not exist in the mapping");
+            }
+        }
+
+        if (context.outputFile() != null) {
+            if (context.outputCmdArray() != null || context.outputCmd() != null) {
+                throw new SearchParseException(context, "Concurrent definition of 'output_cmd' and 'output_file'");
+            }
+        } else if (context.outputCmdArray() == null && context.outputCmd() == null) {
+            throw new SearchParseException(context, "'output_cmd' or 'output_file' has not been defined");
+        }
+
     }
 
     /**
@@ -99,7 +71,6 @@ public class ExportParser {
      * @throws SearchParseException
      */
     public void parseSource(ExportContext context, BytesReference source) throws SearchParseException {
-        reset();
         XContentParser parser = null;
         try {
             if (source != null) {

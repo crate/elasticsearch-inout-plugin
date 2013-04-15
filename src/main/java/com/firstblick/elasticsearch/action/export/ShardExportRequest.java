@@ -48,10 +48,39 @@ class ShardExportRequest extends BroadcastShardOperationRequest {
     @Override
     public void readFrom(StreamInput in) throws IOException {
         super.readFrom(in);
+        source = in.readBytesReference();
+        int typesSize = in.readVInt();
+        if (typesSize > 0) {
+            types = new String[typesSize];
+            for (int i = 0; i < typesSize; i++) {
+                types[i] = in.readString();
+            }
+        }
+        int aliasesSize = in.readVInt();
+        if (aliasesSize > 0) {
+            filteringAliases = new String[aliasesSize];
+            for (int i = 0; i < aliasesSize; i++) {
+                filteringAliases[i] = in.readString();
+            }
+        }
     }
 
     @Override
     public void writeTo(StreamOutput out) throws IOException {
         super.writeTo(out);
+        out.writeBytesReference(source);
+
+        out.writeVInt(types.length);
+        for (String type : types) {
+            out.writeString(type);
+        }
+        if (filteringAliases != null) {
+            out.writeVInt(filteringAliases.length);
+            for (String alias : filteringAliases) {
+                out.writeString(alias);
+            }
+        } else {
+            out.writeVInt(0);
+        }
     }
 }

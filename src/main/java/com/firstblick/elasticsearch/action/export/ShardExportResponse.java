@@ -4,6 +4,8 @@ import org.elasticsearch.action.support.broadcast.BroadcastShardOperationRespons
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.common.text.Text;
+import org.elasticsearch.common.xcontent.ToXContent;
+import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
 import java.util.List;
@@ -11,7 +13,8 @@ import java.util.List;
 /**
  * Internal export response of a shard export request executed directly against a specific shard.
  */
-class ShardExportResponse extends BroadcastShardOperationResponse {
+class ShardExportResponse extends BroadcastShardOperationResponse implements
+        ToXContent{
 
     private String stderr;
     private String stdout;
@@ -112,25 +115,54 @@ class ShardExportResponse extends BroadcastShardOperationResponse {
         return node;
     }
 
+    public static ShardExportResponse readNew(StreamInput in) throws
+            IOException {
+        ShardExportResponse response = new ShardExportResponse();
+        response.readFrom(in);
+        return response;
+    }
+
+
     @Override
     public void readFrom(StreamInput in) throws IOException {
         super.readFrom(in);
-        cmd = in.readString();
-        file = in.readString();
-        stderr = in.readString();
-        stdout = in.readString();
-        exitCode = in.readInt();
-        numExported = in.readLong();
+        cmd = in.readOptionalString();
+        file = in.readOptionalString();
+        stderr = in.readOptionalString();
+        stdout = in.readOptionalString();
+        exitCode = in.readVInt();
+        numExported = in.readVLong();
     }
 
     @Override
     public void writeTo(StreamOutput out) throws IOException {
         super.writeTo(out);
-        out.writeString(cmd);
-        out.writeString(file);
-        out.writeString(stderr);
-        out.writeString(stdout);
-        out.writeInt(exitCode);
-        out.writeLong(numExported);
+        out.writeOptionalString(cmd);
+        out.writeOptionalString(file);
+        out.writeOptionalString(stderr);
+        out.writeOptionalString(stdout);
+        out.writeVInt(exitCode);
+        out.writeVLong(numExported);
+    }
+
+    @Override
+    public XContentBuilder toXContent(XContentBuilder builder, ToXContent.Params params) throws IOException {
+        builder.startObject();
+        builder.field("index", getIndex());
+        builder.field("shard", getShardId());
+        builder.field("node", node);
+        builder.field("numExported", getNumExported());
+        if (getFile() != null) {
+            builder.field("output_file", getFile());
+        } else {
+            builder.field("output_cmd", getCmd() != null ? getCmd() : getCmdArray());
+            if (!dryRun()) {
+                builder.field("stderr", getStderr());
+                builder.field("stdout", getStdout());
+                builder.field("exitcode", getExitCode());
+            }
+        }
+        builder.endObject();
+        return builder;
     }
 }
