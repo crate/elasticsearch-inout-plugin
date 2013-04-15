@@ -8,13 +8,14 @@ import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
  * Internal export response of a shard export request executed directly against a specific shard.
  */
-class ShardExportResponse extends BroadcastShardOperationResponse implements
-        ToXContent{
+class ShardExportResponse extends BroadcastShardOperationResponse implements ToXContent {
 
     private String stderr;
     private String stdout;
@@ -32,22 +33,18 @@ class ShardExportResponse extends BroadcastShardOperationResponse implements
     /**
      * Constructor for regular cases
      *
-     * @param node Name of the Node
-     * @param index Name of the index
-     * @param shardId ID of the shard
-     * @param cmd executed command (might be null)
-     * @param cmdArray executed command array (might be null)
-     * @param file written file (might be null)
-     * @param stderr output written to standard error by the executed command
-     * @param stdout output written to standard out by the executed command
-     * @param exitCode exit code of the executed command
+     * @param node        Name of the Node
+     * @param index       Name of the index
+     * @param shardId     ID of the shard
+     * @param cmd         executed command (might be null)
+     * @param cmdArray    executed command array (might be null)
+     * @param file        written file (might be null)
+     * @param stderr      output written to standard error by the executed command
+     * @param stdout      output written to standard out by the executed command
+     * @param exitCode    exit code of the executed command
      * @param numExported number of exported documents
-     *
      */
-    public ShardExportResponse(Text node, String index, int shardId,
-                               String cmd, List<String> cmdArray, String file,
-                               String stderr, String stdout, int exitCode,
-                               long numExported) {
+    public ShardExportResponse(Text node, String index, int shardId, String cmd, List<String> cmdArray, String file, String stderr, String stdout, int exitCode, long numExported) {
         super(index, shardId);
         this.node = node;
         this.cmd = cmd;
@@ -62,12 +59,12 @@ class ShardExportResponse extends BroadcastShardOperationResponse implements
     /**
      * Constructor for dry runs. Does not contain any execution infos
      *
-     * @param node Name of the Node
-     * @param index Name of the index
-     * @param shardId ID of the shard
-     * @param cmd executed command (might be null)
+     * @param node     Name of the Node
+     * @param index    Name of the index
+     * @param shardId  ID of the shard
+     * @param cmd      executed command (might be null)
      * @param cmdArray executed command array (might be null)
-     * @param file written file (might be null)
+     * @param file     written file (might be null)
      */
     public ShardExportResponse(Text node, String index, int shardId, String cmd, List<String> cmdArray, String file) {
         super(index, shardId);
@@ -115,8 +112,7 @@ class ShardExportResponse extends BroadcastShardOperationResponse implements
         return node;
     }
 
-    public static ShardExportResponse readNew(StreamInput in) throws
-            IOException {
+    public static ShardExportResponse readNew(StreamInput in) throws IOException {
         ShardExportResponse response = new ShardExportResponse();
         response.readFrom(in);
         return response;
@@ -127,22 +123,33 @@ class ShardExportResponse extends BroadcastShardOperationResponse implements
     public void readFrom(StreamInput in) throws IOException {
         super.readFrom(in);
         cmd = in.readOptionalString();
+        cmdArray = new ArrayList<String>(Arrays.asList((String[]) in.readStringArray()));
         file = in.readOptionalString();
         stderr = in.readOptionalString();
         stdout = in.readOptionalString();
         exitCode = in.readVInt();
         numExported = in.readVLong();
+        node = in.readOptionalText();
+        dryRun = in.readBoolean();
     }
 
     @Override
     public void writeTo(StreamOutput out) throws IOException {
         super.writeTo(out);
         out.writeOptionalString(cmd);
+        if (cmdArray == null) {
+            out.writeStringArrayNullable(null);
+        } else {
+            out.writeStringArray(cmdArray.toArray(new String[cmdArray.size()]));
+        }
+
         out.writeOptionalString(file);
         out.writeOptionalString(stderr);
         out.writeOptionalString(stdout);
         out.writeVInt(exitCode);
         out.writeVLong(numExported);
+        out.writeOptionalText(node);
+        out.writeBoolean(dryRun);
     }
 
     @Override
@@ -150,7 +157,9 @@ class ShardExportResponse extends BroadcastShardOperationResponse implements
         builder.startObject();
         builder.field("index", getIndex());
         builder.field("shard", getShardId());
-        builder.field("node", node);
+        if (node != null) {
+            builder.field("node", node);
+        }
         builder.field("numExported", getNumExported());
         if (getFile() != null) {
             builder.field("output_file", getFile());

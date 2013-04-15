@@ -17,8 +17,7 @@ public class ExportModule extends AbstractModule {
 
         bind(ExportParser.class).asEagerSingleton();
 
-        MapBinder<GenericAction, TransportAction> transportActionsBinder =
-                MapBinder.newMapBinder(binder(), GenericAction.class, TransportAction.class);
+        MapBinder<GenericAction, TransportAction> transportActionsBinder = MapBinder.newMapBinder(binder(), GenericAction.class, TransportAction.class);
 
         transportActionsBinder.addBinding(ExportAction.INSTANCE).to(TransportExportAction.class).asEagerSingleton();
 
