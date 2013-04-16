@@ -1,12 +1,20 @@
 package com.firstblick.elasticsearch.module.export.test;
 
-import com.firstblick.elasticsearch.action.export.ExportAction;
-import com.firstblick.elasticsearch.action.export.ExportRequest;
-import com.firstblick.elasticsearch.action.export.ExportResponse;
-import com.firstblick.elasticsearch.rest.action.admin.export.RestExportAction;
-import com.github.tlrx.elasticsearch.test.EsSetup;
+import static com.github.tlrx.elasticsearch.test.EsSetup.createIndex;
+import static com.github.tlrx.elasticsearch.test.EsSetup.deleteAll;
+import static com.github.tlrx.elasticsearch.test.EsSetup.fromClassPath;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import junit.framework.TestCase;
-import org.elasticsearch.action.ActionListener;
+
 import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
@@ -15,47 +23,24 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
-import static com.github.tlrx.elasticsearch.test.EsSetup.*;
+import com.firstblick.elasticsearch.action.export.ExportAction;
+import com.firstblick.elasticsearch.action.export.ExportRequest;
+import com.firstblick.elasticsearch.action.export.ExportResponse;
+import com.firstblick.elasticsearch.rest.action.admin.export.RestExportAction;
+import com.github.tlrx.elasticsearch.test.EsSetup;
 
 public class RestExportActionTest extends TestCase {
 
-    ExportResponse response;
-    CountDownLatch signal;
     EsSetup esSetup;
     RestExportAction restExportAction;
 
-    /**
-     * Action listener for export responses. Save response to member variable
-     * and release the count down signal.
-     */
-    private class ExportResponseActionListener implements ActionListener<ExportResponse> {
-
-        @Override
-        public void onResponse(ExportResponse res) {
-            response = res;
-            signal.countDown();
-        }
-
-        @Override
-        public void onFailure(Throwable e) {
-            fail(e.getMessage());
-        }
-
-    }
-
     @Before
     public void setUp() {
-        signal = new CountDownLatch(1);
-        response = null;
         esSetup = new EsSetup();
-        esSetup.execute(deleteAll(), createIndex("users").withSettings(fromClassPath("essetup/settings/test_a.json")).withMapping("d", fromClassPath("essetup/mappings/test_a.json")).withData(fromClassPath("essetup/data/test_a.json")));
+        esSetup.execute(deleteAll(), createIndex("users").withSettings(
+                fromClassPath("essetup/settings/test_a.json")).withMapping("d",
+                        fromClassPath("essetup/mappings/test_a.json")).withData(
+                                fromClassPath("essetup/data/test_a.json")));
         esSetup.client().admin().indices().prepareRefresh("users").execute();
     }
 
@@ -67,19 +52,8 @@ public class RestExportActionTest extends TestCase {
     public static Map<String, Object> toMap(ToXContent toXContent) throws IOException {
         XContentBuilder builder = XContentFactory.contentBuilder(XContentType.JSON);
         toXContent.toXContent(builder, ToXContent.EMPTY_PARAMS);
-        return XContentFactory.xContent(XContentType.JSON).createParser(builder.string()).mapOrderedAndClose();
-    }
-
-
-    private static List<Map<String, Object>> getExports(ExportResponse resp) {
-        Map<String, Object> res = null;
-        try {
-            res = toMap(resp);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
-        return (List<Map<String, Object>>) res.get("exports");
+        return XContentFactory.xContent(XContentType.JSON).createParser(
+                builder.string()).mapOrderedAndClose();
     }
 
     /**
@@ -87,11 +61,12 @@ public class RestExportActionTest extends TestCase {
      */
     @Test
     public void testNoCommandOrFile() throws IOException {
-        executeExportRequest("{\"fields\": [\"name\"]}");
-        List<Map<String, Object>> infos = getExports(response);
+        ExportResponse response = executeExportRequest("{\"fields\": [\"name\"]}");
         assertEquals(2, response.getShardFailures().length);
-        assertTrue(response.getShardFailures()[0].reason().contains("'output_cmd' or 'output_file' has not been defined"));
-        assertTrue(response.getShardFailures()[1].reason().contains("'output_cmd' or 'output_file' has not been defined"));
+        assertTrue(response.getShardFailures()[0].reason().contains(
+                "'output_cmd' or 'output_file' has not been defined"));
+        assertTrue(response.getShardFailures()[1].reason().contains(
+                "'output_cmd' or 'output_file' has not been defined"));
     }
 
     /**
@@ -99,13 +74,15 @@ public class RestExportActionTest extends TestCase {
      */
     @Test
     public void testNoExportFields() {
-        executeExportRequest("{\"output_cmd\": \"cat\"}");
+        ExportResponse response = executeExportRequest("{\"output_cmd\": \"cat\"}");
 
         List<Map<String, Object>> infos = getExports(response);
         assertEquals(0, infos.size());
         assertEquals(2, response.getShardFailures().length);
-        assertTrue(response.getShardFailures()[0].reason().contains("No export fields defined"));
-        assertTrue(response.getShardFailures()[1].reason().contains("No export fields defined"));
+        assertTrue(response.getShardFailures()[0].reason().contains(
+                "No export fields defined"));
+        assertTrue(response.getShardFailures()[1].reason().contains(
+                "No export fields defined"));
     }
 
     /**
@@ -113,13 +90,16 @@ public class RestExportActionTest extends TestCase {
      */
     @Test
     public void testBadParserArgument() {
-        executeExportRequest("{\"output_cmd\": \"cat\", \"fields\": [\"name\"], \"badparam\":\"somevalue\"}");
+        ExportResponse response = executeExportRequest(
+                "{\"output_cmd\": \"cat\", \"fields\": [\"name\"], \"badparam\":\"somevalue\"}");
 
         List<Map<String, Object>> infos = getExports(response);
         assertEquals(0, infos.size());
         assertEquals(2, response.getShardFailures().length);
-        assertTrue(response.getShardFailures()[0].reason().contains("No parser for element [badparam]"));
-        assertTrue(response.getShardFailures()[1].reason().contains("No parser for element [badparam]"));
+        assertTrue(response.getShardFailures()[0].reason().contains(
+                "No parser for element [badparam]"));
+        assertTrue(response.getShardFailures()[1].reason().contains(
+                "No parser for element [badparam]"));
     }
 
     /**
@@ -130,12 +110,15 @@ public class RestExportActionTest extends TestCase {
      */
     @Test
     public void testSingleOutputCommand() {
-        executeExportRequest("{\"output_cmd\": \"cat\", \"fields\": [\"name\"]}");
+        ExportResponse response = executeExportRequest(
+                "{\"output_cmd\": \"cat\", \"fields\": [\"name\"]}");
 
         List<Map<String, Object>> infos = getExports(response);
         assertEquals(2, infos.size());
-        assertShardInfoCommand(infos.get(0), "users", 0, "{\"name\":\"car\"}\n{\"name\":\"train\"}\n", "", null);
-        assertShardInfoCommand(infos.get(1), "users", 0, "{\"name\":\"bike\"}\n{\"name\":\"bus\"}\n", "", null);
+        assertShardInfoCommand(infos.get(0), "users", 0,
+                "{\"name\":\"car\"}\n{\"name\":\"train\"}\n", "", null);
+        assertShardInfoCommand(infos.get(1), "users", 0,
+                "{\"name\":\"bike\"}\n{\"name\":\"bus\"}\n", "", null);
     }
 
     /**
@@ -143,12 +126,15 @@ public class RestExportActionTest extends TestCase {
      */
     @Test
     public void testOutputCommandList() {
-        executeExportRequest("{\"output_cmd\": [\"/bin/sh\", \"-c\", \"cat\"], \"fields\": [\"name\"]}");
+        ExportResponse response = executeExportRequest(
+                "{\"output_cmd\": [\"/bin/sh\", \"-c\", \"cat\"], \"fields\": [\"name\"]}");
 
         List<Map<String, Object>> infos = getExports(response);
         assertEquals(2, infos.size());
-        assertShardInfoCommand(infos.get(0), "users", 0, "{\"name\":\"car\"}\n{\"name\":\"train\"}\n", "", null);
-        assertShardInfoCommand(infos.get(1), "users", 0, "{\"name\":\"bike\"}\n{\"name\":\"bus\"}\n", "", null);
+        assertShardInfoCommand(infos.get(0), "users", 0,
+                "{\"name\":\"car\"}\n{\"name\":\"train\"}\n", "", null);
+        assertShardInfoCommand(infos.get(1), "users", 0,
+                "{\"name\":\"bike\"}\n{\"name\":\"bus\"}\n", "", null);
     }
 
     /**
@@ -164,13 +150,15 @@ public class RestExportActionTest extends TestCase {
      */
     @Test
     public void testOutputFile() {
-        String clusterName = esSetup.client().admin().cluster().prepareHealth().setWaitForGreenStatus().execute().actionGet().getClusterName();
+        String clusterName = esSetup.client().admin().cluster().prepareHealth().
+                setWaitForGreenStatus().execute().actionGet().getClusterName();
         String filename_0 = "/tmp/" + clusterName + ".0.users.export";
         String filename_1 = "/tmp/" + clusterName + ".1.users.export";
         new File(filename_0).delete();
         new File(filename_1).delete();
 
-        executeExportRequest("{\"output_file\": \"/tmp/${cluster}.${shard}.${index}.export\", \"fields\": [\"name\", \"_id\"]}");
+        ExportResponse response = executeExportRequest(
+                "{\"output_file\": \"/tmp/${cluster}.${shard}.${index}.export\", \"fields\": [\"name\", \"_id\"]}");
 
         List<Map<String, Object>> infos = getExports(response);
         assertEquals(2, infos.size());
@@ -200,14 +188,17 @@ public class RestExportActionTest extends TestCase {
      */
     @Test
     public void testOutputFileAndOutputCommand() {
-        executeExportRequest("{\"output_file\": \"/filename\", \"output_cmd\": \"cat\", \"fields\": [\"name\"]}");
+        ExportResponse response = executeExportRequest(
+                "{\"output_file\": \"/filename\", \"output_cmd\": \"cat\", \"fields\": [\"name\"]}");
 
         List<Map<String, Object>> infos = getExports(response);
         assertEquals(0, infos.size());
         assertEquals(0, infos.size());
         assertEquals(2, response.getShardFailures().length);
-        assertTrue(response.getShardFailures()[0].reason().contains("Concurrent definition of 'output_cmd' and 'output_file'"));
-        assertTrue(response.getShardFailures()[1].reason().contains("Concurrent definition of 'output_cmd' and 'output_file'"));
+        assertTrue(response.getShardFailures()[0].reason().contains(
+                "Concurrent definition of 'output_cmd' and 'output_file'"));
+        assertTrue(response.getShardFailures()[1].reason().contains(
+                "Concurrent definition of 'output_cmd' and 'output_file'"));
 
     }
 
@@ -217,7 +208,7 @@ public class RestExportActionTest extends TestCase {
     @Test
     public void testForceOverwrite() {
         String filename = "/tmp/filename.export";
-        executeExportRequest("{\"output_file\": \"" + filename +
+        ExportResponse response = executeExportRequest("{\"output_file\": \"" + filename +
                 "\", \"fields\": [\"name\"], \"force_overwrite\": \"true\"}");
 
         List<Map<String, Object>> infos = getExports(response);
@@ -236,7 +227,8 @@ public class RestExportActionTest extends TestCase {
      */
     @Test
     public void testExplainCommand() {
-        executeExportRequest("{\"output_cmd\": \"cat\", \"fields\": [\"name\"], \"explain\": \"true\"}");
+        ExportResponse response = executeExportRequest(
+                "{\"output_cmd\": \"cat\", \"fields\": [\"name\"], \"explain\": \"true\"}");
 
         List<Map<String, Object>> infos = getExports(response);
         assertEquals(2, infos.size());
@@ -261,36 +253,27 @@ public class RestExportActionTest extends TestCase {
         assertFalse(new File(filename).exists());
     }
 
+    private static List<Map<String, Object>> getExports(ExportResponse resp) {
+        Map<String, Object> res = null;
+        try {
+            res = toMap(resp);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+        return (List<Map<String, Object>>) res.get("exports");
+    }
+
     /**
      * Execute an export request with a JSON string as source query. Waits for
      * async callback and writes result in response member variable.
      *
      * @param source
      */
-    private void executeExportRequest(String source) {
+    private ExportResponse executeExportRequest(String source) {
         ExportRequest exportRequest = new ExportRequest();
         exportRequest.source(source);
-        ActionListener<ExportResponse> listener = new ExportResponseActionListener();
-        esSetup.client().execute(ExportAction.INSTANCE, exportRequest, listener);
-        waitForAsyncCallback(4000);
-    }
-
-    /**
-     * Wait for the signal and let the test fail if the response did not
-     * retrieve within time.
-     *
-     * @param milliSeconds time to wait for maximum
-     */
-    private void waitForAsyncCallback(long milliSeconds) {
-        try {
-            signal.await(milliSeconds, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            fail("Signal interrupted");
-        }
-        if (response == null) {
-            fail("No response within time");
-        }
+        return esSetup.client().execute(ExportAction.INSTANCE, exportRequest).actionGet();
     }
 
     /**
@@ -321,7 +304,8 @@ public class RestExportActionTest extends TestCase {
         return lines;
     }
 
-    private void assertShardInfoCommand(Map<String, Object> map, String index, int exitcode, String stdout, String stderr, String cmd) {
+    private void assertShardInfoCommand(Map<String, Object> map, String index,
+            int exitcode, String stdout, String stderr, String cmd) {
         assertEquals(index, map.get("index"));
         assertEquals(exitcode, map.get("exitcode"));
         assertEquals(stderr, map.get("stderr"));
