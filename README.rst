@@ -4,8 +4,8 @@ Elasticsearch Export Plugin
 
 This Elasticsearch plugin provides the ability to export data by query
 on server side, by outputting the data directly on the according node.
-Data is exported for every shard of the query. The export can happen on
-all indexes, on a specific index or on a specific type of an index.
+The export can happen on all indexes, on a specific index or on a specific
+type of an index.
 
 The data will get exported as one json object per line::
 
@@ -15,6 +15,14 @@ The data will get exported as one json object per line::
 
 Usage
 =====
+
+Examples
+--------
+
+Below are some examples demonstrating what can be done with the elasticsearch
+export plugin. The example commands require installation on a UNIX system,
+the plugin of course also works with different commands on other operating
+systems supporting elasticsearch.
 
 Export data to files in the node's file system. The filenames will be expanded
 by index and shard names (p.e. /tmp/dump-myIndex-0)::
@@ -177,7 +185,7 @@ request body::
 
     - `index`: The name of the exported index
     - `shard`: The number of the exported shard
-    - `node`: The node name where the export happened
+    - `node`: The node id where the export happened
     - `numExported`: The number of exported objects in the shard
     - `output_file`: The file name of the output file with substituted variables
     - `error`: A detailed error message of a shard operation if an error occured
@@ -216,15 +224,10 @@ request body::
 
 .. hint::
 
-    - `index`: The name of the exported index
-    - `shard`: The number of the exported shard
-    - `node`: The node name where the export happened
-    - `numExported`: The number of exported objects in the shard
     - `output_cmd`: The executed command on the node with substituted variables
     - `stderr`: The first 8K of the standard error log of the executed command
     - `stdout`: The first 8K of the standard output log of the executed command
     - `exitcode`: The exit code of the executed command
-    - `error`: A detailed error message of a shard operation if an error occured
 
 Installation
 ============
