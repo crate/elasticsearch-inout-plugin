@@ -3,6 +3,7 @@ package com.firstblick.elasticsearch.module.export.test;
 import static com.github.tlrx.elasticsearch.test.EsSetup.createIndex;
 import static com.github.tlrx.elasticsearch.test.EsSetup.deleteAll;
 import static com.github.tlrx.elasticsearch.test.EsSetup.fromClassPath;
+import static com.github.tlrx.elasticsearch.test.EsSetup.index;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -251,6 +252,30 @@ public class RestExportActionTest extends TestCase {
                 "\", \"fields\": [\"name\"], \"explain\": \"true\"}");
 
         assertFalse(new File(filename).exists());
+    }
+
+    /**
+     * Export request must also work with multiple nodes.
+     */
+    @Test
+    public void testWithMultipleNodes() {
+        // Prepare a second node and wait for relocation
+        EsSetup esSetup2 = new EsSetup();
+        esSetup2.execute(index("users", "d").withSource("{\"name\": \"motorbike\"}"));
+        esSetup2.client().admin().cluster().prepareHealth().setWaitForGreenStatus().
+            setWaitForNodes("2").setWaitForRelocatingShards(0).execute().actionGet();
+
+        // Do export request
+        String source = "{\"output_cmd\": \"cat\", \"fields\": [\"name\"]}";
+        ExportRequest exportRequest = new ExportRequest();
+        exportRequest.source(source);
+        ExportResponse response = esSetup2.client().execute(
+                ExportAction.INSTANCE, exportRequest).actionGet();
+
+        // The two shard results are from different nodes and have no failures
+        assertEquals(0, response.getFailedShards());
+        List<Map<String, Object>> infos = getExports(response);
+        assertNotSame(infos.get(0).get("node"), infos.get(1).get("node"));
     }
 
     private static List<Map<String, Object>> getExports(ExportResponse resp) {
