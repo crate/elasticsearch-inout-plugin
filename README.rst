@@ -195,7 +195,7 @@ request body::
                 "shard" : 0,
                 "node" : "someNodeName",
                 "numExported" : 5,
-                "output_cmd" : ["/bin/sh", "-c", "gzip > /tmp/dump-eventlog_2013-04-22-0.json.gz" ],
+                "output_cmd" : ["/bin/sh", "-c", "gzip > /tmp/dump-myIndex-0.json.gz" ],
                 "stderr" : "",
                 "stdout" : "",
                 "exitcode" : 0
