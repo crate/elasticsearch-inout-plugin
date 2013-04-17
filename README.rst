@@ -53,6 +53,20 @@ system::
     }
     '
 
+Limit the exported data with a query. The same query syntax as for search can
+be used::
+
+    curl -X POST 'http://localhost:9200/_export' -d '{
+        "fields": ["_id", "_source"],
+        "output_file": "/tmp/query-${index}-${shard}",
+        "query": {
+            "match": {
+                "someField": "someValue"
+            }
+        }
+    }
+    '
+
 
 Elements of the request body
 ----------------------------
