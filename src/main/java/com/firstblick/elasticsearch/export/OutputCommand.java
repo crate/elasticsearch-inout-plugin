@@ -81,7 +81,11 @@ public class OutputCommand extends Output{
         }
 
         if (process != null) {
-            process.getOutputStream().flush();
+            try {
+                process.getOutputStream().flush();
+            } catch (IOException e) {
+                // Ignore if output stream is already closed
+            }
             result = new Result();
             try {
                 result.exit = process.waitFor();
