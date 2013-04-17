@@ -1,10 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <name>elasticsearch-export-plugin</name>
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.firstblick</groupId>
 	<artifactId>elasticsearch-export-plugin</artifactId>
 	<version>0.0.2</version>
+    <packaging>jar</packaging>
+    <description>An Elasticsearch plugin which provides the ability to export data by query on server side.</description>
+    <scm>
+        <connection>git@github.com:firstblick/elasticsearch-export-plugin.git</connection>
+        <developerConnection>scm:git:git@github.com:firstblick/elasticsearch-export-plugin.git</developerConnection>
+        <url>https://github.com/firstblick/elasticsearch-export-plugin</url>
+    </scm>
 	<properties>
 		<elasticsearch.version>0.90.0.RC2</elasticsearch.version>
 	</properties>
@@ -67,4 +76,17 @@
 			<version>0.0.8</version>
 		</dependency>
 	</dependencies>
+
+    <licenses>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <issueManagement>
+        <system>GitHub</system>
+        <url>https://github.com/firstblick/elasticsearch-export-plugin/issues</url>
+    </issueManagement>
 </project>
