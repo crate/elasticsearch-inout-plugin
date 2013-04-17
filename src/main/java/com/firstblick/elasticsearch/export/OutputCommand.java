@@ -2,7 +2,6 @@ package com.firstblick.elasticsearch.export;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.PrintWriter;
 import java.util.List;
 
 
@@ -11,12 +10,11 @@ import java.util.List;
  * standard in. Get standard out and standard error messages when
  * process has finished.
  */
-public class OutputCommand extends Output{
+public class OutputCommand extends Output {
 
     private static final int BUFFER_LEN = 8192;
 
     private final ProcessBuilder builder;
-    private PrintWriter printWriter;
     private Process process;
     private Result result;
     private StreamConsumer outputConsumer, errorConsumer;
@@ -44,28 +42,20 @@ public class OutputCommand extends Output{
      */
     public void open() throws IOException {
         process = builder.start();
-        if (process != null) {
-            printWriter = new PrintWriter(process.getOutputStream());
-            outputConsumer = new StreamConsumer(process.getInputStream(),
-                    BUFFER_LEN);
-            errorConsumer = new StreamConsumer(process.getErrorStream(),
-                    BUFFER_LEN);
-        }
-    }
-
-    public OutputStream getOutputStream() {
-        return process.getOutputStream();
+        outputConsumer = new StreamConsumer(process.getInputStream(),
+                BUFFER_LEN);
+        errorConsumer = new StreamConsumer(process.getErrorStream(),
+                BUFFER_LEN);
     }
 
     /**
-     * Write a line to the process' standard in.
-     *
-     * @param string
+     * Get the output stream to write to the process' standard in.
      */
-    public void println(String string) {
-        if (printWriter != null) {
-            printWriter.println(string);
+    public OutputStream getOutputStream() {
+        if (process != null) {
+            return process.getOutputStream();
         }
+        return null;
     }
 
     /**
@@ -75,17 +65,9 @@ public class OutputCommand extends Output{
      * @throws IOException
      */
     public void close() throws IOException {
-        if (printWriter != null) {
-            printWriter.flush();
-            printWriter.close();
-        }
-
         if (process != null) {
-            try {
-                process.getOutputStream().flush();
-            } catch (IOException e) {
-                // Ignore if output stream is already closed
-            }
+            process.getOutputStream().flush();
+            process.getOutputStream().close();
             result = new Result();
             try {
                 result.exit = process.waitFor();
