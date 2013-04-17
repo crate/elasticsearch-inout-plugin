@@ -244,14 +244,14 @@ request body::
 Installation
 ============
 
-* Clone this repo with git clone
-  git@github.com:firstblick/elasticsearch-export-plugin.git
+* Clone this repo with ``git clone
+  git@github.com:firstblick/elasticsearch-export-plugin.git``
 * Checkout the tag (find out via git tag) you want to build with
   (possibly master is not for your elasticsearch version)
-* Run: mvn clean package -DskipTests=true – this does not run any unit
-  tests, as they take some time. If you want to run them, better run mvn
-  clean package
-* Install the plugin: /path/to/elasticsearch/bin/plugin -install
+* Run: ``mvn clean package -DskipTests=true`` – this does not run any unit
+  tests, as they take some time. If you want to run them, better run ``mvn
+  clean package``
+* Install the plugin: ``/path/to/elasticsearch/bin/plugin -install
   elasticsearch-export-plugin -url
-  file:///$PWD/target/releases/elasticsearch-export-plugin-$version.jar
+  file:///$PWD/target/releases/elasticsearch-export-plugin-$version.jar``
 
