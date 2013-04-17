@@ -278,6 +278,26 @@ public class RestExportActionTest extends TestCase {
         assertNotSame(infos.get(0).get("node"), infos.get(1).get("node"));
     }
 
+    /**
+     * A query must also work and deliver only the queried results.
+     */
+    @Test
+    public void testWithQuery() {
+        ExportResponse response = executeExportRequest(
+                "{\"output_file\": \"/tmp/query-${shard}.json\", \"fields\": [\"name\"], " +
+                "\"query\": {\"match\": {\"name\":\"bus\"}}, \"force_overwrite\": true}");
+
+        assertEquals(0, response.getFailedShards());
+        List<Map<String, Object>> infos = getExports(response);
+        assertEquals(2, infos.size());
+
+        List<String> lines_0 = readLines("/tmp/query-0.json");
+        assertEquals(0, lines_0.size());
+        List<String> lines_1 = readLines("/tmp/query-1.json");
+        assertEquals(1, lines_1.size());
+        assertEquals("{\"name\":\"bus\"}", lines_1.get(0));
+    }
+
     private static List<Map<String, Object>> getExports(ExportResponse resp) {
         Map<String, Object> res = null;
         try {
