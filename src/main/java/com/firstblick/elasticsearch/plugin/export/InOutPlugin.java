@@ -1,22 +1,23 @@
 package com.firstblick.elasticsearch.plugin.export;
 
-import com.firstblick.elasticsearch.module.export.ExportModule;
-import com.firstblick.elasticsearch.rest.action.admin.export.RestExportAction;
+import java.util.Collection;
+
 import org.elasticsearch.common.collect.Lists;
 import org.elasticsearch.common.inject.Module;
 import org.elasticsearch.plugins.AbstractPlugin;
 import org.elasticsearch.rest.RestModule;
 
-import java.util.Collection;
+import com.firstblick.elasticsearch.module.export.ExportModule;
+import com.firstblick.elasticsearch.rest.action.admin.export.RestExportAction;
 
 
-public class ExportPlugin extends AbstractPlugin {
+public class InOutPlugin extends AbstractPlugin {
     public String name() {
-        return "export";
+        return "inout";
     }
 
     public String description() {
-        return "Export plugin";
+        return "InOut plugin";
     }
 
     public void onModule(RestModule restModule) {
