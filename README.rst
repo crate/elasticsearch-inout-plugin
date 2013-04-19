@@ -1,6 +1,6 @@
-===========================
-Elasticsearch Export Plugin
-===========================
+==========================
+Elasticsearch InOut Plugin
+==========================
 
 This Elasticsearch plugin provides the ability to export data by query
 on server side, by outputting the data directly on the according node.
@@ -20,7 +20,7 @@ Examples
 --------
 
 Below are some examples demonstrating what can be done with the elasticsearch
-export plugin. The example commands require installation on a UNIX system.
+inout plugin. The example commands require installation on a UNIX system.
 The plugin may also works with different commands on other operating
 systems supporting elasticsearch, but is not tested yet.
 
@@ -261,4 +261,4 @@ Installation
 If you do not want to work on the repository, just use the standard
 elasticsearch plugin command (inside your elasticsearch/bin directory)
 
-    bin/plugin -install elasticsearch-export-plugin -url file:///path/to/elasticsearch-export-plugin/target/elasticsearch-export-plugin-1.0-SNAPSHOT.jar
+    bin/plugin -install elasticsearch-inout-plugin -url file:///path/to/elasticsearch-inout-plugin/target/elasticsearch-inout-plugin-1.0-SNAPSHOT.jar
