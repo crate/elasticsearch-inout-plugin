@@ -146,7 +146,7 @@ public class TransportExportAction extends TransportBroadcastOperationAction<Exp
                 if (context.explain()) {
                     return new ShardExportResponse(shardTarget.nodeIdText(), request.index(), request.shardId(), context.outputCmd(), context.outputCmdArray(), context.outputFile());
                 } else {
-                    Exporter.Result res = Exporter.execute(logger, context);
+                    Exporter.Result res = Exporter.execute(context);
                     return new ShardExportResponse(shardTarget.nodeIdText(), request.index(), request.shardId(), context.outputCmd(), context.outputCmdArray(), context.outputFile(), res.outputResult.stdErr, res.outputResult.stdOut, res.outputResult.exit, res.numExported);
                 }
 

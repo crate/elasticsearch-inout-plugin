@@ -7,7 +7,6 @@ import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.io.stream.CachedStreamOutput;
-import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.text.StringAndBytesText;
 import org.elasticsearch.common.text.Text;
 import org.elasticsearch.common.xcontent.ToXContent;
@@ -38,7 +37,6 @@ public class ExportCollector extends Collector {
     private int docBase;
     private long numExported = 0;
     private final FieldsVisitor fieldsVisitor;
-    private final ESLogger logger;
     private final ExportContext context;
 
     private List<String> extractFieldNames;
@@ -48,9 +46,8 @@ public class ExportCollector extends Collector {
     private XContentBuilder builder;
 
     public ExportCollector(ExportContext context,
-                           ESLogger logger, OutputStream os) {
+                           OutputStream os) {
         this.out = os;
-        this.logger = logger;
         this.context = context;
         this.exportFields = new ExportFields(context.fieldNames());
         sourceRequested = false;
