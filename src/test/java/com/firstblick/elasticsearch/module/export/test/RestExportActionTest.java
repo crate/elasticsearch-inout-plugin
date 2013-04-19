@@ -7,12 +7,15 @@ import static com.github.tlrx.elasticsearch.test.EsSetup.index;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.GZIPInputStream;
 
 import junit.framework.TestCase;
 
@@ -139,6 +142,22 @@ public class RestExportActionTest extends TestCase {
     }
 
     /**
+     * The gzip compression will also work on output commands.
+     */
+    @Test
+    public void testOutputCommandWithGZIP() {
+        ExportResponse response = executeExportRequest(
+                "{\"output_cmd\": [\"/bin/sh\", \"-c\", \"gunzip\"], \"fields\": [\"name\"], \"compression\": \"gzip\"}");
+
+        List<Map<String, Object>> infos = getExports(response);
+        assertEquals(2, infos.size());
+        assertShardInfoCommand(infos.get(0), "users", 0,
+                "{\"name\":\"car\"}\n{\"name\":\"train\"}\n", "", null);
+        assertShardInfoCommand(infos.get(1), "users", 0,
+                "{\"name\":\"bike\"}\n{\"name\":\"bus\"}\n", "", null);
+    }
+
+    /**
      * The 'output_file' parameter defines the filename to save the export.
      * There are 3 template variables that will be replaced:
      * <p/>
@@ -179,6 +198,40 @@ public class RestExportActionTest extends TestCase {
         assertEquals("{\"name\":\"car\",\"_id\":\"1\"}", lines_0.get(0));
         assertEquals("{\"name\":\"train\",\"_id\":\"3\"}", lines_0.get(1));
         List<String> lines_1 = readLines(filename_1);
+        assertEquals(2, lines_1.size());
+        assertEquals("{\"name\":\"bike\",\"_id\":\"2\"}", lines_1.get(0));
+        assertEquals("{\"name\":\"bus\",\"_id\":\"4\"}", lines_1.get(1));
+    }
+
+    public void testGZIPOutputFile() {
+        String clusterName = esSetup.client().admin().cluster().prepareHealth().
+                setWaitForGreenStatus().execute().actionGet().getClusterName();
+        String filename_0 = "/tmp/" + clusterName + ".0.users.zipexport.gz";
+        String filename_1 = "/tmp/" + clusterName + ".1.users.zipexport.gz";
+        new File(filename_0).delete();
+        new File(filename_1).delete();
+
+        ExportResponse response = executeExportRequest(
+                "{\"output_file\": \"/tmp/${cluster}.${shard}.${index}.zipexport.gz\", \"fields\": [\"name\", \"_id\"], \"compression\": \"gzip\"}");
+
+        List<Map<String, Object>> infos = getExports(response);
+        assertEquals(2, infos.size());
+        Map<String, Object> shard_0 = infos.get(0);
+        Map<String, Object> shard_1 = infos.get(1);
+        assertEquals("users", shard_0.get("index"));
+        assertEquals("users", shard_1.get("index"));
+        String output_file_0 = shard_0.get("output_file").toString();
+        assertEquals(filename_0, output_file_0);
+        String output_file_1 = shard_1.get("output_file").toString();
+        assertEquals(filename_1, output_file_1);
+        assertTrue(shard_0.containsKey("node"));
+        assertTrue(shard_1.containsKey("node"));
+
+        List<String> lines_0 = readLinesFromGZIP(filename_0);
+        assertEquals(2, lines_0.size());
+        assertEquals("{\"name\":\"car\",\"_id\":\"1\"}", lines_0.get(0));
+        assertEquals("{\"name\":\"train\",\"_id\":\"3\"}", lines_0.get(1));
+        List<String> lines_1 = readLinesFromGZIP(filename_1);
         assertEquals(2, lines_1.size());
         assertEquals("{\"name\":\"bike\",\"_id\":\"2\"}", lines_1.get(0));
         assertEquals("{\"name\":\"bus\",\"_id\":\"4\"}", lines_1.get(1));
@@ -298,6 +351,31 @@ public class RestExportActionTest extends TestCase {
         assertEquals("{\"name\":\"bus\"}", lines_1.get(0));
     }
 
+    /**
+     * Only the compression format 'gzip' or no compression is supported.
+     */
+    @Test
+    public void testUnsopportedCompressionFormat() {
+        String clusterName = esSetup.client().admin().cluster().prepareHealth().
+                setWaitForGreenStatus().execute().actionGet().getClusterName();
+        String filename_0 = "/tmp/" + clusterName + ".0.users.nocompressexport.gz";
+        String filename_1 = "/tmp/" + clusterName + ".1.users.nocompressexport.gz";
+        new File(filename_0).delete();
+        new File(filename_1).delete();
+        ExportResponse response = executeExportRequest(
+                "{\"output_file\": \"/tmp/${cluster}.${shard}.${index}.lzivexport.gz\", \"fields\": [\"name\", \"_id\"], \"compression\": \"LZIV\"}");
+
+        assertEquals(2, response.getFailedShards());
+        assertTrue(response.getShardFailures()[0].reason().contains(
+                "Compression format 'lziv' unknown or not supported."));
+
+        ExportResponse response2 = executeExportRequest(
+                "{\"output_file\": \"/tmp/${cluster}.${shard}.${index}.nocompressexport.gz\", \"fields\": [\"name\", \"_id\"], \"compression\": \"\"}");
+
+        assertEquals(0, response2.getFailedShards());
+        assertEquals(2, response2.getSuccessfulShards());
+    }
+
     private static List<Map<String, Object>> getExports(ExportResponse resp) {
         Map<String, Object> res = null;
         try {
@@ -329,7 +407,6 @@ public class RestExportActionTest extends TestCase {
      * @return a list of strings
      */
     private List<String> readLines(String filename) {
-        List<String> lines = new ArrayList<String>();
         BufferedReader reader = null;
         try {
             reader = new BufferedReader(new FileReader(new File(filename)));
@@ -337,6 +414,33 @@ public class RestExportActionTest extends TestCase {
             e.printStackTrace();
             fail("File not found");
         }
+        return readLines(filename, reader);
+    }
+
+    /**
+     * Get a list of lines from a gzipped file.
+     * Test fails if file not found or IO exception happens.
+     *
+     * @param filename the file name to read
+     * @return a list of strings
+     */
+    private List<String> readLinesFromGZIP(String filename) {
+        BufferedReader reader = null;
+        try {
+            reader = new BufferedReader(new InputStreamReader(
+                    new GZIPInputStream(new FileInputStream(new File(filename)))));
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            fail("File not found");
+        } catch (IOException e) {
+            e.printStackTrace();
+            fail("IO Excsption while reading ZIP stream");
+        }
+        return readLines(filename, reader);
+    }
+
+    private List<String> readLines(String filename, BufferedReader reader) {
+        List<String> lines = new ArrayList<String>();
         try {
             String line;
             while ((line = reader.readLine()) != null) {

@@ -28,6 +28,7 @@ public class ExportContext extends SearchContext {
     private String outputCmd;
     private String outputFile;
     private boolean forceOverride = false;
+    private boolean compression;
 
     public ExportContext(long id, ShardSearchRequest request, SearchShardTarget shardTarget, Engine.Searcher engineSearcher, IndexService indexService, IndexShard indexShard, ScriptService scriptService) {
         super(id, request, shardTarget, engineSearcher, indexService, indexShard, scriptService);
@@ -63,6 +64,14 @@ public class ExportContext extends SearchContext {
 
     public void forceOverride(boolean forceOverride) {
         this.forceOverride = forceOverride;
+    }
+
+    public void compression(boolean compression) {
+        this.compression = compression;
+    }
+
+    public boolean compression() {
+        return this.compression;
     }
 
     /**
@@ -103,12 +112,12 @@ public class ExportContext extends SearchContext {
 
     public Output createOutput() {
         if (outputFile()!=null){
-            return new OutputFile(outputFile(), forceOverride());
+            return new OutputFile(outputFile(), forceOverride(), compression);
         } else {
             if (outputCmd()!=null){
-                return new OutputCommand(outputCmd());
+                return new OutputCommand(outputCmd(), compression);
             } else {
-                return new OutputCommand(outputCmdArray());
+                return new OutputCommand(outputCmdArray(), compression);
             }
         }
     }
