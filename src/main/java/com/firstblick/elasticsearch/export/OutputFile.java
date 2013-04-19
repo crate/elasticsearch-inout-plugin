@@ -4,17 +4,20 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.zip.GZIPOutputStream;
 
 public class OutputFile extends Output {
 
     private Result result;
     private final String path;
-    private FileOutputStream fos;
+    private OutputStream os;
     private final boolean overwrite;
+    private final boolean gzip;
 
-    public OutputFile(String path, boolean overwrite) {
+    public OutputFile(String path, boolean overwrite, boolean gzip) {
         this.path = path;
         this.overwrite = overwrite;
+        this.gzip = gzip;
     }
 
     @Override
@@ -23,25 +26,27 @@ public class OutputFile extends Output {
         if (!overwrite && outFile.exists()){
             throw new IOException("File exists: " +  path);
         }
-        fos = new FileOutputStream(outFile);
+        os = new FileOutputStream(outFile);
+        if (gzip) {
+            os = new GZIPOutputStream(os);
+        }
     }
 
     @Override
     public void close() throws IOException {
         result = new Result();
-        if (fos != null) {
-            fos.getChannel().force(true);
-            fos.close();
+        if (os != null) {
+            os.close();
             result.exit = 0;
         } else {
             result.exit = 1;
         }
-        fos = null;
+        os = null;
     }
 
     @Override
     public OutputStream getOutputStream() {
-        return fos;
+        return os;
     }
 
     @Override
