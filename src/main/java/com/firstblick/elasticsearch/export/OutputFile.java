@@ -12,12 +12,12 @@ public class OutputFile extends Output {
     private final String path;
     private OutputStream os;
     private final boolean overwrite;
-    private final boolean gzip;
+    private final boolean compression;
 
-    public OutputFile(String path, boolean overwrite, boolean gzip) {
+    public OutputFile(String path, boolean overwrite, boolean compression) {
         this.path = path;
         this.overwrite = overwrite;
-        this.gzip = gzip;
+        this.compression = compression;
     }
 
     @Override
@@ -27,7 +27,7 @@ public class OutputFile extends Output {
             throw new IOException("File exists: " +  path);
         }
         os = new FileOutputStream(outFile);
-        if (gzip) {
+        if (compression) {
             os = new GZIPOutputStream(os);
         }
     }

@@ -16,7 +16,7 @@ public class OutputCommand extends Output {
     private static final int BUFFER_LEN = 8192;
 
     private final ProcessBuilder builder;
-    private final boolean gzip;
+    private final boolean compression;
     private Process process;
     private Result result;
     private StreamConsumer outputConsumer, errorConsumer;
@@ -26,18 +26,18 @@ public class OutputCommand extends Output {
      * Initialize the process builder with a single command.
      * @param command
      */
-    public OutputCommand(String command, boolean gzip) {
+    public OutputCommand(String command, boolean compression) {
         builder = new ProcessBuilder(command);
-        this.gzip = gzip;
+        this.compression = compression;
     }
 
     /**
      * Initialize the process with a command list.
      * @param cmdArray
      */
-    public OutputCommand(List<String> cmdArray, boolean gzip) {
+    public OutputCommand(List<String> cmdArray, boolean compression) {
         builder = new ProcessBuilder(cmdArray);
-        this.gzip = gzip;
+        this.compression = compression;
     }
 
     /**
@@ -52,7 +52,7 @@ public class OutputCommand extends Output {
         errorConsumer = new StreamConsumer(process.getErrorStream(),
                 BUFFER_LEN);
         os = process.getOutputStream();
-        if (gzip) {
+        if (compression) {
             os = new GZIPOutputStream(os);
         }
     }

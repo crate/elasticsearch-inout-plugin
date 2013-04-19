@@ -2,6 +2,7 @@ package com.firstblick.elasticsearch.action.export.parser;
 
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.search.SearchParseElement;
+import org.elasticsearch.search.SearchParseException;
 import org.elasticsearch.search.internal.SearchContext;
 
 import com.firstblick.elasticsearch.action.export.ExportContext;
@@ -13,7 +14,13 @@ public class ExportCompressionParseElement implements SearchParseElement {
             throws Exception {
         XContentParser.Token token = parser.currentToken();
         if (token.isValue()) {
-            ((ExportContext)context).compression(parser.text());
+            String lower = parser.text().toLowerCase();
+            if (lower.equals("gzip")) {
+                ((ExportContext) context).compression(true);
+            } else if (!lower.isEmpty()) {
+                throw new SearchParseException(context,
+                        "Compression format '" + lower + "' unknown or not supported.");
+            }
         }
     }
 
