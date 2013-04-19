@@ -351,6 +351,31 @@ public class RestExportActionTest extends TestCase {
         assertEquals("{\"name\":\"bus\"}", lines_1.get(0));
     }
 
+    /**
+     * Only the compression format 'gzip' or no compression is supported.
+     */
+    @Test
+    public void testUnsopportedCompressionFormat() {
+        String clusterName = esSetup.client().admin().cluster().prepareHealth().
+                setWaitForGreenStatus().execute().actionGet().getClusterName();
+        String filename_0 = "/tmp/" + clusterName + ".0.users.nocompressexport.gz";
+        String filename_1 = "/tmp/" + clusterName + ".1.users.nocompressexport.gz";
+        new File(filename_0).delete();
+        new File(filename_1).delete();
+        ExportResponse response = executeExportRequest(
+                "{\"output_file\": \"/tmp/${cluster}.${shard}.${index}.lzivexport.gz\", \"fields\": [\"name\", \"_id\"], \"compression\": \"LZIV\"}");
+
+        assertEquals(2, response.getFailedShards());
+        assertTrue(response.getShardFailures()[0].reason().contains(
+                "Compression format 'lziv' unknown or not supported."));
+
+        ExportResponse response2 = executeExportRequest(
+                "{\"output_file\": \"/tmp/${cluster}.${shard}.${index}.nocompressexport.gz\", \"fields\": [\"name\", \"_id\"], \"compression\": \"\"}");
+
+        assertEquals(0, response2.getFailedShards());
+        assertEquals(2, response2.getSuccessfulShards());
+    }
+
     private static List<Map<String, Object>> getExports(ExportResponse resp) {
         Map<String, Object> res = null;
         try {
