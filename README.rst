@@ -33,6 +33,15 @@ by index and shard names (p.e. /tmp/dump-myIndex-0)::
     }
     '
 
+Do GZIP compression on file exports::
+
+    curl -X POST 'http://localhost:9200/_export' -d '{
+        "fields": ["_id", "_source"],
+        "output_file": "/tmp/dump-${index}-${shard}.gz",
+        "compression": "gzip"
+    }
+    '
+
 Pipe the export data through a single argumentless command on the corresponding
 node, like `cat`. This command actually returns the export data in the JSON
 result's stdout field::
@@ -43,13 +52,14 @@ result's stdout field::
     }
     '
 
-Pipe the export data through argumented commands (p.e. a shell script). This
-command will result in writing the zipped data to files on the node's file
-system::
+Pipe the export data through argumented commands (p.e. a shell script, or
+provide your own sophisticated script on the node). This command will
+result in transforming the data to lower case and write the file to the
+node's file system::
 
     curl -X POST 'http://localhost:9200/_export' -d '{
         "fields": ["_id", "_source"],
-        "output_cmd": ["/bin/sh", "-c", "gzip > /tmp/dump-${index}-${shard}.json.gz"]
+        "output_cmd": ["/bin/sh", "-c", "tr [A-Z] [a-z] > /tmp/outputcommand.txt"]
     }
     '
 
@@ -87,7 +97,7 @@ The mapping of fields to export has to be defined with ``"store": true``
 
     "output_cmd": "cat"
 
-    "output_cmd": ["/bin/sh", "-c", "gzip > /tmp/out"]
+    "output_cmd": ["/location/yourcommand", "argument1", "argument2"]
 
 The command to execute. Might be defined as string or as array. The
 content to export will get piped to Stdin of the command to execute.
@@ -124,6 +134,18 @@ make sense if ``output_file`` has been defined.
 Option to evaluate the command to execute (like dry-run).
 
 - Optional (defaults to false)
+
+``compression``
+~~~~~~~~~~~~~~~
+
+    "compression": "gzip"
+
+Option to activate compression to the output. Works both whether
+``output_file`` or ``output_cmd`` has been defined. Currently only the
+``gzip`` compression type is available. Omitting the option will result
+in uncompressed output to files or processes.
+
+- Optional (default is no compression)
 
 ``query``
 ~~~~~~~~~
@@ -215,7 +237,7 @@ request body::
                 "output_cmd" : [
                     "/bin/sh",
                     "-c",
-                    "gzip > /tmp/dump-myIndex-0.json.gz"
+                    "tr [A-Z] [a-z] > /tmp/outputcommand.txt"
                 ],
                 "stderr" : "",
                 "stdout" : "",
