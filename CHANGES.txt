@@ -5,6 +5,8 @@ Changes for Elasticsearch InOut Plugin
 Unreleased
 ==========
 
+ - added support for _version field
+
  - added gzip parameter to export (output_file and output_cmd)
 
 2013/04/19 0.1.0

@@ -19,10 +19,16 @@ import java.util.zip.GZIPInputStream;
 
 import junit.framework.TestCase;
 
+import org.elasticsearch.ElasticSearchException;
+import org.elasticsearch.action.index.IndexResponse;
+import org.elasticsearch.client.Client;
 import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.index.VersionType;
+import org.elasticsearch.index.engine.VersionConflictEngineException;
+import org.elasticsearch.indices.IndexMissingException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -374,6 +380,57 @@ public class RestExportActionTest extends TestCase {
 
         assertEquals(0, response2.getFailedShards());
         assertEquals(2, response2.getSuccessfulShards());
+    }
+
+    /**
+     * The field _version returns the correct version.
+     */
+    @Test
+    public void testVersion() {
+        esSetup.execute(index("users", "d", "2").withSource("{\"name\": \"electric bike\"}"));
+        ExportResponse response = executeExportRequest(
+                "{\"output_cmd\": \"cat\", \"fields\": [\"_id\", \"_version\", \"_source\"]}");
+
+        List<Map<String, Object>> infos = getExports(response);
+        assertEquals(2, infos.size());
+        assertShardInfoCommand(infos.get(1), "users", 0,
+                "{\"_id\":\"4\",\"_version\":1,\"_source\":{\"name\":\"bus\"}}\n{\"_id\":\"2\",\"_version\":2,\"_source\":{\"name\":\"electric bike\"}}\n",
+                "", null);
+
+    }
+
+    /**
+     * External versions can start with 0 and also are able to get exported.
+     */
+    @Test
+    public void testExternalVersion() {
+        Client client = esSetup.client();
+        deleteIndex("test");
+        client.admin().indices().prepareCreate("test").execute().actionGet();
+        client.admin().cluster().prepareHealth("test").setWaitForGreenStatus().execute().actionGet();
+
+        client.prepareIndex("test", "type", "1").setSource("field1", "value1_1").setVersion(
+                0).setVersionType(VersionType.EXTERNAL).execute().actionGet();
+        client.admin().indices().prepareRefresh().execute().actionGet();
+
+        ExportResponse response = executeExportRequest(
+                "{\"output_cmd\": \"cat\", \"fields\": [\"_id\", \"_version\", \"_source\"]}");
+
+        List<Map<String, Object>> infos = getExports(response);
+        assertEquals(3, infos.size());
+        assertEquals(
+                "{\"_id\":\"1\",\"_version\":0,\"_source\":{\"field1\":\"value1_1\"}}\n",
+                infos.get(0).get("stdout"));
+        deleteIndex("test");
+    }
+
+    private boolean deleteIndex(String name) {
+        try {
+            esSetup.client().admin().indices().prepareDelete(name).execute().actionGet();
+        } catch (IndexMissingException e) {
+            return false;
+        }
+        return true;
     }
 
     private static List<Map<String, Object>> getExports(ExportResponse resp) {
