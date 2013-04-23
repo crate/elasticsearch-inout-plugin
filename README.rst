@@ -9,8 +9,8 @@ document type.
 
 The data will get exported as one json object per line::
 
-    {"_id":"id1","_source":{"type":"myObject","value":"value1"}}
-    {"_id":"id2","_source":{"type":"myObject","value":"value2"}}
+    {"_id":"id1","_source":{"type":"myObject","value":"value1"},"_version":1}
+    {"_id":"id2","_source":{"type":"myObject","value":"value2"},"_version":2}
 
 
 Usage
@@ -28,7 +28,7 @@ Export data to files in the node's file system. The filenames will be expanded
 by index and shard names (p.e. /tmp/dump-myIndex-0)::
 
     curl -X POST 'http://localhost:9200/_export' -d '{
-        "fields": ["_id", "_source"],
+        "fields": ["_id", "_source", "_version"],
         "output_file": "/tmp/dump-${index}-${shard}"
     }
     '
@@ -36,7 +36,7 @@ by index and shard names (p.e. /tmp/dump-myIndex-0)::
 Do GZIP compression on file exports::
 
     curl -X POST 'http://localhost:9200/_export' -d '{
-        "fields": ["_id", "_source"],
+        "fields": ["_id", "_source", "_version"],
         "output_file": "/tmp/dump-${index}-${shard}.gz",
         "compression": "gzip"
     }
@@ -47,7 +47,7 @@ node, like `cat`. This command actually returns the export data in the JSON
 result's stdout field::
 
     curl -X POST 'http://localhost:9200/_export' -d '{
-        "fields": ["_id", "_source"],
+        "fields": ["_id", "_source", "_version"],
         "output_cmd": "cat"
     }
     '
@@ -58,7 +58,7 @@ result in transforming the data to lower case and write the file to the
 node's file system::
 
     curl -X POST 'http://localhost:9200/_export' -d '{
-        "fields": ["_id", "_source"],
+        "fields": ["_id", "_source", "_version"],
         "output_cmd": ["/bin/sh", "-c", "tr [A-Z] [a-z] > /tmp/outputcommand.txt"]
     }
     '
@@ -67,7 +67,7 @@ Limit the exported data with a query. The same query syntax as for search can
 be used::
 
     curl -X POST 'http://localhost:9200/_export' -d '{
-        "fields": ["_id", "_source"],
+        "fields": ["_id", "_source", "_version"],
         "output_file": "/tmp/query-${index}-${shard}",
         "query": {
             "match": {
@@ -84,13 +84,23 @@ Elements of the request body
 ``fields``
 ~~~~~~~~~~
 
-A list of fields to export. Each field must be defined in the mapping.
+A list of fields to export. Describes which data is exported for every
+object. A field name can be any property that is defined in the index/type
+mapping with ``"store": "yes"`` or one of the following special fields
+(prefixed with _)::
 
-    "fields": ["name", "address"]
+    * _id: Delivers the ID of the object
+    * _index: Delivers the index of the object
+    * _source: Delivers the stored JSON values of the object
+    * _type: Delivers the document type of the object
+    * _version: Delivers the current version of the object
 
-The mapping of fields to export has to be defined with ``"store": true``
+Example assuming that the properties ``name`` and ``address`` are defined
+in the index/type mapping with the property ``"store": "yes"``::
 
-- Required
+    "fields": ["_id", "name", "address"]
+
+The ``fields`` element is required in the POST data of the request.
 
 ``output_cmd``
 ~~~~~~~~~~~~~~

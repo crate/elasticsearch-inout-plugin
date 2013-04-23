@@ -1,13 +1,14 @@
 package com.firstblick.elasticsearch.action.export.parser;
 
-import com.firstblick.elasticsearch.action.export.ExportContext;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.collect.ImmutableMap;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentHelper;
 import org.elasticsearch.common.xcontent.XContentParser;
-import org.elasticsearch.index.mapper.FieldMappers;
 import org.elasticsearch.search.SearchParseElement;
 import org.elasticsearch.search.SearchParseException;
 import org.elasticsearch.search.fetch.FetchPhase;
@@ -15,8 +16,7 @@ import org.elasticsearch.search.fetch.FieldsParseElement;
 import org.elasticsearch.search.fetch.explain.ExplainParseElement;
 import org.elasticsearch.search.query.QueryPhase;
 
-import java.util.HashMap;
-import java.util.Map;
+import com.firstblick.elasticsearch.action.export.ExportContext;
 
 /**
  * Parser for payload given to _export action.
@@ -44,7 +44,6 @@ public class ExportParser {
      * @param context
      */
     private void validate(ExportContext context) {
-
         if (!context.hasFieldNames()) {
             throw new SearchParseException(context, "No export fields defined");
         }
