@@ -89,8 +89,9 @@ A list of fields to export. Each field must be defined in the mapping.
     "fields": ["name", "address"]
 
 The mapping of fields to export has to be defined with ``"store": true``.
-Unlike the ``_search`` endpoint, the field ``_version`` will always be
-exported without the additional parameter ``"version": true``.
+Unlike the ``_search`` endpoint, the field ``_version`` will also be
+exported if defined as field (without the additional parameter
+``"version": true``).
 
 - Required
 
