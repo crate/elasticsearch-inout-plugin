@@ -47,12 +47,15 @@ public class TransportExportAction extends TransportBroadcastOperationAction<Exp
 
     private final ExportParser exportParser;
 
+    private final Exporter exporter;
+
     @Inject
-    public TransportExportAction(Settings settings, ThreadPool threadPool, ClusterService clusterService, TransportService transportService, IndicesService indicesService, ScriptService scriptService, ExportParser exportParser) {
+    public TransportExportAction(Settings settings, ThreadPool threadPool, ClusterService clusterService, TransportService transportService, IndicesService indicesService, ScriptService scriptService, ExportParser exportParser, Exporter exporter) {
         super(settings, threadPool, clusterService, transportService);
         this.indicesService = indicesService;
         this.scriptService = scriptService;
         this.exportParser = exportParser;
+        this.exporter = exporter;
     }
 
     @Override
@@ -146,7 +149,7 @@ public class TransportExportAction extends TransportBroadcastOperationAction<Exp
                 if (context.explain()) {
                     return new ShardExportResponse(shardTarget.nodeIdText(), request.index(), request.shardId(), context.outputCmd(), context.outputCmdArray(), context.outputFile());
                 } else {
-                    Exporter.Result res = Exporter.execute(context);
+                    Exporter.Result res = exporter.execute(context);
                     return new ShardExportResponse(shardTarget.nodeIdText(), request.index(), request.shardId(), context.outputCmd(), context.outputCmdArray(), context.outputFile(), res.outputResult.stdErr, res.outputResult.stdOut, res.outputResult.exit, res.numExported);
                 }
 

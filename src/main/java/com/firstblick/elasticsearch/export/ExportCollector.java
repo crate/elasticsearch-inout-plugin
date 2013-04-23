@@ -1,6 +1,15 @@
 package com.firstblick.elasticsearch.export;
 
-import com.firstblick.elasticsearch.action.export.ExportContext;
+import static org.elasticsearch.common.collect.Lists.newArrayList;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Collector;
@@ -21,20 +30,16 @@ import org.elasticsearch.index.mapper.DocumentMapper;
 import org.elasticsearch.index.mapper.FieldMappers;
 import org.elasticsearch.index.mapper.internal.SourceFieldMapper;
 import org.elasticsearch.search.SearchHitField;
+import org.elasticsearch.search.fetch.FetchSubPhase;
 import org.elasticsearch.search.internal.InternalSearchHit;
 import org.elasticsearch.search.internal.InternalSearchHitField;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.*;
-
-import static org.elasticsearch.common.collect.Lists.newArrayList;
+import com.firstblick.elasticsearch.action.export.ExportContext;
 
 
 public class ExportCollector extends Collector {
 
     private IndexReader currentReader;
-    private int docBase;
     private long numExported = 0;
     private final FieldsVisitor fieldsVisitor;
     private final ExportContext context;
@@ -43,12 +48,14 @@ public class ExportCollector extends Collector {
     boolean sourceRequested;
     private final ExportFields exportFields;
     private final OutputStream out;
-    private XContentBuilder builder;
+    private AtomicReaderContext arc;
+    private final FetchSubPhase[] fetchSubPhases;
 
     public ExportCollector(ExportContext context,
-                           OutputStream os) {
+                           OutputStream os, FetchSubPhase[] fetchSubPhases) {
         this.out = os;
         this.context = context;
+        this.fetchSubPhases = fetchSubPhases;
         this.exportFields = new ExportFields(context.fieldNames());
         sourceRequested = false;
 
@@ -106,19 +113,12 @@ public class ExportCollector extends Collector {
                 fieldsVisitor = new JustUidFieldsVisitor();
             }
         }
-
-
-        //new XContentBuilder
-        //        (XContentFactory
-        //        .xContent(XContentType.JSON), cachedEntry.bytes(),
-        //        cachedEntry);
-
     }
 
     @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
+        this.arc = context;
         this.currentReader = context.reader();
-        this.docBase = context.docBase;
     }
 
     @Override
@@ -160,6 +160,15 @@ public class ExportCollector extends Collector {
                 fieldsVisitor.uid().id(), typeText,
                 sourceRequested ? fieldsVisitor.source() : null,
                 searchFields);
+
+        for (FetchSubPhase fetchSubPhase : fetchSubPhases) {
+            FetchSubPhase.HitContext hitContext = new FetchSubPhase.HitContext();
+            if (fetchSubPhase.hitExecutionNeeded(context)) {
+                hitContext.reset(searchHit, arc, doc, context.searcher().getIndexReader(), doc, fieldsVisitor);
+                fetchSubPhase.hitExecute(context, hitContext);
+            }
+        }
+
         searchHit.shardTarget(context.shardTarget());
         exportFields.hit(searchHit);
         CachedStreamOutput.Entry cachedEntry = CachedStreamOutput.popEntry();

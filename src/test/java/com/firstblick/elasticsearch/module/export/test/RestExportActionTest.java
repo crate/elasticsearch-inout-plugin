@@ -376,6 +376,23 @@ public class RestExportActionTest extends TestCase {
         assertEquals(2, response2.getSuccessfulShards());
     }
 
+    /**
+     * The field _version returns the correct version.
+     */
+    @Test
+    public void testVersion() {
+        esSetup.execute(index("users", "d", "2").withSource("{\"name\": \"electric bike\"}"));
+        ExportResponse response = executeExportRequest(
+                "{\"output_cmd\": \"cat\", \"fields\": [\"_id\", \"_version\", \"_source\"]}");
+
+        List<Map<String, Object>> infos = getExports(response);
+        assertEquals(2, infos.size());
+        assertShardInfoCommand(infos.get(1), "users", 0,
+                "{\"_id\":\"4\",\"_version\":1,\"_source\":{\"name\":\"bus\"}}\n{\"_id\":\"2\",\"_version\":2,\"_source\":{\"name\":\"electric bike\"}}\n",
+                "", null);
+
+    }
+
     private static List<Map<String, Object>> getExports(ExportResponse resp) {
         Map<String, Object> res = null;
         try {
