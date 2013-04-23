@@ -405,7 +405,7 @@ public class RestExportActionTest extends TestCase {
     @Test
     public void testExternalVersion() {
         Client client = esSetup.client();
-        deleteIndice("test");
+        deleteIndex("test");
         client.admin().indices().prepareCreate("test").execute().actionGet();
         client.admin().cluster().prepareHealth("test").setWaitForGreenStatus().execute().actionGet();
 
@@ -421,10 +421,10 @@ public class RestExportActionTest extends TestCase {
         assertEquals(
                 "{\"_id\":\"1\",\"_version\":0,\"_source\":{\"field1\":\"value1_1\"}}\n",
                 infos.get(0).get("stdout"));
-        deleteIndice("test");
+        deleteIndex("test");
     }
 
-    private boolean deleteIndice(String name) {
+    private boolean deleteIndex(String name) {
         try {
             esSetup.client().admin().indices().prepareDelete(name).execute().actionGet();
         } catch (IndexMissingException e) {
