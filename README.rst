@@ -84,16 +84,23 @@ Elements of the request body
 ``fields``
 ~~~~~~~~~~
 
-A list of fields to export. Each field must be defined in the mapping.
+A list of fields to export. Describes which data is exported for every
+object. A field name can be any property that is defined in the index/type
+mapping with ``"store": "yes"`` or one of the following special fields
+(prefixed with _)::
 
-    "fields": ["name", "address"]
+    * _id: Delivers the ID of the object
+    * _index: Delivers the index of the object
+    * _source: Delivers the stored JSON values of the object
+    * _type: Delivers the document type of the object
+    * _version: Delivers the current version of the object
 
-The mapping of fields to export has to be defined with ``"store": true``.
-Unlike the ``_search`` endpoint, the field ``_version`` will also be
-exported if defined as field (without the additional parameter
-``"version": true``).
+Example assuming that the properties ``name`` and ``address`` are defined
+in the index/type mapping with the property ``"store": "yes"``::
 
-- Required
+    "fields": ["_id", "name", "address"]
+
+The ``fields`` element is required in the POST data of the request.
 
 ``output_cmd``
 ~~~~~~~~~~~~~~
