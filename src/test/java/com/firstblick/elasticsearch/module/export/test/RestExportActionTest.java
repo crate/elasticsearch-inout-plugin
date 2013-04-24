@@ -21,13 +21,9 @@ import java.util.zip.GZIPInputStream;
 import junit.framework.TestCase;
 
 import org.elasticsearch.client.Client;
-import org.elasticsearch.cluster.metadata.MappingMetaData.Timestamp;
-import org.elasticsearch.common.collect.Tuple;
-import org.elasticsearch.common.jackson.core.JsonParser;
 import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
-import org.elasticsearch.common.xcontent.XContentHelper;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.VersionType;
 import org.elasticsearch.indices.IndexMissingException;
@@ -491,6 +487,38 @@ public class RestExportActionTest extends TestCase {
         long ttl = Long.valueOf(lsplit.substring(0, lsplit.length() - 2));
         long diff = ttl - now.getTime();
         assertTrue(diff < 86400000 && diff > 86390000);
+    }
+
+
+    /**
+     * The _index and _type fields can be fetched for every object.
+     */
+    @Test
+    public void testIndexAndType() {
+        ExportResponse response = executeExportRequest(
+                "{\"output_cmd\": \"cat\", \"fields\": [\"_id\", \"_type\", \"_index\"]}");
+        List<Map<String, Object>> infos = getExports(response);
+        assertEquals("{\"_id\":\"2\",\"_type\":\"d\",\"_index\":\"users\"}\n" +
+                "{\"_id\":\"4\",\"_type\":\"d\",\"_index\":\"users\"}\n",
+                infos.get(1).get("stdout"));
+    }
+
+    /**
+     * The _routing field delivers the routing value if one is given.
+     */
+    @Test
+    public void testRouting() {
+        Client client = esSetup.client();
+        client.prepareIndex("users", "d", "1").setSource("field1", "value1").setRouting("2").execute().actionGet();
+        client.admin().indices().prepareRefresh().execute().actionGet();
+
+        ExportResponse response = executeExportRequest(
+                "{\"output_cmd\": \"cat\", \"fields\": [\"_id\", \"_source\", \"_routing\"]}");
+        List<Map<String, Object>> infos = getExports(response);
+        assertEquals("{\"_id\":\"2\",\"_source\":{\"name\":\"bike\"}}\n" +
+                "{\"_id\":\"4\",\"_source\":{\"name\":\"bus\"}}\n" +
+                "{\"_id\":\"1\",\"_source\":{\"field1\":\"value1\"},\"_routing\":\"2\"}\n",
+                infos.get(1).get("stdout"));
     }
 
     private boolean deleteIndex(String name) {
