@@ -87,13 +87,18 @@ Elements of the request body
 A list of fields to export. Describes which data is exported for every
 object. A field name can be any property that is defined in the index/type
 mapping with ``"store": "yes"`` or one of the following special fields
-(prefixed with _)::
+(prefixed with _):
 
-    * _id: Delivers the ID of the object
-    * _index: Delivers the index of the object
-    * _source: Delivers the stored JSON values of the object
-    * _type: Delivers the document type of the object
-    * _version: Delivers the current version of the object
+* ``_id``: Delivers the ID of the object
+* ``_index``: Delivers the index of the object
+* ``_source``: Delivers the stored JSON values of the object
+* ``_timestamp``: Delivers the time stamp when the object was created (or the
+  externally provided timestamp). Works only if the _timestamp field is enabled
+  and set to ``"store": "yes"`` in the index/type mapping of the object.
+* ``_ttl``: Delivers the expiration time stamp of the object if the _ttl field
+  is enabled in the index/type mapping.
+* ``_type``: Delivers the document type of the object
+* ``_version``: Delivers the current version of the object
 
 Example assuming that the properties ``name`` and ``address`` are defined
 in the index/type mapping with the property ``"store": "yes"``::

@@ -13,21 +13,23 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
 
 import junit.framework.TestCase;
 
-import org.elasticsearch.ElasticSearchException;
-import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.cluster.metadata.MappingMetaData.Timestamp;
+import org.elasticsearch.common.collect.Tuple;
+import org.elasticsearch.common.jackson.core.JsonParser;
 import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
+import org.elasticsearch.common.xcontent.XContentHelper;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.VersionType;
-import org.elasticsearch.index.engine.VersionConflictEngineException;
 import org.elasticsearch.indices.IndexMissingException;
 import org.junit.After;
 import org.junit.Before;
@@ -422,6 +424,73 @@ public class RestExportActionTest extends TestCase {
                 "{\"_id\":\"1\",\"_version\":0,\"_source\":{\"field1\":\"value1_1\"}}\n",
                 infos.get(0).get("stdout"));
         deleteIndex("test");
+    }
+
+    /**
+     * The _timestamp field is not returned if the mapping does not store the timestamps.
+     */
+    @Test
+    public void testTimestampNotStored() {
+        ExportResponse response = executeExportRequest(
+                "{\"output_cmd\": \"cat\", \"fields\": [\"_id\", \"_timestamp\"]}");
+        List<Map<String, Object>> infos = getExports(response);
+        assertEquals("{\"_id\":\"1\"}\n{\"_id\":\"3\"}\n", infos.get(0).get("stdout"));
+    }
+
+    /**
+     * Create a mapping with "_timestamp": {"enabled": true, "store": "yes"} to get it
+     * as a field.
+     */
+    @Test
+    public void testTimestampStored(){
+        esSetup.execute(deleteAll(), createIndex("tsstored").withSettings(
+                fromClassPath("essetup/settings/test_a.json")).withMapping("d",
+                        "{\"d\": {\"_timestamp\": {\"enabled\": true, \"store\": \"yes\"}}}"));
+        Client client = esSetup.client();
+        client.prepareIndex("tsstored", "d", "1").setSource(
+                "field1", "value1").setTimestamp("123").execute().actionGet();
+        client.admin().indices().prepareRefresh().execute().actionGet();
+
+        ExportResponse response = executeExportRequest(
+                "{\"output_cmd\": \"cat\", \"fields\": [\"_id\", \"_timestamp\"]}");
+
+        List<Map<String, Object>> infos = getExports(response);
+        assertEquals("{\"_id\":\"1\",\"_timestamp\":123}\n", infos.get(1).get("stdout"));
+    }
+
+    /**
+     * If _ttl is not enabled in the mapping, the _ttl field is not in the output.
+     */
+    public void testTTLNotEnabled() {
+        ExportResponse response = executeExportRequest(
+                "{\"output_cmd\": \"cat\", \"fields\": [\"_id\", \"_ttl\"]}");
+        List<Map<String, Object>> infos = getExports(response);
+        assertEquals("{\"_id\":\"1\"}\n{\"_id\":\"3\"}\n", infos.get(0).get("stdout"));
+    }
+
+    /**
+     * If _ttl is enabled in the mapping, the _ttl field delivers the time stamp
+     * when the object is expired.
+     */
+    @Test
+    public void testTTLEnabled() {
+        esSetup.execute(deleteAll(), createIndex("ttlenabled").withSettings(
+                fromClassPath("essetup/settings/test_a.json")).withMapping("d",
+                        "{\"d\": {\"_ttl\": {\"enabled\": true, \"default\": \"1d\"}}}"));
+        Client client = esSetup.client();
+        client.prepareIndex("ttlenabled", "d", "1").setSource("field1", "value1").execute().actionGet();
+        client.admin().indices().prepareRefresh().execute().actionGet();
+
+        Date now = new Date();
+        ExportResponse response = executeExportRequest(
+                "{\"output_cmd\": \"cat\", \"fields\": [\"_id\", \"_ttl\"]}");
+        List<Map<String, Object>> infos = getExports(response);
+        String stdout = infos.get(1).get("stdout").toString();
+        assertTrue(stdout.startsWith("{\"_id\":\"1\",\"_ttl\":"));
+        String lsplit  = stdout.substring(18);
+        long ttl = Long.valueOf(lsplit.substring(0, lsplit.length() - 2));
+        long diff = ttl - now.getTime();
+        assertTrue(diff < 86400000 && diff > 86390000);
     }
 
     private boolean deleteIndex(String name) {
