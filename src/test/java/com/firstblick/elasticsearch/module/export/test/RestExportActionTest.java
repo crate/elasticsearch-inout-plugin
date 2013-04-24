@@ -19,15 +19,12 @@ import java.util.zip.GZIPInputStream;
 
 import junit.framework.TestCase;
 
-import org.elasticsearch.ElasticSearchException;
-import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.VersionType;
-import org.elasticsearch.index.engine.VersionConflictEngineException;
 import org.elasticsearch.indices.IndexMissingException;
 import org.junit.After;
 import org.junit.Before;
@@ -422,6 +419,40 @@ public class RestExportActionTest extends TestCase {
                 "{\"_id\":\"1\",\"_version\":0,\"_source\":{\"field1\":\"value1_1\"}}\n",
                 infos.get(0).get("stdout"));
         deleteIndex("test");
+    }
+
+    /**
+     * The _timestamp field is not returned if the mapping does not store the timestamps.
+     */
+    @Test
+    public void testTimestampNotStored() {
+        ExportResponse response = executeExportRequest(
+                "{\"output_cmd\": \"cat\", \"fields\": [\"_id\", \"_timestamp\"]}");
+
+        List<Map<String, Object>> infos = getExports(response);
+        assertEquals("{\"_id\":\"1\"}\n{\"_id\":\"3\"}\n", infos.get(0).get("stdout"));
+    }
+
+    /**
+     * Create a mapping with "_timestamp": {"enabled": true, "store": "yes"} to get it
+     * as a field.
+     */
+    @Test
+    public void testTimestampStored(){
+        esSetup.execute(deleteAll(), createIndex("tsstored").withSettings(
+                fromClassPath("essetup/settings/test_a.json")).withMapping("d",
+                        "{\"d\": {\"_timestamp\": {\"enabled\": true, \"store\": \"yes\"}}}"));
+        Client client = esSetup.client();
+        client.prepareIndex("tsstored", "d", "1").setSource(
+                "field1", "value1").setTimestamp("123").execute().actionGet();
+        client.admin().indices().prepareRefresh().execute().actionGet();
+
+        ExportResponse response = executeExportRequest(
+                "{\"output_cmd\": \"cat\", \"fields\": [\"_id\", \"_timestamp\"]}");
+
+        List<Map<String, Object>> infos = getExports(response);
+        System.out.println(infos);
+        assertEquals("{\"_id\":\"1\",\"_timestamp\":123}\n", infos.get(1).get("stdout"));
     }
 
     private boolean deleteIndex(String name) {
