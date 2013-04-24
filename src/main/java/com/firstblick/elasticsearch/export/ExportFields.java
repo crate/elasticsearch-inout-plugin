@@ -2,6 +2,8 @@ package com.firstblick.elasticsearch.export;
 
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.xcontent.*;
+import org.elasticsearch.index.mapper.internal.TTLFieldMapper;
+import org.elasticsearch.index.mapper.internal.TimestampFieldMapper;
 import org.elasticsearch.search.SearchHitField;
 import org.elasticsearch.search.internal.InternalSearchHit;
 
@@ -21,6 +23,8 @@ public class ExportFields implements ToXContent {
         static final XContentBuilderString _INDEX = new XContentBuilderString("_index");
         static final XContentBuilderString _ID = new XContentBuilderString("_id");
         static final XContentBuilderString _VERSION = new XContentBuilderString("_version");
+        static final XContentBuilderString _TIMESTAMP = new XContentBuilderString(TimestampFieldMapper.NAME);
+        static final XContentBuilderString _TTL = new XContentBuilderString(TTLFieldMapper.NAME);
     }
 
     abstract class FieldExtractor implements ToXContent {
