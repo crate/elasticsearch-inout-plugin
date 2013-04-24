@@ -91,6 +91,7 @@ mapping with ``"store": "yes"`` or one of the following special fields
 
 * ``_id``: Delivers the ID of the object
 * ``_index``: Delivers the index of the object
+* ``_routing``: Delivers the routing value of the object
 * ``_source``: Delivers the stored JSON values of the object
 * ``_timestamp``: Delivers the time stamp when the object was created (or the
   externally provided timestamp). Works only if the _timestamp field is enabled
