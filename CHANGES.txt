@@ -5,6 +5,8 @@ Changes for Elasticsearch InOut Plugin
 Unreleased
 ==========
 
+ - added basic _import endpoints with node distribution
+
  - added support for _ttl and _timestamp fields
 
  - added support for _version field
