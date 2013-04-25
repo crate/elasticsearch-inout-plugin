@@ -109,7 +109,6 @@ public class TransportExportAction extends TransportBroadcastOperationAction<Exp
     protected ExportResponse newResponse(ExportRequest request, AtomicReferenceArray shardsResponses, ClusterState clusterState) {
         int successfulShards = 0;
         int failedShards = 0;
-        long count = 0;
         List<ShardOperationFailedException> shardFailures = null;
         List<ShardExportResponse> responses = new ArrayList<ShardExportResponse>();
         for (int i = 0; i < shardsResponses.length(); i++) {

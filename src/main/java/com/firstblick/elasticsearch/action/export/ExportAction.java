@@ -11,7 +11,7 @@ import org.elasticsearch.client.Client;
 public class ExportAction extends Action<ExportRequest, ExportResponse, ExportRequestBuilder> {
 
     public static final ExportAction INSTANCE = new ExportAction();
-    public static final String NAME = "el-fb-export";
+    public static final String NAME = "el-crate-export";
 
     private ExportAction() {
         super(NAME);
