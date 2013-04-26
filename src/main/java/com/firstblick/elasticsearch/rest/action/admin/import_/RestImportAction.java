@@ -1,4 +1,4 @@
-package com.firstblick.elasticsearch.rest.action.admin.imports;
+package com.firstblick.elasticsearch.rest.action.admin.import_;
 
 import static org.elasticsearch.rest.RestRequest.Method.POST;
 import static org.elasticsearch.rest.RestStatus.BAD_REQUEST;
@@ -22,9 +22,9 @@ import org.elasticsearch.rest.XContentThrowableRestResponse;
 import org.elasticsearch.rest.action.support.RestActions;
 import org.elasticsearch.rest.action.support.RestXContentBuilder;
 
-import com.firstblick.elasticsearch.action.imports.ImportAction;
-import com.firstblick.elasticsearch.action.imports.ImportRequest;
-import com.firstblick.elasticsearch.action.imports.ImportResponse;
+import com.firstblick.elasticsearch.action.import_.ImportAction;
+import com.firstblick.elasticsearch.action.import_.ImportRequest;
+import com.firstblick.elasticsearch.action.import_.ImportResponse;
 
 public class RestImportAction extends BaseRestHandler {
 

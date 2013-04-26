@@ -1,9 +1,9 @@
-package com.firstblick.elasticsearch.action.imports;
+package com.firstblick.elasticsearch.action.import_;
 
 import org.elasticsearch.action.Action;
 import org.elasticsearch.client.Client;
 
-import com.firstblick.elasticsearch.client.action.imports.ImportRequestBuilder;
+import com.firstblick.elasticsearch.client.action.import_.ImportRequestBuilder;
 
 public class ImportAction extends Action<ImportRequest, ImportResponse, ImportRequestBuilder> {
 

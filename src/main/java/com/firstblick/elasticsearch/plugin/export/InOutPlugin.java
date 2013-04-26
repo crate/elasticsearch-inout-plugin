@@ -8,9 +8,9 @@ import org.elasticsearch.plugins.AbstractPlugin;
 import org.elasticsearch.rest.RestModule;
 
 import com.firstblick.elasticsearch.module.export.ExportModule;
-import com.firstblick.elasticsearch.module.imports.ImportModule;
+import com.firstblick.elasticsearch.module.import_.ImportModule;
 import com.firstblick.elasticsearch.rest.action.admin.export.RestExportAction;
-import com.firstblick.elasticsearch.rest.action.admin.imports.RestImportAction;
+import com.firstblick.elasticsearch.rest.action.admin.import_.RestImportAction;
 
 
 public class InOutPlugin extends AbstractPlugin {

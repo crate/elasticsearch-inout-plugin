@@ -1,12 +1,12 @@
-package com.firstblick.elasticsearch.module.imports;
+package com.firstblick.elasticsearch.module.import_;
 
 import org.elasticsearch.action.GenericAction;
 import org.elasticsearch.action.support.TransportAction;
 import org.elasticsearch.common.inject.AbstractModule;
 import org.elasticsearch.common.inject.multibindings.MapBinder;
 
-import com.firstblick.elasticsearch.action.imports.ImportAction;
-import com.firstblick.elasticsearch.action.imports.TransportImportAction;
+import com.firstblick.elasticsearch.action.import_.ImportAction;
+import com.firstblick.elasticsearch.action.import_.TransportImportAction;
 
 public class ImportModule extends AbstractModule {
 

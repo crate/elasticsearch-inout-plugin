@@ -1,4 +1,4 @@
-package com.firstblick.elasticsearch.action.imports;
+package com.firstblick.elasticsearch.action.import_;
 
 import java.io.IOException;
 

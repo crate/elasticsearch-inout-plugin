@@ -1,13 +1,13 @@
-package com.firstblick.elasticsearch.client.action.imports;
+package com.firstblick.elasticsearch.client.action.import_;
 
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.ActionRequestBuilder;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.internal.InternalClient;
 
-import com.firstblick.elasticsearch.action.imports.ImportAction;
-import com.firstblick.elasticsearch.action.imports.ImportRequest;
-import com.firstblick.elasticsearch.action.imports.ImportResponse;
+import com.firstblick.elasticsearch.action.import_.ImportAction;
+import com.firstblick.elasticsearch.action.import_.ImportRequest;
+import com.firstblick.elasticsearch.action.import_.ImportResponse;
 
 public class ImportRequestBuilder extends ActionRequestBuilder<ImportRequest, ImportResponse, ImportRequestBuilder> {
 
