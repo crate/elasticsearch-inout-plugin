@@ -53,10 +53,8 @@ public class RestImportAction extends BaseRestHandler {
                     }
                 }
             }
-            importRequest.routing(request.param("routing"));
-            importRequest.index(splitTypes(request.param("index")));
-            importRequest.types(splitTypes(request.param("type")));
-            importRequest.preference(request.param("preference", "_primary"));
+            importRequest.index(request.param("index"));
+            importRequest.types(request.param("type"));
         } catch (Exception e) {
             try {
                 XContentBuilder builder = RestXContentBuilder.restContentBuilder(request);
