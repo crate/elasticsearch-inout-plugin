@@ -7,12 +7,17 @@ import org.elasticsearch.common.inject.multibindings.MapBinder;
 
 import com.firstblick.elasticsearch.action.import_.ImportAction;
 import com.firstblick.elasticsearch.action.import_.TransportImportAction;
+import com.firstblick.elasticsearch.action.import_.parser.ImportParser;
+import com.firstblick.elasticsearch.import_.Importer;
 
 public class ImportModule extends AbstractModule {
 
     @Override
     protected void configure() {
         bind(TransportImportAction.class).asEagerSingleton();
+
+        bind(ImportParser.class).asEagerSingleton();
+        bind(Importer.class).asEagerSingleton();
 
         MapBinder<GenericAction, TransportAction> transportActionsBinder = MapBinder.newMapBinder(binder(), GenericAction.class, TransportAction.class);
         transportActionsBinder.addBinding(ImportAction.INSTANCE).to(TransportImportAction.class).asEagerSingleton();

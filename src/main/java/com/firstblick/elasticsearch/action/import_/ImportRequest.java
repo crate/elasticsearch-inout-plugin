@@ -47,7 +47,7 @@ public class ImportRequest extends NodesOperationRequest<ImportRequest> {
         return this.type;
     }
 
-    public void types(String type) {
+    public void type(String type) {
         this.type = type;
     }
 
@@ -62,11 +62,17 @@ public class ImportRequest extends NodesOperationRequest<ImportRequest> {
     @Override
     public void readFrom(StreamInput in) throws IOException {
         super.readFrom(in);
+        index = in.readOptionalString();
+        type = in.readOptionalString();
+        source = in.readBytesReference();
     }
 
     @Override
     public void writeTo(StreamOutput out) throws IOException {
         super.writeTo(out);
+        out.writeOptionalString(index);
+        out.writeOptionalString(type);
+        out.writeBytesReference(source);
     }
 
 }

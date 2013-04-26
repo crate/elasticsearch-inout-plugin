@@ -34,13 +34,11 @@ import org.junit.Test;
 import com.firstblick.elasticsearch.action.export.ExportAction;
 import com.firstblick.elasticsearch.action.export.ExportRequest;
 import com.firstblick.elasticsearch.action.export.ExportResponse;
-import com.firstblick.elasticsearch.rest.action.admin.export.RestExportAction;
 import com.github.tlrx.elasticsearch.test.EsSetup;
 
 public class RestExportActionTest extends TestCase {
 
     EsSetup esSetup;
-    RestExportAction restExportAction;
 
     @Before
     public void setUp() {

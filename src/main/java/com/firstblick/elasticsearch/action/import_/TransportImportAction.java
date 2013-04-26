@@ -2,25 +2,37 @@ package com.firstblick.elasticsearch.action.import_;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import org.elasticsearch.ElasticSearchException;
+import org.elasticsearch.action.FailedNodeException;
 import org.elasticsearch.action.support.nodes.TransportNodesOperationAction;
 import org.elasticsearch.cluster.ClusterName;
 import org.elasticsearch.cluster.ClusterService;
+import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.transport.TransportService;
 
+import com.firstblick.elasticsearch.action.import_.parser.ImportParser;
+import com.firstblick.elasticsearch.import_.Importer;
+import static org.elasticsearch.common.collect.Lists.newArrayList;
+
 public class TransportImportAction extends TransportNodesOperationAction<ImportRequest, ImportResponse, NodeImportRequest, NodeImportResponse>{
+
+    private ImportParser importParser;
+
+    private Importer importer;
 
     @Inject
     public TransportImportAction(Settings settings, ClusterName clusterName,
             ThreadPool threadPool, ClusterService clusterService,
-            TransportService transportService) {
+            TransportService transportService, ImportParser importParser,
+            Importer importer) {
         super(settings, clusterName, threadPool, clusterService, transportService);
+        this.importParser = importParser;
+        this.importer = importer;
     }
 
     @Override
@@ -44,17 +56,24 @@ public class TransportImportAction extends TransportNodesOperationAction<ImportR
         int total = nodesResponses.length();
         int successfulNodes = 0;
         int failedNodes = 0;
+        List<FailedNodeException> nodeFailures = null;
         List<NodeImportResponse> responses = new ArrayList<NodeImportResponse>();
         for (int i=0; i < total; i++) {
             Object nodeResponse = nodesResponses.get(i);
             if (nodeResponse == null) {
                 failedNodes++;
+            } else if (nodeResponse instanceof FailedNodeException) {
+                failedNodes++;
+                if (nodeFailures == null) {
+                    nodeFailures = newArrayList();
+                }
+                nodeFailures.add((FailedNodeException) nodeResponse);
             } else {
                 responses.add((NodeImportResponse) nodeResponse);
                 successfulNodes++;
             }
         }
-        return new ImportResponse(responses, total, successfulNodes, failedNodes);
+        return new ImportResponse(responses, total, successfulNodes, failedNodes, nodeFailures);
     }
 
     /**
@@ -85,11 +104,16 @@ public class TransportImportAction extends TransportNodesOperationAction<ImportR
     @Override
     protected NodeImportResponse nodeOperation(NodeImportRequest request)
             throws ElasticSearchException {
+        ImportContext context = new ImportContext();
+
+        BytesReference source = request.source();
+        importParser.parseSource(context, source);
+        importer.execute(context);
         return new NodeImportResponse(clusterService.state().nodes().localNode());
     }
 
     @Override
     protected boolean accumulateExceptions() {
-        return false;
+        return true;
     }
 }
