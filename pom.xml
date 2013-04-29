@@ -3,7 +3,7 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <name>elasticsearch-inout-plugin</name>
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>com.crate</groupId>
+	<groupId>crate</groupId>
 	<artifactId>elasticsearch-inout-plugin</artifactId>
 	<version>0.1.0</version>
     <packaging>jar</packaging>
