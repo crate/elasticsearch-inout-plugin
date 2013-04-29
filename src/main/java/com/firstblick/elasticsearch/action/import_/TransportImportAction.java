@@ -1,5 +1,8 @@
 package com.firstblick.elasticsearch.action.import_;
 
+import static org.elasticsearch.common.collect.Lists.newArrayList;
+
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReferenceArray;
@@ -12,12 +15,12 @@ import org.elasticsearch.cluster.ClusterService;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.transport.TransportService;
 
 import com.firstblick.elasticsearch.action.import_.parser.ImportParser;
 import com.firstblick.elasticsearch.import_.Importer;
-import static org.elasticsearch.common.collect.Lists.newArrayList;
 
 public class TransportImportAction extends TransportNodesOperationAction<ImportRequest, ImportResponse, NodeImportRequest, NodeImportResponse>{
 
@@ -28,8 +31,7 @@ public class TransportImportAction extends TransportNodesOperationAction<ImportR
     @Inject
     public TransportImportAction(Settings settings, ClusterName clusterName,
             ThreadPool threadPool, ClusterService clusterService,
-            TransportService transportService, ImportParser importParser,
-            Importer importer) {
+            TransportService transportService, ImportParser importParser, Importer importer) {
         super(settings, clusterName, threadPool, clusterService, transportService);
         this.importParser = importParser;
         this.importer = importer;
@@ -68,6 +70,8 @@ public class TransportImportAction extends TransportNodesOperationAction<ImportR
                     nodeFailures = newArrayList();
                 }
                 nodeFailures.add((FailedNodeException) nodeResponse);
+            } else if (nodeResponse instanceof Exception) {
+                ((Exception) nodeResponse).getMessage();
             } else {
                 responses.add((NodeImportResponse) nodeResponse);
                 successfulNodes++;
@@ -108,8 +112,8 @@ public class TransportImportAction extends TransportNodesOperationAction<ImportR
 
         BytesReference source = request.source();
         importParser.parseSource(context, source);
-        importer.execute(context);
-        return new NodeImportResponse(clusterService.state().nodes().localNode());
+        Importer.Result result = importer.execute(context, request);
+        return new NodeImportResponse(clusterService.state().nodes().localNode(), result);
     }
 
     @Override
