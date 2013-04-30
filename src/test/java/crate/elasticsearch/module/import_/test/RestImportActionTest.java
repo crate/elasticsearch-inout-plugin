@@ -218,6 +218,25 @@ public class RestImportActionTest extends TestCase {
     }
 
     /**
+     * With the compression flag set to 'gzip' zipped files will be unzipped before
+     * importing.
+     */
+    @Test
+    public void testCompression() {
+        String path = getClass().getResource("import_7").getPath();
+        ImportResponse response = executeImportRequest("{\"directory\": \"" + path + "\", \"compression\":\"gzip\"}");
+        List<Map<String, Object>> imports = getImports(response);
+        assertEquals(1, imports.size());
+        Map<String, Object> nodeInfo = imports.get(0);
+        assertNotNull(nodeInfo.get("node_id"));
+        assertTrue(Long.valueOf(nodeInfo.get("took").toString()) > 0);
+        assertEquals("[{file_name=import_7.json.gz, successes=2, failures=0}]",
+                nodeInfo.get("imported_files").toString());
+        assertTrue(existsWithField("102", "name", "102"));
+        assertTrue(existsWithField("103", "name", "103"));
+    }
+
+    /**
      * Set up a second node and wait  for green status
      */
     private void setUpSecondNode() {

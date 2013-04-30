@@ -19,6 +19,7 @@ public class ImportParser {
     public ImportParser() {
         Map<String, ImportParseElement> elementParsers = new HashMap<String, ImportParseElement>();
         elementParsers.put("directory", new DirectoryParseElement());
+        elementParsers.put("compression", new ImportCompressionParseElement());
         this.elementParsers = ImmutableMap.copyOf(elementParsers);
     }
 

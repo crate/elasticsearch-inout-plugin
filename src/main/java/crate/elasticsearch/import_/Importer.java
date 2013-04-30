@@ -2,13 +2,16 @@ package crate.elasticsearch.import_;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.zip.GZIPInputStream;
 
 import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.ElasticSearchParseException;
@@ -65,7 +68,7 @@ public class Importer {
         File dir = new File(context.directory());
         if (dir.isDirectory()) {
             for (File file : dir.listFiles()) {
-                ImportCounts counts = handleFile(file, index, type, bulkSize);
+                ImportCounts counts = handleFile(file, index, type, bulkSize, context.compression());
                 if (counts != null) {
                     result.importCounts.add(counts);
                 }
@@ -75,7 +78,7 @@ public class Importer {
         return result;
     }
 
-    private ImportCounts handleFile(File file, String index, String type, int bulkSize) {
+    private ImportCounts handleFile(File file, String index, String type, int bulkSize, boolean compression) {
         if (file.isFile() && file.canRead()) {
             ImportBulkListener bulkListener = new ImportBulkListener(file.getName());
             BulkProcessor bulkProcessor = BulkProcessor.builder(client, bulkListener)
@@ -85,7 +88,13 @@ public class Importer {
                     .setConcurrentRequests(concurrentRequests)
                     .build();
             try {
-                BufferedReader r = new BufferedReader(new FileReader(file));
+                BufferedReader r;
+                if (compression) {
+                    GZIPInputStream is = new GZIPInputStream(new FileInputStream(file));
+                    r = new BufferedReader(new InputStreamReader(is));
+                } else {
+                    r = new BufferedReader(new FileReader(file));
+                }
                 String line;
                 while ((line = r.readLine()) != null) {
                     IndexRequest indexRequest;
