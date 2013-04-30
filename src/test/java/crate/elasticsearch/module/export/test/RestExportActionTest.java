@@ -331,6 +331,7 @@ public class RestExportActionTest extends TestCase {
         assertEquals(0, response.getFailedShards());
         List<Map<String, Object>> infos = getExports(response);
         assertNotSame(infos.get(0).get("node"), infos.get(1).get("node"));
+        esSetup2.terminate();
     }
 
     /**
