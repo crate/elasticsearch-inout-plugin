@@ -9,6 +9,7 @@ import org.elasticsearch.common.io.stream.StreamOutput;
 
 public class NodeImportRequest  extends NodeOperationRequest {
 
+    public static final int DEFAULT_BULK_SIZE = 10000;
 
     private BytesReference source;
     private String index;
@@ -50,5 +51,9 @@ public class NodeImportRequest  extends NodeOperationRequest {
 
     public String type() {
         return type;
+    }
+
+    public int bulkSize() {
+        return DEFAULT_BULK_SIZE;
     }
 }

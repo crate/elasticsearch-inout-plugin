@@ -8,17 +8,17 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
-import org.elasticsearch.ElasticSearchException;
-import org.elasticsearch.action.bulk.BulkItemResponse;
-import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.bulk.BulkProcessor;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexRequest.OpType;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.client.Requests;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.inject.Injector;
+import org.elasticsearch.common.unit.ByteSizeUnit;
+import org.elasticsearch.common.unit.ByteSizeValue;
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentParser;
@@ -38,36 +38,12 @@ import crate.elasticsearch.action.import_.NodeImportRequest;
 
 public class Importer {
 
-    public static class IndexedObject {
-        public final static String opType = "index";
-        public String _index;
-        public String _type;
-        public String _id;
-        public long  _version;
-        public boolean ok;
-        public String error;
-    }
-
-    public static class HandledFile {
-        public String fileName;
-    }
-
-    public static class ImportedFile extends HandledFile {
-        public long took;
-        public List<IndexedObject> items;
-    }
-
-    public static class FailedFile extends HandledFile {
-        public String error;
-    }
-
-    public static class Result {
-        public List<ImportedFile> importedFiles = new ArrayList<Importer.ImportedFile>();
-        public List<FailedFile> failedFiles = new ArrayList<Importer.FailedFile>();
-    }
-
     private Client client;
     private Injector injector;
+
+    private final ByteSizeValue bulkByteSize = new ByteSizeValue(5, ByteSizeUnit.MB);
+    private final TimeValue flushInterval = TimeValue.timeValueSeconds(5);
+    private final int concurrentRequests = 4;
 
     @Inject
     public Importer(Injector injector) {
@@ -81,36 +57,38 @@ public class Importer {
         }
         String index = request.index();
         String type = request.type();
+        int bulkSize = request.bulkSize();
         Result result = new Result();
+        Date start = new Date();
         File dir = new File(context.directory());
         if (dir.isDirectory()) {
             for (File file : dir.listFiles()) {
-                HandledFile handledFile = handleFile(file, index, type);
-                if (handledFile != null) {
-                    if (handledFile instanceof ImportedFile) {
-                        result.importedFiles.add((ImportedFile) handledFile);
-                    } else if (handledFile instanceof FailedFile) {
-                        result.failedFiles.add((FailedFile) handledFile);
-                    }
+                ImportCounts counts = handleFile(file, index, type, bulkSize);
+                if (counts != null) {
+                    result.importCounts.add(counts);
                 }
             }
         }
         // Handle single file too?
+        result.took = new Date().getTime() - start.getTime();
         return result;
     }
 
-    private HandledFile handleFile(File file, String index, String type) {
+    private ImportCounts handleFile(File file, String index, String type, int bulkSize) {
         if (file.isFile() && file.canRead()) {
-            BulkRequest bulkRequest = Requests.bulkRequest();
-            bulkRequest.listenerThreaded(false);
-            boolean added = false;
+            ImportBulkListener bulkListener = new ImportBulkListener(file.getName());
+            BulkProcessor bulkProcessor = BulkProcessor.builder(client, bulkListener)
+                    .setBulkActions(bulkSize)
+                    .setBulkSize(bulkByteSize)
+                    .setFlushInterval(flushInterval)
+                    .setConcurrentRequests(concurrentRequests)
+                    .build();
             try {
                 BufferedReader r = new BufferedReader(new FileReader(file));
                 String line;
                 while ((line = r.readLine()) != null) {
                     IndexRequest indexRequest = parseObject(line);
                     if (indexRequest != null) {
-                        added = true;
                         indexRequest.opType(OpType.INDEX);
                         if (index != null) {
                             indexRequest.index(index);
@@ -118,42 +96,27 @@ public class Importer {
                         if (type != null) {
                             indexRequest.type(type);
                         }
-                        bulkRequest.add(indexRequest);
+                        if (indexRequest.type() != null && indexRequest.index() != null) {
+                            bulkProcessor.add(indexRequest);
+                        } else {
+                            bulkListener.addFailure();
+                        }
                     }
                 }
             } catch (FileNotFoundException e) {
                 // Ignore not existing files, actually they should exist, as they are filtered before.
             } catch (IOException e) {
-                FailedFile failedFile = new FailedFile();
-                failedFile.fileName = file.getName();
-                failedFile.error = e.getMessage();
+            } finally {
+                bulkProcessor.close();
             }
-            if (added) {
-                try {
-                    BulkResponse response = client.bulk(bulkRequest).actionGet();
-                    ImportedFile importedFile = new ImportedFile();
-                    importedFile.fileName = file.getName();
-                    importedFile.took = response.getTookInMillis();
-                    importedFile.items = new ArrayList<IndexedObject>();
-                    for (BulkItemResponse item : response.getItems()) {
-                        IndexedObject obj = new IndexedObject();
-                        obj._id = item.getId();
-                        obj._index = item.getIndex();
-                        obj._type = item.getType();
-                        obj.ok = !item.isFailed();
-                        obj._version = item.getVersion();
-                        obj.error = item.getFailureMessage();
-                        importedFile.items.add(obj);
-                    }
-                    return importedFile;
-                } catch (ElasticSearchException e) {
-                    e.printStackTrace();
-                    FailedFile failedFile = new FailedFile();
-                    failedFile.fileName = file.getName();
-                    failedFile.error = e.getMessage();
-                    return failedFile;
-                }
+            try {
+                bulkListener.get();
+            } catch (InterruptedException e1) {
+                e1.printStackTrace();
+            } catch (ExecutionException e1) {
+                e1.printStackTrace();
             }
+            return bulkListener.importCounts();
         }
         return null;
     }
@@ -199,4 +162,16 @@ public class Importer {
         }
         return null;
     }
+
+    public static class Result {
+        public List<ImportCounts> importCounts = new ArrayList<Importer.ImportCounts>();
+        public long took;
+    }
+
+    public static class ImportCounts {
+        public String fileName;
+        public int successes = 0;
+        public int failures = 0;
+    }
+
 }
