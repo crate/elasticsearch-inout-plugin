@@ -36,6 +36,9 @@ public class NodeImportResponse extends NodeOperationResponse implements ToXCont
             builder.field(Fields.FILE_NAME, counts.fileName);
             builder.field(Fields.SUCCESSES, counts.successes);
             builder.field(Fields.FAILURES, counts.failures);
+            if (counts.invalid > 0) {
+                builder.field(Fields.INVALIDATED, counts.invalid);
+            }
             builder.endObject();
         }
         builder.endArray();
@@ -54,6 +57,7 @@ public class NodeImportResponse extends NodeOperationResponse implements ToXCont
             counts.fileName = in.readString();
             counts.successes = in.readInt();
             counts.failures = in.readInt();
+            counts.invalid = in.readInt();
             result.importCounts.add(counts);
         }
     }
@@ -67,6 +71,7 @@ public class NodeImportResponse extends NodeOperationResponse implements ToXCont
             out.writeString(counts.fileName);
             out.writeInt(counts.successes);
             out.writeInt(counts.failures);
+            out.writeInt(counts.invalid);
         }
     }
 
@@ -77,5 +82,6 @@ public class NodeImportResponse extends NodeOperationResponse implements ToXCont
         static final XContentBuilderString FILE_NAME = new XContentBuilderString("file_name");
         static final XContentBuilderString SUCCESSES = new XContentBuilderString("successes");
         static final XContentBuilderString FAILURES = new XContentBuilderString("failures");
+        static final XContentBuilderString INVALIDATED = new XContentBuilderString("invalidated");
     }
 }

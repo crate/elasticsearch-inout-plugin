@@ -10,6 +10,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
+import org.elasticsearch.ElasticSearchException;
+import org.elasticsearch.ElasticSearchParseException;
 import org.elasticsearch.action.bulk.BulkProcessor;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexRequest.OpType;
@@ -87,7 +89,13 @@ public class Importer {
                 BufferedReader r = new BufferedReader(new FileReader(file));
                 String line;
                 while ((line = r.readLine()) != null) {
-                    IndexRequest indexRequest = parseObject(line);
+                    IndexRequest indexRequest;
+                    try {
+                        indexRequest = parseObject(line);
+                    } catch (ObjectImportException e) {
+                        bulkListener.addFailure();
+                        continue;
+                    }
                     if (indexRequest != null) {
                         indexRequest.opType(OpType.INDEX);
                         if (index != null) {
@@ -101,6 +109,8 @@ public class Importer {
                         } else {
                             bulkListener.addFailure();
                         }
+                    } else {
+                        bulkListener.addInvalid();
                     }
                 }
             } catch (FileNotFoundException e) {
@@ -121,13 +131,14 @@ public class Importer {
         return null;
     }
 
-    private IndexRequest parseObject(String line) {
+    private IndexRequest parseObject(String line) throws ObjectImportException {
         XContentParser parser = null;
         try {
             IndexRequest indexRequest = new IndexRequest();
             parser = XContentFactory.xContent(line.getBytes()).createParser(line.getBytes());
             Token token;
             XContentBuilder sourceBuilder = XContentFactory.contentBuilder(XContentType.JSON);
+            long ttl = 0;
             while ((token = parser.nextToken()) != Token.END_OBJECT) {
                 if (token == XContentParser.Token.FIELD_NAME) {
                     String fieldName = parser.currentName();
@@ -140,28 +151,53 @@ public class Importer {
                         indexRequest.type(parser.text());
                     } else if (fieldName.equals(RoutingFieldMapper.NAME) && token == Token.VALUE_STRING) {
                         indexRequest.routing(parser.text());
-                    } else if (fieldName.equals(TimestampFieldMapper.NAME) && token == Token.VALUE_STRING) {
-                        indexRequest.timestamp(parser.text());
+                    } else if (fieldName.equals(TimestampFieldMapper.NAME) && token == Token.VALUE_NUMBER) {
+                        indexRequest.timestamp(String.valueOf(parser.longValue()));
                     } else if (fieldName.equals(TTLFieldMapper.NAME) && token == Token.VALUE_NUMBER) {
-                        indexRequest.ttl(new Date().getTime() - parser.longValue());
+                        ttl = parser.longValue();
                     } else if (fieldName.equals("_version") && token == Token.VALUE_NUMBER) {
                         indexRequest.version(parser.longValue());
                         indexRequest.versionType(VersionType.EXTERNAL);
                     } else if (fieldName.equals(SourceFieldMapper.NAME) && token == Token.START_OBJECT) {
                         sourceBuilder.copyCurrentStructure(parser);
-                    } else {
-                        // what to do with other fields?
                     }
                 } else if (token == null) {
                     break;
                 }
             }
+            if (ttl > 0) {
+                String ts = indexRequest.timestamp();
+                long start;
+                if (ts != null) {
+                    start = Long.valueOf(ts);
+                } else {
+                    start = new Date().getTime();
+                }
+                ttl = ttl - start;
+                if (ttl > 0) {
+                    indexRequest.ttl(ttl);
+                } else {
+                    // object is invalid, do not import
+                    return null;
+                }
+            }
             indexRequest.source(sourceBuilder);
             return indexRequest;
+        } catch (ElasticSearchParseException e) {
+            throw new ObjectImportException(e);
         } catch (IOException e) {
+            throw new ObjectImportException(e);
         }
-        return null;
     }
+
+    class ObjectImportException extends ElasticSearchException {
+
+        private static final long serialVersionUID = 2405764408378929056L;
+
+        public ObjectImportException(Throwable cause) {
+            super("Object could not be imported.", cause);
+        }
+   }
 
     public static class Result {
         public List<ImportCounts> importCounts = new ArrayList<Importer.ImportCounts>();
@@ -172,6 +208,7 @@ public class Importer {
         public String fileName;
         public int successes = 0;
         public int failures = 0;
+        public int invalid = 0;
     }
 
 }

@@ -72,4 +72,8 @@ public class ImportBulkListener extends BaseFuture<ImportBulkListener> implement
         }
     }
 
+    public void addInvalid() {
+        counts.invalid++;
+    }
+
 }
