@@ -1,6 +1,7 @@
 package crate.elasticsearch.action.import_;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.elasticsearch.action.FailedNodeException;
@@ -54,10 +55,32 @@ public class ImportResponse extends NodesOperationResponse<NodeImportResponse> i
     @Override
     public void readFrom(StreamInput in) throws IOException {
         super.readFrom(in);
+        int responsesCount = in.readInt();
+        this.responses = new ArrayList<NodeImportResponse>(responsesCount);
+        for (int i = 0; i < responsesCount; i++) {
+            responses.add(NodeImportResponse.readNew(in));
+        }
+        int failuresCount = in.readInt();
+        this.nodeFailures = new ArrayList<FailedNodeException>(failuresCount);
+        for (int i = 0; i < failuresCount; i++) {
+            String nodeId = in.readString();
+            String msg = in.readOptionalString();
+            FailedNodeException e = new FailedNodeException(nodeId, msg, null);
+            nodeFailures.add(e);
+        }
     }
 
     @Override
     public void writeTo(StreamOutput out) throws IOException {
         super.writeTo(out);
+        out.writeInt(responses.size());
+        for (NodeImportResponse response : responses) {
+            response.writeTo(out);
+        }
+        out.writeInt(nodeFailures.size());
+        for (FailedNodeException e : nodeFailures) {
+            out.writeString(e.nodeId());
+            out.writeOptionalString(e.getMessage());
+        }
     }
 }

@@ -50,8 +50,8 @@ public class ExportResponse extends BroadcastOperationResponse implements ToXCon
         super.readFrom(in);
         totalExported = in.readVLong();
         int numResponses = in.readVInt();
-        responses = new ArrayList<ShardExportResponse>(in.readVInt());
-        for (int i = 0; i < responses.size(); i++) {
+        responses = new ArrayList<ShardExportResponse>(numResponses);
+        for (int i = 0; i < numResponses; i++) {
             responses.add(ShardExportResponse.readNew(in));
         }
     }

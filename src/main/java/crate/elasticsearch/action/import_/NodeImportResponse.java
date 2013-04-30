@@ -75,6 +75,12 @@ public class NodeImportResponse extends NodeOperationResponse implements ToXCont
         }
     }
 
+    public static NodeImportResponse readNew(StreamInput in) throws IOException {
+        NodeImportResponse response = new NodeImportResponse();
+        response.readFrom(in);
+        return response;
+    }
+
     static final class Fields {
         static final XContentBuilderString NODE_ID = new XContentBuilderString("node_id");
         static final XContentBuilderString TOOK = new XContentBuilderString("took");
