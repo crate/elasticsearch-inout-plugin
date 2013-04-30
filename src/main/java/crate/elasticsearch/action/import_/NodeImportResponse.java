@@ -75,7 +75,7 @@ public class NodeImportResponse extends NodeOperationResponse implements ToXCont
         static final XContentBuilderString TOOK = new XContentBuilderString("took");
         static final XContentBuilderString IMPORTED_FILES = new XContentBuilderString("imported_files");
         static final XContentBuilderString FILE_NAME = new XContentBuilderString("file_name");
-        static final XContentBuilderString SUCCESSES = new XContentBuilderString("sucesses");
+        static final XContentBuilderString SUCCESSES = new XContentBuilderString("successes");
         static final XContentBuilderString FAILURES = new XContentBuilderString("failures");
     }
 }
