@@ -71,7 +71,6 @@ public class Importer {
                 }
             }
         }
-        // Handle single file too?
         result.took = new Date().getTime() - start.getTime();
         return result;
     }

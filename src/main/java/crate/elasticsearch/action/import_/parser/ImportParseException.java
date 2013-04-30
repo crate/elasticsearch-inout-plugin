@@ -1,7 +1,6 @@
 package crate.elasticsearch.action.import_.parser;
 
 import org.elasticsearch.ElasticSearchException;
-import org.elasticsearch.search.internal.SearchContext;
 
 import crate.elasticsearch.action.import_.ImportContext;
 

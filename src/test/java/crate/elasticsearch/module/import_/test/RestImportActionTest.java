@@ -13,23 +13,16 @@ import junit.framework.TestCase;
 
 import org.elasticsearch.action.get.GetRequestBuilder;
 import org.elasticsearch.action.get.GetResponse;
-import org.elasticsearch.action.search.SearchRequestBuilder;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.Client;
 import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentType;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import com.github.tlrx.elasticsearch.test.EsSetup;
 
-import crate.elasticsearch.action.export.ExportAction;
-import crate.elasticsearch.action.export.ExportRequest;
 import crate.elasticsearch.action.import_.ImportAction;
 import crate.elasticsearch.action.import_.ImportRequest;
 import crate.elasticsearch.action.import_.ImportResponse;
@@ -206,6 +199,22 @@ public class RestImportActionTest extends TestCase {
 
         assertTrue(existsWithField("501", "name", "501"));
         assertTrue(existsWithField("511", "name", "511"));
+    }
+
+    /**
+     * Some failures may occur in the bulk request results, like Version conflicts.
+     * The failures are counted correctly.
+     */
+    @Test
+    public void testFailures() {
+        String path = getClass().getResource("import_6").getPath();
+        ImportResponse response = executeImportRequest("{\"directory\": \"" + path + "\"}");
+        List<Map<String, Object>> imports = getImports(response);
+        Map<String, Object> nodeInfo = imports.get(0);
+        assertNotNull(nodeInfo.get("node_id"));
+        assertTrue(Long.valueOf(nodeInfo.get("took").toString()) > 0);
+        assertEquals("[{file_name=import_6.json, successes=1, failures=1}]",
+                nodeInfo.get("imported_files").toString());
     }
 
     /**

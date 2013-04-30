@@ -1,8 +1,7 @@
 package crate.elasticsearch.import_;
 
-import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkProcessor;
@@ -14,7 +13,7 @@ import crate.elasticsearch.import_.Importer.ImportCounts;
 
 public class ImportBulkListener extends BaseFuture<ImportBulkListener> implements BulkProcessor.Listener {
 
-    private Set<Long> executionIds = new HashSet<Long>();
+    private AtomicLong bulksInProgress = new AtomicLong();
     private ImportCounts counts = new ImportCounts();
 
     public ImportBulkListener(String fileName) {
@@ -24,7 +23,7 @@ public class ImportBulkListener extends BaseFuture<ImportBulkListener> implement
     @Override
     public ImportBulkListener get() throws InterruptedException,
             ExecutionException {
-        if (executionIds.size() == 0) {
+        if (bulksInProgress.get() == 0) {
             return this;
         }
         return super.get();
@@ -40,19 +39,23 @@ public class ImportBulkListener extends BaseFuture<ImportBulkListener> implement
 
     @Override
     public void beforeBulk(long executionId, BulkRequest request) {
-        executionIds.add(executionId);
+        bulksInProgress.incrementAndGet();
     }
 
     @Override
     public void afterBulk(long executionId, BulkRequest request,
             BulkResponse response) {
-        executionIds.remove(executionId);
-        for (BulkItemResponse item : response.getItems()) {
-            if (item.isFailed()) {
-                counts.failures++;
-            } else {
-                counts.successes++;
+        bulksInProgress.decrementAndGet();
+        if (response.hasFailures()) {
+            for (BulkItemResponse item : response.getItems()) {
+                if (item.isFailed()) {
+                    counts.failures++;
+                } else {
+                    counts.successes++;
+                }
             }
+        } else {
+            counts.successes += response.getItems().length;
         }
         checkRelease();
     }
@@ -60,14 +63,14 @@ public class ImportBulkListener extends BaseFuture<ImportBulkListener> implement
     @Override
     public void afterBulk(long executionId, BulkRequest request,
             Throwable failure) {
-        executionIds.remove(executionId);
+        bulksInProgress.decrementAndGet();
         counts.failures += request.requests().size();
         failure.printStackTrace();
         checkRelease();
     }
 
     private void checkRelease() {
-        if (executionIds.size() == 0) {
+        if (bulksInProgress.get() == 0) {
             this.set(this);
         }
     }

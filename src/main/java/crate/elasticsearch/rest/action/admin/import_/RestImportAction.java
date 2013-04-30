@@ -3,7 +3,6 @@ package crate.elasticsearch.rest.action.admin.import_;
 import static org.elasticsearch.rest.RestRequest.Method.POST;
 import static org.elasticsearch.rest.RestStatus.BAD_REQUEST;
 import static org.elasticsearch.rest.RestStatus.OK;
-import static org.elasticsearch.rest.action.support.RestActions.splitTypes;
 
 import java.io.IOException;
 
