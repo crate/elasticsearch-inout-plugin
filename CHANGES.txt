@@ -5,6 +5,10 @@ Changes for Elasticsearch InOut Plugin
 Unreleased
 ==========
 
+ - added gzip compression flag to uncompress import files
+
+ - added basic _import endpoints with node distribution
+
  - added support for _ttl and _timestamp fields
 
  - added support for _version field

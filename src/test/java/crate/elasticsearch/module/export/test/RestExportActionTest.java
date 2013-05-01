@@ -34,13 +34,11 @@ import org.junit.Test;
 import crate.elasticsearch.action.export.ExportAction;
 import crate.elasticsearch.action.export.ExportRequest;
 import crate.elasticsearch.action.export.ExportResponse;
-import crate.elasticsearch.rest.action.admin.export.RestExportAction;
 import com.github.tlrx.elasticsearch.test.EsSetup;
 
 public class RestExportActionTest extends TestCase {
 
     EsSetup esSetup;
-    RestExportAction restExportAction;
 
     @Before
     public void setUp() {
@@ -333,6 +331,7 @@ public class RestExportActionTest extends TestCase {
         assertEquals(0, response.getFailedShards());
         List<Map<String, Object>> infos = getExports(response);
         assertNotSame(infos.get(0).get("node"), infos.get(1).get("node"));
+        esSetup2.terminate();
     }
 
     /**
