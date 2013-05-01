@@ -42,7 +42,7 @@ public class ImportResponse extends NodesOperationResponse<NodeImportResponse> i
             builder.startArray("failures");
             for (FailedNodeException failure : nodeFailures) {
                 builder.startObject();
-                builder.field("nodeId", failure.nodeId());
+                builder.field("node_id", failure.nodeId());
                 builder.field("reason", failure.getDetailedMessage());
                 builder.endObject();
             }
