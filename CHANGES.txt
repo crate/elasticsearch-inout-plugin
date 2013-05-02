@@ -5,6 +5,9 @@ Changes for Elasticsearch InOut Plugin
 Unreleased
 ==========
 
+2013/05/01 0.2.0
+================
+
  - added gzip compression flag to uncompress import files
 
  - added basic _import endpoints with node distribution
