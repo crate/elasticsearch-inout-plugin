@@ -31,14 +31,15 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.github.tlrx.elasticsearch.test.EsSetup;
+
 import crate.elasticsearch.action.export.ExportAction;
 import crate.elasticsearch.action.export.ExportRequest;
 import crate.elasticsearch.action.export.ExportResponse;
-import com.github.tlrx.elasticsearch.test.EsSetup;
 
 public class RestExportActionTest extends TestCase {
 
-    EsSetup esSetup;
+    EsSetup esSetup, esSetup2;
 
     @Before
     public void setUp() {
@@ -53,6 +54,9 @@ public class RestExportActionTest extends TestCase {
     @After
     public void tearDown() {
         esSetup.terminate();
+        if (esSetup2 != null) {
+            esSetup2.terminate();
+        }
     }
 
     public static Map<String, Object> toMap(ToXContent toXContent) throws IOException {
@@ -315,7 +319,7 @@ public class RestExportActionTest extends TestCase {
     @Test
     public void testWithMultipleNodes() {
         // Prepare a second node and wait for relocation
-        EsSetup esSetup2 = new EsSetup();
+        esSetup2 = new EsSetup();
         esSetup2.execute(index("users", "d").withSource("{\"name\": \"motorbike\"}"));
         esSetup2.client().admin().cluster().prepareHealth().setWaitForGreenStatus().
             setWaitForNodes("2").setWaitForRelocatingShards(0).execute().actionGet();
@@ -331,7 +335,6 @@ public class RestExportActionTest extends TestCase {
         assertEquals(0, response.getFailedShards());
         List<Map<String, Object>> infos = getExports(response);
         assertNotSame(infos.get(0).get("node_id"), infos.get(1).get("node_id"));
-        esSetup2.terminate();
     }
 
     /**
@@ -518,6 +521,28 @@ public class RestExportActionTest extends TestCase {
                 "{\"_id\":\"4\",\"_source\":{\"name\":\"bus\"}}\n" +
                 "{\"_id\":\"1\",\"_source\":{\"field1\":\"value1\"},\"_routing\":\"2\"}\n",
                 infos.get(1).get("stdout"));
+    }
+
+    /**
+     * If the path of the output file is relative, the files are put to the data directory
+     * of each node in a sub directory /export .
+     */
+    @Test
+    public void testExportRelativeFilename() {
+        esSetup2 = new EsSetup();
+        esSetup2.execute(index("users", "d").withSource("{\"name\": \"motorbike\"}"));
+        esSetup2.client().admin().cluster().prepareHealth().setWaitForGreenStatus().
+            setWaitForNodes("2").setWaitForRelocatingShards(0).execute().actionGet();
+
+        ExportResponse response = executeExportRequest(
+                "{\"output_file\": \"export.${shard}.${index}.json\", \"fields\": [\"name\", \"_id\"], \"force_overwrite\": true}");
+
+        List<Map<String, Object>> infos = getExports(response);
+        assertEquals(2, infos.size());
+        String output_file_0 = infos.get(0).get("output_file").toString();
+        assertTrue(output_file_0.matches("(.*)/nodes/0/export/export.(\\d).users.json"));
+        String output_file_1 = infos.get(1).get("output_file").toString();
+        assertTrue(output_file_1.matches("(.*)/nodes/1/export/export.(\\d).users.json"));
     }
 
     private boolean deleteIndex(String name) {

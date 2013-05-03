@@ -5,6 +5,8 @@ Changes for Elasticsearch InOut Plugin
 Unreleased
 ==========
 
+ - support for relative paths on export and import
+
  - renamed 'node' in export output to 'node_id'
 
 2013/05/01 0.2.0

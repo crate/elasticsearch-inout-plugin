@@ -12,6 +12,7 @@ import org.elasticsearch.search.SearchShardTarget;
 import org.elasticsearch.search.internal.SearchContext;
 import org.elasticsearch.search.internal.ShardSearchRequest;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,9 +30,11 @@ public class ExportContext extends SearchContext {
     private String outputFile;
     private boolean forceOverride = false;
     private boolean compression;
+    private String nodePath;
 
-    public ExportContext(long id, ShardSearchRequest request, SearchShardTarget shardTarget, Engine.Searcher engineSearcher, IndexService indexService, IndexShard indexShard, ScriptService scriptService) {
+    public ExportContext(long id, ShardSearchRequest request, SearchShardTarget shardTarget, Engine.Searcher engineSearcher, IndexService indexService, IndexShard indexShard, ScriptService scriptService, String nodePath) {
         super(id, request, shardTarget, engineSearcher, indexService, indexShard, scriptService);
+        this.nodePath = nodePath;
     }
 
     public List<String> outputCmdArray() {
@@ -55,7 +58,21 @@ public class ExportContext extends SearchContext {
     }
 
     public void outputFile(String outputFile) {
-        this.outputFile = applyVars(outputFile);
+        outputFile = applyVars(outputFile);
+        File outFile = new File(outputFile);
+        if (!outFile.isAbsolute() && nodePath != null) {
+            File dir = new File(nodePath, "export");
+            if (!dir.exists()) {
+                dir.mkdir();
+            }
+            outFile = new File(dir, outputFile);
+            outputFile = outFile.getAbsolutePath();
+        }
+        this.outputFile = outputFile;
+    }
+
+    public String nodePath() {
+        return nodePath;
     }
 
     public boolean forceOverride() {

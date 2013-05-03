@@ -1,10 +1,17 @@
 package crate.elasticsearch.action.import_;
 
+import java.io.File;
+
 public class ImportContext {
 
+    private String nodePath;
     private boolean compression;
     private String directory;
     private String file_pattern;
+
+    public ImportContext(String nodePath) {
+        this.nodePath = nodePath;
+    }
 
     public boolean compression() {
         return compression;
@@ -19,6 +26,11 @@ public class ImportContext {
     }
 
     public void directory(String directory) {
+        File file = new File(directory);
+        if (!file.isAbsolute() && nodePath != null) {
+            file = new File(new File(nodePath, "export"), directory);
+            directory = file.getAbsolutePath();
+        }
         this.directory = directory;
     }
 

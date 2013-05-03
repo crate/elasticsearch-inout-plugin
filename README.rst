@@ -182,7 +182,10 @@ Some variable substitution is possible (see Variable Substitution)
 
 A path to the resulting output file. The containing directory of the
 given ``output_file`` has to exist. The given ``output_file`` MUST NOT exist.
-Some variable substitution is possible (see Variable Substitution).
+If the path is relative, the files will be stored relative to the node's
+data directory in the ``export`` subfolder. The absolute path can be seen in
+the JSON response of the request. Some variable substitution is possible (see
+Variable Substitution).
 
 - Required (if ``output_cmd`` has been omitted)
 
@@ -375,6 +378,9 @@ Elements of the request body
 
 Specifies the directory where the files to be imported reside. Every single
 node of the cluster imports files from that directory on it's file system.
+If the directory is a relative path, the import will happen in the ``export``
+directory of each node's data path. Using the ``.`` specifies the default
+export path.
 
 ``compression``
 ~~~~~~~~~~~~~~~
