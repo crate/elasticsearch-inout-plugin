@@ -158,7 +158,7 @@ class ShardExportResponse extends BroadcastShardOperationResponse implements ToX
         builder.field("index", getIndex());
         builder.field("shard", getShardId());
         if (node != null) {
-            builder.field("node", node);
+            builder.field("node_id", node);
         }
         builder.field("numExported", getNumExported());
         if (getFile() != null) {
