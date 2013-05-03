@@ -271,7 +271,7 @@ request body::
             {
                 "index" : "myIndex",
                 "shard" : 0,
-                "node" : "someNodeName",
+                "node_id" : "the_node_id",
                 "numExported" : 5,
                 "output_file" : "/tmp/dump-myIndex-0"
             }
@@ -302,7 +302,7 @@ request body::
             {
                 "index" : "myIndex",
                 "shard" : 0,
-                "node" : "someNodeName",
+                "node_id" : "the_node_id",
                 "numExported" : 5,
                 "output_cmd" : [
                     "/bin/sh",
@@ -336,7 +336,7 @@ request body::
     - ``_shards``: Shard information
     - ``index``: The name of the exported index
     - ``shard``: The number of the exported shard
-    - ``node``: The node id where the export happened
+    - ``node_id``: The node id where the export happened
     - ``numExported``: The number of exported objects in the shard
     - ``output_file``: The file name of the output file with substituted variables
     - ``failures``: List of failing shard operations

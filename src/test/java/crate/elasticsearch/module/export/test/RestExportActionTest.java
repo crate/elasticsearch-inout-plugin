@@ -192,8 +192,8 @@ public class RestExportActionTest extends TestCase {
         assertEquals(filename_0, output_file_0);
         String output_file_1 = shard_1.get("output_file").toString();
         assertEquals(filename_1, output_file_1);
-        assertTrue(shard_0.containsKey("node"));
-        assertTrue(shard_1.containsKey("node"));
+        assertTrue(shard_0.containsKey("node_id"));
+        assertTrue(shard_1.containsKey("node_id"));
 
         List<String> lines_0 = readLines(filename_0);
         assertEquals(2, lines_0.size());
@@ -226,8 +226,8 @@ public class RestExportActionTest extends TestCase {
         assertEquals(filename_0, output_file_0);
         String output_file_1 = shard_1.get("output_file").toString();
         assertEquals(filename_1, output_file_1);
-        assertTrue(shard_0.containsKey("node"));
-        assertTrue(shard_1.containsKey("node"));
+        assertTrue(shard_0.containsKey("node_id"));
+        assertTrue(shard_1.containsKey("node_id"));
 
         List<String> lines_0 = readLinesFromGZIP(filename_0);
         assertEquals(2, lines_0.size());
@@ -330,7 +330,7 @@ public class RestExportActionTest extends TestCase {
         // The two shard results are from different nodes and have no failures
         assertEquals(0, response.getFailedShards());
         List<Map<String, Object>> infos = getExports(response);
-        assertNotSame(infos.get(0).get("node"), infos.get(1).get("node"));
+        assertNotSame(infos.get(0).get("node_id"), infos.get(1).get("node_id"));
         esSetup2.terminate();
     }
 
@@ -613,6 +613,6 @@ public class RestExportActionTest extends TestCase {
         assertEquals(stderr, map.get("stderr"));
         assertEquals(stdout, map.get("stdout"));
         assertEquals(cmd, map.get("cmd"));
-        assertTrue(map.containsKey("node"));
+        assertTrue(map.containsKey("node_id"));
     }
 }
