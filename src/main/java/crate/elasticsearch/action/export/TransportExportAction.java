@@ -1,7 +1,14 @@
 package crate.elasticsearch.action.export;
 
-import crate.elasticsearch.action.export.parser.ExportParser;
-import crate.elasticsearch.export.Exporter;
+import static org.elasticsearch.common.collect.Lists.newArrayList;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReferenceArray;
+
 import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.action.ShardOperationFailedException;
 import org.elasticsearch.action.support.DefaultShardOperationFailedException;
@@ -16,6 +23,7 @@ import org.elasticsearch.cluster.routing.ShardRouting;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.env.NodeEnvironment;
 import org.elasticsearch.index.service.IndexService;
 import org.elasticsearch.index.shard.service.IndexShard;
 import org.elasticsearch.indices.IndicesService;
@@ -27,13 +35,8 @@ import org.elasticsearch.search.query.QueryPhaseExecutionException;
 import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.transport.TransportService;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicReferenceArray;
-
-import static org.elasticsearch.common.collect.Lists.newArrayList;
+import crate.elasticsearch.action.export.parser.ExportParser;
+import crate.elasticsearch.export.Exporter;
 
 
 /**
@@ -49,13 +52,19 @@ public class TransportExportAction extends TransportBroadcastOperationAction<Exp
 
     private final Exporter exporter;
 
+    private String nodePath;
+
     @Inject
-    public TransportExportAction(Settings settings, ThreadPool threadPool, ClusterService clusterService, TransportService transportService, IndicesService indicesService, ScriptService scriptService, ExportParser exportParser, Exporter exporter) {
+    public TransportExportAction(Settings settings, ThreadPool threadPool, ClusterService clusterService, TransportService transportService, IndicesService indicesService, ScriptService scriptService, ExportParser exportParser, Exporter exporter, NodeEnvironment nodeEnv) {
         super(settings, threadPool, clusterService, transportService);
         this.indicesService = indicesService;
         this.scriptService = scriptService;
         this.exportParser = exportParser;
         this.exporter = exporter;
+        File[] paths = nodeEnv.nodeDataLocations();
+        if (paths.length > 0) {
+            nodePath = paths[0].getAbsolutePath();
+        }
     }
 
     @Override
@@ -137,7 +146,7 @@ public class TransportExportAction extends TransportBroadcastOperationAction<Exp
         IndexShard indexShard = indexService.shardSafe(request.shardId());
 
         SearchShardTarget shardTarget = new SearchShardTarget(clusterService.localNode().id(), request.index(), request.shardId());
-        ExportContext context = new ExportContext(0, new ShardSearchRequest().types(request.types()).filteringAliases(request.filteringAliases()), shardTarget, indexShard.searcher(), indexService, indexShard, scriptService);
+        ExportContext context = new ExportContext(0, new ShardSearchRequest().types(request.types()).filteringAliases(request.filteringAliases()), shardTarget, indexShard.searcher(), indexService, indexShard, scriptService, nodePath);
         ExportContext.setCurrent(context);
 
         try {

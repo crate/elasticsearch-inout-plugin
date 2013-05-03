@@ -3,8 +3,11 @@ package crate.elasticsearch.module.import_.test;
 import static com.github.tlrx.elasticsearch.test.EsSetup.createIndex;
 import static com.github.tlrx.elasticsearch.test.EsSetup.deleteAll;
 import static com.github.tlrx.elasticsearch.test.EsSetup.fromClassPath;
+import static com.github.tlrx.elasticsearch.test.EsSetup.index;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +26,9 @@ import org.junit.Test;
 
 import com.github.tlrx.elasticsearch.test.EsSetup;
 
+import crate.elasticsearch.action.export.ExportAction;
+import crate.elasticsearch.action.export.ExportRequest;
+import crate.elasticsearch.action.export.ExportResponse;
 import crate.elasticsearch.action.import_.ImportAction;
 import crate.elasticsearch.action.import_.ImportRequest;
 import crate.elasticsearch.action.import_.ImportResponse;
@@ -76,8 +82,8 @@ public class RestImportActionTest extends TestCase {
         Map<String, Object> nodeInfo = imports.get(0);
         assertNotNull(nodeInfo.get("node_id"));
         assertTrue(Long.valueOf(nodeInfo.get("took").toString()) > 0);
-        assertEquals("[{file_name=import_1.json, successes=2, failures=0}]",
-                nodeInfo.get("imported_files").toString());
+        assertTrue(nodeInfo.get("imported_files").toString().matches(
+                "\\[\\{file_name=(.*)/importdata/import_1/import_1.json, successes=2, failures=0\\}\\]"));
         assertTrue(existsWithField("102", "name", "102"));
         assertTrue(existsWithField("103", "name", "103"));
     }
@@ -92,8 +98,8 @@ public class RestImportActionTest extends TestCase {
         ImportResponse response = executeImportRequest("{\"directory\": \"" + path + "\"}");
         List<Map<String, Object>> imports = getImports(response);
         Map<String, Object> nodeInfo = imports.get(0);
-        assertEquals("[{file_name=import_2.json, successes=1, failures=3}]",
-                nodeInfo.get("imported_files").toString());
+        assertTrue(nodeInfo.get("imported_files").toString().matches(
+                "\\[\\{file_name=(.*)/importdata/import_2/import_2.json, successes=1, failures=3\\}\\]"));
         assertTrue(existsWithField("202", "name", "202"));
         assertFalse(existsWithField("203", "name", "203"));
         assertFalse(existsWithField("204", "name", "204"));
@@ -115,8 +121,8 @@ public class RestImportActionTest extends TestCase {
 
         List<Map<String, Object>> imports = getImports(response);
         Map<String, Object> nodeInfo = imports.get(0);
-        assertEquals("[{file_name=import_2.json, successes=4, failures=0}]",
-                nodeInfo.get("imported_files").toString());
+        assertTrue(nodeInfo.get("imported_files").toString().matches(
+                "\\[\\{file_name=(.*)/importdata/import_2/import_2.json, successes=4, failures=0\\}\\]"));
         assertTrue(existsWithField("202", "name", "202", "another_index", "e"));
         assertTrue(existsWithField("203", "name", "203", "another_index", "e"));
         assertTrue(existsWithField("204", "name", "204", "another_index", "e"));
@@ -133,8 +139,8 @@ public class RestImportActionTest extends TestCase {
         ImportResponse response = executeImportRequest("{\"directory\": \"" + path + "\"}");
         List<Map<String, Object>> imports = getImports(response);
         assertEquals(1, imports.size());
-        assertEquals("[{file_name=import_3.json, successes=3, failures=2}]",
-                imports.get(0).get("imported_files").toString());
+        assertTrue(imports.get(0).get("imported_files").toString().matches(
+                "\\[\\{file_name=(.*)/importdata/import_3/import_3.json, successes=3, failures=2\\}\\]"));
     }
 
     /**
@@ -157,8 +163,8 @@ public class RestImportActionTest extends TestCase {
         Map<String, Object> nodeInfo = imports.get(0);
         assertNotNull(nodeInfo.get("node_id"));
         assertTrue(Long.valueOf(nodeInfo.get("took").toString()) > 0);
-        assertEquals("[{file_name=import_4.json, successes=2, failures=0, invalidated=1}]",
-                nodeInfo.get("imported_files").toString());
+        assertTrue(nodeInfo.get("imported_files").toString().matches(
+                "\\[\\{file_name=(.*)/importdata/import_4/import_4.json, successes=2, failures=0, invalidated=1}]"));
 
         GetRequestBuilder rb = new GetRequestBuilder(node1.client(), "test");
         GetResponse res = rb.setType("d").setId("402").setFields("_ttl", "_timestamp", "_routing").execute().actionGet();
@@ -187,15 +193,15 @@ public class RestImportActionTest extends TestCase {
         List<Map<String, Object>> imports = getImports(response);
         assertEquals(2, imports.size());
 
-        String result = "[{file_name=import_5_a.json, successes=1, failures=0}, {file_name=import_5_b.json, successes=1, failures=0}]";
+        String result = "\\[\\{file_name=(.*)/importdata/import_5/import_5_a.json, successes=1, failures=0\\}, \\{file_name=(.*)import_5_b.json, successes=1, failures=0\\}\\]";
         Map<String, Object> nodeInfo = imports.get(0);
         assertNotNull(nodeInfo.get("node_id"));
         assertTrue(Long.valueOf(nodeInfo.get("took").toString()) > 0);
-        assertEquals(result, nodeInfo.get("imported_files").toString());
+        assertTrue(nodeInfo.get("imported_files").toString().matches(result));
         nodeInfo = imports.get(1);
         assertNotNull(nodeInfo.get("node_id"));
         assertTrue(Long.valueOf(nodeInfo.get("took").toString()) > 0);
-        assertEquals(result, nodeInfo.get("imported_files").toString());
+        assertTrue(nodeInfo.get("imported_files").toString().matches(result));
 
         assertTrue(existsWithField("501", "name", "501"));
         assertTrue(existsWithField("511", "name", "511"));
@@ -213,8 +219,8 @@ public class RestImportActionTest extends TestCase {
         Map<String, Object> nodeInfo = imports.get(0);
         assertNotNull(nodeInfo.get("node_id"));
         assertTrue(Long.valueOf(nodeInfo.get("took").toString()) > 0);
-        assertEquals("[{file_name=import_6.json, successes=1, failures=1}]",
-                nodeInfo.get("imported_files").toString());
+        assertTrue(nodeInfo.get("imported_files").toString().matches(
+                "\\[\\{file_name=(.*)import_6.json, successes=1, failures=1\\}\\]"));
     }
 
     /**
@@ -230,10 +236,67 @@ public class RestImportActionTest extends TestCase {
         Map<String, Object> nodeInfo = imports.get(0);
         assertNotNull(nodeInfo.get("node_id"));
         assertTrue(Long.valueOf(nodeInfo.get("took").toString()) > 0);
-        assertEquals("[{file_name=import_7.json.gz, successes=2, failures=0}]",
-                nodeInfo.get("imported_files").toString());
+        assertTrue(nodeInfo.get("imported_files").toString().matches(
+                "\\[\\{file_name=(.*)import_7.json.gz, successes=2, failures=0\\}\\]"));
         assertTrue(existsWithField("102", "name", "102"));
         assertTrue(existsWithField("103", "name", "103"));
+    }
+
+    /**
+     * Using a relative directory leads to an import from within each node's export
+     * directory in the data path. This test also covers the export - import combination.
+     */
+    @Test
+    public void testImportRelativeFilename() {
+        setUpSecondNode();
+        // create sample data
+        node1.execute(deleteAll(), createIndex("users").withSettings(
+                fromClassPath("essetup/settings/test_a.json")).withMapping("d",
+                        fromClassPath("essetup/mappings/test_a.json")));
+        node1.execute(index("users", "d", "1").withSource("{\"name\": \"item1\"}"));
+        node1.execute(index("users", "d", "2").withSource("{\"name\": \"item2\"}"));
+        node2.client().admin().cluster().prepareHealth().setWaitForGreenStatus().
+            setWaitForNodes("2").setWaitForRelocatingShards(0).execute().actionGet();
+
+        makeNodeDataLocationDirectories("myExport");
+
+        // export data and recreate empty index
+        ExportRequest exportRequest = new ExportRequest();
+        exportRequest.source("{\"output_file\": \"myExport/export.${shard}.${index}.json\", \"fields\": [\"_source\", \"_id\", \"_index\", \"_type\"], \"force_overwrite\": true}");
+        node1.client().execute(ExportAction.INSTANCE, exportRequest).actionGet();
+        node1.execute(deleteAll(), createIndex("users").withSettings(
+                fromClassPath("essetup/settings/test_a.json")).withMapping("d",
+                        fromClassPath("essetup/mappings/test_a.json")));
+
+        // run import with relative directory
+        ImportResponse response = executeImportRequest("{\"directory\": \"myExport\"}");
+        List<Map<String, Object>> imports = getImports(response);
+        assertEquals(2, imports.size());
+        String regex = "\\[\\{file_name=(.*)/nodes/(\\d)/myExport/export.(\\d).users.json, successes=1, failures=0\\}\\]";
+        assertTrue(imports.get(0).get("imported_files").toString().matches(regex));
+        assertTrue(imports.get(1).get("imported_files").toString().matches(regex));
+
+        assertTrue(existsWithField("1", "name", "item1", "users", "d"));
+        assertTrue(existsWithField("2", "name", "item2", "users", "d"));
+    }
+
+    /**
+     * Make a subdirectory in each node's node data location.
+     * @param directory
+     */
+    private void makeNodeDataLocationDirectories(String directory) {
+        ExportRequest exportRequest = new ExportRequest();
+        exportRequest.source("{\"output_file\": \"" + directory + "\", \"fields\": [\"_source\", \"_id\", \"_index\", \"_type\"], \"force_overwrite\": true, \"explain\": true}");
+        ExportResponse explain = node1.client().execute(ExportAction.INSTANCE, exportRequest).actionGet();
+
+        try {
+            Map<String, Object> res = toMap(explain);
+            List<Map<String, String>> list = (ArrayList<Map<String, String>>) res.get("exports");
+            for (Map<String, String> map : list) {
+                new File(map.get("output_file").toString()).mkdir();
+            }
+        } catch (IOException e) {
+        }
     }
 
     /**
