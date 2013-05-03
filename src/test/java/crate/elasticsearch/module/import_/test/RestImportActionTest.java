@@ -69,7 +69,7 @@ public class RestImportActionTest extends TestCase {
      */
     @Test
     public void testImportWithIndexAndType() {
-        String path = getClass().getResource("import_1").getPath();
+        String path = getClass().getResource("/importdata/import_1").getPath();
         ImportResponse response = executeImportRequest("{\"directory\": \"" + path + "\"}");
         List<Map<String, Object>> imports = getImports(response);
         assertEquals(1, imports.size());
@@ -88,7 +88,7 @@ public class RestImportActionTest extends TestCase {
      */
     @Test
     public void testImportWithoutIndexOrType() {
-        String path = getClass().getResource("import_2").getPath();
+        String path = getClass().getResource("/importdata/import_2").getPath();
         ImportResponse response = executeImportRequest("{\"directory\": \"" + path + "\"}");
         List<Map<String, Object>> imports = getImports(response);
         Map<String, Object> nodeInfo = imports.get(0);
@@ -106,7 +106,7 @@ public class RestImportActionTest extends TestCase {
      */
     @Test
     public void testImportIntoIndexAndType() {
-        String path = getClass().getResource("import_2").getPath();
+        String path = getClass().getResource("/importdata/import_2").getPath();
         ImportRequest request = new ImportRequest();
         request.index("another_index");
         request.type("e");
@@ -129,7 +129,7 @@ public class RestImportActionTest extends TestCase {
      */
     @Test
     public void testCorruptFile() {
-        String path = getClass().getResource("import_3").getPath();
+        String path = getClass().getResource("/importdata/import_3").getPath();
         ImportResponse response = executeImportRequest("{\"directory\": \"" + path + "\"}");
         List<Map<String, Object>> imports = getImports(response);
         assertEquals(1, imports.size());
@@ -150,7 +150,7 @@ public class RestImportActionTest extends TestCase {
 
         long now = new Date().getTime();
         long ttl = 1867329687097L - now;
-        String path = getClass().getResource("import_4").getPath();
+        String path = getClass().getResource("/importdata/import_4").getPath();
         ImportResponse response = executeImportRequest("{\"directory\": \"" + path + "\"}");
         List<Map<String, Object>> imports = getImports(response);
         assertEquals(1, imports.size());
@@ -182,7 +182,7 @@ public class RestImportActionTest extends TestCase {
     @Test
     public void testMultipleFilesAndMultipleNodes() {
         setUpSecondNode();
-        String path = getClass().getResource("import_5").getPath();
+        String path = getClass().getResource("/importdata/import_5").getPath();
         ImportResponse response = executeImportRequest("{\"directory\": \"" + path + "\"}");
         List<Map<String, Object>> imports = getImports(response);
         assertEquals(2, imports.size());
@@ -207,7 +207,7 @@ public class RestImportActionTest extends TestCase {
      */
     @Test
     public void testFailures() {
-        String path = getClass().getResource("import_6").getPath();
+        String path = getClass().getResource("/importdata/import_6").getPath();
         ImportResponse response = executeImportRequest("{\"directory\": \"" + path + "\"}");
         List<Map<String, Object>> imports = getImports(response);
         Map<String, Object> nodeInfo = imports.get(0);
@@ -223,7 +223,7 @@ public class RestImportActionTest extends TestCase {
      */
     @Test
     public void testCompression() {
-        String path = getClass().getResource("import_7").getPath();
+        String path = getClass().getResource("/importdata/import_7").getPath();
         ImportResponse response = executeImportRequest("{\"directory\": \"" + path + "\", \"compression\":\"gzip\"}");
         List<Map<String, Object>> imports = getImports(response);
         assertEquals(1, imports.size());
