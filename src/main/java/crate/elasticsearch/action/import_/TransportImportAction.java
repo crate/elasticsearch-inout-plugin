@@ -2,6 +2,7 @@ package crate.elasticsearch.action.import_;
 
 import static org.elasticsearch.common.collect.Lists.newArrayList;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReferenceArray;
@@ -14,6 +15,7 @@ import org.elasticsearch.cluster.ClusterService;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.env.NodeEnvironment;
 import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.transport.TransportService;
 
@@ -26,13 +28,20 @@ public class TransportImportAction extends TransportNodesOperationAction<ImportR
 
     private Importer importer;
 
+    private String nodePath = "";
+
     @Inject
     public TransportImportAction(Settings settings, ClusterName clusterName,
             ThreadPool threadPool, ClusterService clusterService,
-            TransportService transportService, ImportParser importParser, Importer importer) {
+            TransportService transportService, ImportParser importParser, Importer importer, NodeEnvironment nodeEnv) {
         super(settings, clusterName, threadPool, clusterService, transportService);
         this.importParser = importParser;
         this.importer = importer;
+
+        File[] paths = nodeEnv.nodeDataLocations();
+        if (paths.length > 0) {
+            nodePath = paths[0].getAbsolutePath();
+        }
     }
 
     @Override
@@ -106,7 +115,7 @@ public class TransportImportAction extends TransportNodesOperationAction<ImportR
     @Override
     protected NodeImportResponse nodeOperation(NodeImportRequest request)
             throws ElasticSearchException {
-        ImportContext context = new ImportContext();
+        ImportContext context = new ImportContext(nodePath);
 
         BytesReference source = request.source();
         importParser.parseSource(context, source);

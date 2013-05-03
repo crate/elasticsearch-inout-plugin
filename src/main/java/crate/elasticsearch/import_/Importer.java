@@ -80,7 +80,7 @@ public class Importer {
 
     private ImportCounts handleFile(File file, String index, String type, int bulkSize, boolean compression) {
         if (file.isFile() && file.canRead()) {
-            ImportBulkListener bulkListener = new ImportBulkListener(file.getName());
+            ImportBulkListener bulkListener = new ImportBulkListener(file.getAbsolutePath());
             BulkProcessor bulkProcessor = BulkProcessor.builder(client, bulkListener)
                     .setBulkActions(bulkSize)
                     .setBulkSize(bulkByteSize)
