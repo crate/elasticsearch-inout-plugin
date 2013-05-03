@@ -281,6 +281,28 @@ public class RestImportActionTest extends TestCase {
     }
 
     /**
+     * A file pattern can be specified to filter only for files with a given regex.
+     * The other files are not imported.
+     */
+    @Test
+    public void testFilePattern() {
+        String path = getClass().getResource("/importdata/import_8").getPath();
+        ImportResponse response = executeImportRequest("{\"directory\": \"" + path + "\", \"file_pattern\": \"index_test_(.*).json\"}");
+        List<Map<String, Object>> imports = getImports(response);
+        assertEquals(1, imports.size());
+        Map<String, Object> nodeInfo = imports.get(0);
+        System.out.println(imports);
+        List imported = (List) nodeInfo.get("imported_files");
+        assertTrue(imported.size() == 1);
+        assertTrue(imported.get(0).toString().matches(
+                "\\{file_name=(.*)/importdata/import_8/index_test_1.json, successes=2, failures=0\\}"));
+        assertTrue(existsWithField("802", "name", "802", "test", "d"));
+        assertTrue(existsWithField("803", "name", "803", "test", "d"));
+        assertFalse(existsWithField("811", "name", "811", "test", "d"));
+        assertFalse(existsWithField("812", "name", "812", "test", "d"));
+    }
+
+    /**
      * Make a subdirectory in each node's node data location.
      * @param directory
      */

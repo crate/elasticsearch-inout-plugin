@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
@@ -67,7 +68,22 @@ public class Importer {
         Date start = new Date();
         File dir = new File(context.directory());
         if (dir.isDirectory()) {
-            for (File file : dir.listFiles()) {
+            File[] files;
+            if (context.file_pattern() == null) {
+                files = dir.listFiles();
+            } else {
+                final String file_pattern = context.file_pattern();
+                files = dir.listFiles(new FilenameFilter() {
+                    @Override
+                    public boolean accept(File dir, String name) {
+                        if (name.matches(file_pattern)) {
+                            return true;
+                        }
+                        return false;
+                    }
+                });
+            }
+            for (File file : files) {
                 ImportCounts counts = handleFile(file, index, type, bulkSize, context.compression());
                 if (counts != null) {
                     result.importCounts.add(counts);
