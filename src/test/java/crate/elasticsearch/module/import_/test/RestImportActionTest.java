@@ -5,7 +5,9 @@ import static com.github.tlrx.elasticsearch.test.EsSetup.deleteAll;
 import static com.github.tlrx.elasticsearch.test.EsSetup.fromClassPath;
 import static com.github.tlrx.elasticsearch.test.EsSetup.index;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +28,7 @@ import com.github.tlrx.elasticsearch.test.EsSetup;
 
 import crate.elasticsearch.action.export.ExportAction;
 import crate.elasticsearch.action.export.ExportRequest;
+import crate.elasticsearch.action.export.ExportResponse;
 import crate.elasticsearch.action.import_.ImportAction;
 import crate.elasticsearch.action.import_.ImportRequest;
 import crate.elasticsearch.action.import_.ImportResponse;
@@ -79,7 +82,6 @@ public class RestImportActionTest extends TestCase {
         Map<String, Object> nodeInfo = imports.get(0);
         assertNotNull(nodeInfo.get("node_id"));
         assertTrue(Long.valueOf(nodeInfo.get("took").toString()) > 0);
-        System.out.println(nodeInfo.get("imported_files").toString());
         assertTrue(nodeInfo.get("imported_files").toString().matches(
                 "\\[\\{file_name=(.*)/importdata/import_1/import_1.json, successes=2, failures=0\\}\\]"));
         assertTrue(existsWithField("102", "name", "102"));
@@ -247,7 +249,6 @@ public class RestImportActionTest extends TestCase {
     @Test
     public void testImportRelativeFilename() {
         setUpSecondNode();
-
         // create sample data
         node1.execute(deleteAll(), createIndex("users").withSettings(
                 fromClassPath("essetup/settings/test_a.json")).withMapping("d",
@@ -257,24 +258,45 @@ public class RestImportActionTest extends TestCase {
         node2.client().admin().cluster().prepareHealth().setWaitForGreenStatus().
             setWaitForNodes("2").setWaitForRelocatingShards(0).execute().actionGet();
 
+        makeNodeDataLocationDirectories("myExport");
+
         // export data and recreate empty index
         ExportRequest exportRequest = new ExportRequest();
-        exportRequest.source("{\"output_file\": \"export.${shard}.${index}.json\", \"fields\": [\"_source\", \"_id\", \"_index\", \"_type\"], \"force_overwrite\": true}");
+        exportRequest.source("{\"output_file\": \"myExport/export.${shard}.${index}.json\", \"fields\": [\"_source\", \"_id\", \"_index\", \"_type\"], \"force_overwrite\": true}");
         node1.client().execute(ExportAction.INSTANCE, exportRequest).actionGet();
         node1.execute(deleteAll(), createIndex("users").withSettings(
                 fromClassPath("essetup/settings/test_a.json")).withMapping("d",
                         fromClassPath("essetup/mappings/test_a.json")));
 
         // run import with relative directory
-        ImportResponse response = executeImportRequest("{\"directory\": \".\"}");
+        ImportResponse response = executeImportRequest("{\"directory\": \"myExport\"}");
         List<Map<String, Object>> imports = getImports(response);
         assertEquals(2, imports.size());
-        String regex = "\\[\\{file_name=(.*)/nodes/(\\d)/export/./export.(\\d).users.json, successes=1, failures=0\\}\\]";
+        String regex = "\\[\\{file_name=(.*)/nodes/(\\d)/myExport/export.(\\d).users.json, successes=1, failures=0\\}\\]";
         assertTrue(imports.get(0).get("imported_files").toString().matches(regex));
         assertTrue(imports.get(1).get("imported_files").toString().matches(regex));
 
         assertTrue(existsWithField("1", "name", "item1", "users", "d"));
         assertTrue(existsWithField("2", "name", "item2", "users", "d"));
+    }
+
+    /**
+     * Make a subdirectory in each node's node data location.
+     * @param directory
+     */
+    private void makeNodeDataLocationDirectories(String directory) {
+        ExportRequest exportRequest = new ExportRequest();
+        exportRequest.source("{\"output_file\": \"" + directory + "\", \"fields\": [\"_source\", \"_id\", \"_index\", \"_type\"], \"force_overwrite\": true, \"explain\": true}");
+        ExportResponse explain = node1.client().execute(ExportAction.INSTANCE, exportRequest).actionGet();
+
+        try {
+            Map<String, Object> res = toMap(explain);
+            List<Map<String, String>> list = (ArrayList<Map<String, String>>) res.get("exports");
+            for (Map<String, String> map : list) {
+                new File(map.get("output_file").toString()).mkdir();
+            }
+        } catch (IOException e) {
+        }
     }
 
     /**

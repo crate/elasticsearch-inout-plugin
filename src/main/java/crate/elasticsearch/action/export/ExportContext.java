@@ -61,12 +61,7 @@ public class ExportContext extends SearchContext {
         outputFile = applyVars(outputFile);
         File outFile = new File(outputFile);
         if (!outFile.isAbsolute() && nodePath != null) {
-            File dir = new File(nodePath, "export");
-            if (!dir.exists()) {
-                dir.mkdir();
-            }
-            outFile = new File(dir, outputFile);
-            outputFile = outFile.getAbsolutePath();
+            outputFile = new File(nodePath, outputFile).getAbsolutePath();
         }
         this.outputFile = outputFile;
     }

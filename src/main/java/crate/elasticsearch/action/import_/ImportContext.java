@@ -28,7 +28,7 @@ public class ImportContext {
     public void directory(String directory) {
         File file = new File(directory);
         if (!file.isAbsolute() && nodePath != null) {
-            file = new File(new File(nodePath, "export"), directory);
+            file = new File(nodePath, directory);
             directory = file.getAbsolutePath();
         }
         this.directory = directory;

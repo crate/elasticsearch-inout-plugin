@@ -540,9 +540,9 @@ public class RestExportActionTest extends TestCase {
         List<Map<String, Object>> infos = getExports(response);
         assertEquals(2, infos.size());
         String output_file_0 = infos.get(0).get("output_file").toString();
-        assertTrue(output_file_0.matches("(.*)/nodes/0/export/export.(\\d).users.json"));
+        assertTrue(output_file_0.matches("(.*)/nodes/0/export.(\\d).users.json"));
         String output_file_1 = infos.get(1).get("output_file").toString();
-        assertTrue(output_file_1.matches("(.*)/nodes/1/export/export.(\\d).users.json"));
+        assertTrue(output_file_1.matches("(.*)/nodes/1/export.(\\d).users.json"));
     }
 
     private boolean deleteIndex(String name) {
