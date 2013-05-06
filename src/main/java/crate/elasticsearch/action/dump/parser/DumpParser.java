@@ -22,11 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Created with IntelliJ IDEA.
- * User: bernd
- * Date: 03.05.13
- * Time: 15:36
- * To change this template use File | Settings | File Templates.
+ * Dump specific parser class
  */
 public class DumpParser implements IExportParser {
 
@@ -106,7 +102,6 @@ public class DumpParser implements IExportParser {
         for (int i = 0; i < DEFAULT_FIELDS.length; i++) {
             context.fieldNames().add(DEFAULT_FIELDS[i]);
         }
-
     }
 
     /**
