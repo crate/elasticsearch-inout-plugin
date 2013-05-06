@@ -128,6 +128,15 @@ Import data into a specific type of an index::
     }
     '
 
+Use a regular expression to filter imported file names (e.g. for specific
+indexes)::
+
+    curl -X POST 'http://localhost:9200/_import' -d '{
+        "directory": "/tmp/es-data",
+        "file_pattern": "dump-myindex-(\\d).json"
+    }
+    '
+
 
 Exports
 =======
@@ -398,6 +407,17 @@ Option to activate decompression on the import files. Currently only the
 ``gzip`` compression type is available.
 
 - Optional (default is no decompression)
+
+``file_pattern``
+~~~~~~~~~~~~~~~~
+
+    "file_pattern": "index-(.*)-(\\d).json"
+
+Option to import only files with a given regular expression. Take care of
+double escaping, as the JSON is decoded too in the process. For more
+information on regular expressions visit http://www.regular-expressions.info/
+
+- Optional (default is no filtering)
 
 
 JSON Response
