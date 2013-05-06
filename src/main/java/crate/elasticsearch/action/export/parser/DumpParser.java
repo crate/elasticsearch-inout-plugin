@@ -15,6 +15,7 @@ import org.elasticsearch.search.fetch.FieldsParseElement;
 import org.elasticsearch.search.fetch.explain.ExplainParseElement;
 import org.elasticsearch.search.query.QueryPhase;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,9 +28,10 @@ import java.util.Map;
  */
 public class DumpParser implements IExportParser {
 
-    public static final String[] DEFAULT_FIELDS = {"_id", "_source", "_timestamp", "_ttl", "_version", "_index", "_type", "_routing"};
+    public static final String[] DEFAULT_FIELDS = {"_id", "_source", "_timestamp", "_ttl", "_version", "_index",
+                                                   "_type", "_routing"};
     public static final String FILENAME_PATTERN = "${cluster}_${index}_${shard}.json.gz";
-    public static final String DEFAULT_DIR = "./dump";
+    public static final String DEFAULT_DIR = "dump";
 
 
     private final ImmutableMap<String, SearchParseElement> elementParsers;
@@ -73,6 +75,10 @@ public class DumpParser implements IExportParser {
                     }
                 }
             }
+            if (context.outputFile() == null) {
+                directoryParseElement.setOutPutFile(context, DEFAULT_DIR);
+                this.ensureDefaultDirectory(context);
+            }
         } catch (Exception e) {
             String sSource = "_na_";
             try {
@@ -94,11 +100,23 @@ public class DumpParser implements IExportParser {
      * @param context
      */
     private void setDefaults(ExportContext context) {
-        directoryParseElement.setOutPutFile(context, DEFAULT_DIR);
         context.compression(true);
         for (int i = 0; i < DEFAULT_FIELDS.length; i++) {
             context.fieldNames().add(DEFAULT_FIELDS[i]);
         }
 
+    }
+
+    /**
+     * create default dump directory if it does not exist
+     *
+     * @param context
+     */
+    private void ensureDefaultDirectory(ExportContext context) {
+        File dumpFile = new File(context.outputFile());
+        File dumpDir = new File(dumpFile.getParent());
+        if (!dumpDir.exists()) {
+            dumpDir.mkdir();
+        }
     }
 }

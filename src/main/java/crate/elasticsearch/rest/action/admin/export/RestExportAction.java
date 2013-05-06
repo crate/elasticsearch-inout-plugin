@@ -1,6 +1,5 @@
 package crate.elasticsearch.rest.action.admin.export;
 
-import crate.elasticsearch.action.export.DumpAction;
 import crate.elasticsearch.action.export.ExportAction;
 import crate.elasticsearch.action.export.ExportRequest;
 import crate.elasticsearch.action.export.ExportResponse;

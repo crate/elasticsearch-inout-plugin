@@ -1,7 +1,6 @@
 package crate.elasticsearch.action.export;
 
 import crate.elasticsearch.action.export.parser.ExportParser;
-import crate.elasticsearch.action.export.parser.ExportParserFactory;
 import crate.elasticsearch.action.export.parser.IExportParser;
 import crate.elasticsearch.export.Exporter;
 import org.elasticsearch.ElasticSearchException;
@@ -19,6 +18,7 @@ import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.inject.name.Named;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.env.NodeEnvironment;
 import org.elasticsearch.index.service.IndexService;
 import org.elasticsearch.index.shard.service.IndexShard;
 import org.elasticsearch.indices.IndicesService;
@@ -30,6 +30,7 @@ import org.elasticsearch.search.query.QueryPhaseExecutionException;
 import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.transport.TransportService;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -52,14 +53,21 @@ public class AbstractTransportExportAction extends TransportBroadcastOperationAc
 
     private final Exporter exporter;
 
+    private String nodePath;
+
     public AbstractTransportExportAction(Settings settings, ThreadPool threadPool, ClusterService clusterService,
                                          TransportService transportService, IndicesService indicesService,
-                                         ScriptService scriptService, IExportParser exportParser, Exporter exporter) {
+                                         ScriptService scriptService, IExportParser exportParser, Exporter exporter,
+                                         NodeEnvironment nodeEnv) {
         super(settings, threadPool, clusterService, transportService);
         this.indicesService = indicesService;
         this.scriptService = scriptService;
         this.exportParser = exportParser;
         this.exporter = exporter;
+        File[] paths = nodeEnv.nodeDataLocations();
+        if (paths.length > 0) {
+            nodePath = paths[0].getAbsolutePath();
+        }
     }
 
     @Override
@@ -142,7 +150,7 @@ public class AbstractTransportExportAction extends TransportBroadcastOperationAc
         IndexShard indexShard = indexService.shardSafe(request.shardId());
 
         SearchShardTarget shardTarget = new SearchShardTarget(clusterService.localNode().id(), request.index(), request.shardId());
-        ExportContext context = new ExportContext(0, new ShardSearchRequest().types(request.types()).filteringAliases(request.filteringAliases()), shardTarget, indexShard.searcher(), indexService, indexShard, scriptService);
+        ExportContext context = new ExportContext(0, new ShardSearchRequest().types(request.types()).filteringAliases(request.filteringAliases()), shardTarget, indexShard.searcher(), indexService, indexShard, scriptService, nodePath);
         ExportContext.setCurrent(context);
 
         try {

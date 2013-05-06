@@ -16,6 +16,7 @@ import org.elasticsearch.cluster.routing.ShardRouting;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.env.NodeEnvironment;
 import org.elasticsearch.index.service.IndexService;
 import org.elasticsearch.index.shard.service.IndexShard;
 import org.elasticsearch.indices.IndicesService;
@@ -44,8 +45,9 @@ public class TransportDumpAction extends AbstractTransportExportAction {
     @Inject
     public TransportDumpAction(Settings settings, ThreadPool threadPool, ClusterService clusterService,
                                TransportService transportService, IndicesService indicesService,
-                               ScriptService scriptService, DumpParser dumpParser, Exporter exporter) {
-        super(settings, threadPool, clusterService, transportService, indicesService, scriptService, dumpParser, exporter);
+                               ScriptService scriptService, DumpParser dumpParser, Exporter exporter,
+                               NodeEnvironment nodeEnv) {
+        super(settings, threadPool, clusterService, transportService, indicesService, scriptService, dumpParser, exporter, nodeEnv);
     }
 
 }
