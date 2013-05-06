@@ -1,8 +1,10 @@
 package crate.elasticsearch.rest.action.admin.export;
 
+import crate.elasticsearch.action.export.DumpAction;
 import crate.elasticsearch.action.export.ExportAction;
 import crate.elasticsearch.action.export.ExportRequest;
 import crate.elasticsearch.action.export.ExportResponse;
+import org.elasticsearch.action.Action;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.support.IgnoreIndices;
 import org.elasticsearch.action.support.broadcast.BroadcastOperationThreading;
@@ -30,9 +32,17 @@ public class RestExportAction extends BaseRestHandler {
     @Inject
     public RestExportAction(Settings settings, Client client, RestController controller) {
         super(settings, client);
+        registerHandlers(controller);
+    }
+
+    protected void registerHandlers(RestController controller) {
         controller.registerHandler(POST, "/_export", this);
         controller.registerHandler(POST, "/{index}/_export", this);
         controller.registerHandler(POST, "/{index}/{type}/_export", this);
+    }
+
+    protected Action action() {
+        return ExportAction.INSTANCE;
     }
 
     public void handleRequest(final RestRequest request, final RestChannel channel) {
@@ -75,7 +85,7 @@ public class RestExportAction extends BaseRestHandler {
             return;
         }
 
-        client.execute(ExportAction.INSTANCE, exportRequest, new ActionListener<ExportResponse>() {
+        client.execute(action(), exportRequest, new ActionListener<ExportResponse>() {
 
             public void onResponse(ExportResponse response) {
                 try {

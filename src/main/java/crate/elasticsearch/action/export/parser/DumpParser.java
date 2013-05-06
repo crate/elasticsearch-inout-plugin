@@ -1,8 +1,7 @@
 package crate.elasticsearch.action.export.parser;
 
-import java.util.HashMap;
-import java.util.Map;
-
+import crate.elasticsearch.action.export.ExportContext;
+import crate.elasticsearch.action.import_.parser.DirectoryParseElement;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.collect.ImmutableMap;
 import org.elasticsearch.common.inject.Inject;
@@ -16,55 +15,38 @@ import org.elasticsearch.search.fetch.FieldsParseElement;
 import org.elasticsearch.search.fetch.explain.ExplainParseElement;
 import org.elasticsearch.search.query.QueryPhase;
 
-import crate.elasticsearch.action.export.ExportContext;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * Parser for payload given to _export action.
+ * Created with IntelliJ IDEA.
+ * User: bernd
+ * Date: 03.05.13
+ * Time: 15:36
+ * To change this template use File | Settings | File Templates.
  */
-public class ExportParser implements IExportParser {
+public class DumpParser implements IExportParser {
+
+    public static final String[] DEFAULT_FIELDS = {"_id", "_source", "_timestamp", "_ttl", "_version", "_index", "_type", "_routing"};
+    public static final String FILENAME_PATTERN = "${cluster}_${index}_${shard}.json.gz";
+    public static final String DEFAULT_DIR = "./dump";
+
 
     private final ImmutableMap<String, SearchParseElement> elementParsers;
+    private final DumpDirectoryParseElement directoryParseElement = new DumpDirectoryParseElement();
+
 
     @Inject
-    public ExportParser(QueryPhase queryPhase, FetchPhase fetchPhase) {
+    public DumpParser(QueryPhase queryPhase, FetchPhase fetchPhase) {
         Map<String, SearchParseElement> elementParsers = new HashMap<String, SearchParseElement>();
         elementParsers.putAll(queryPhase.parseElements());
-        elementParsers.put("fields", new FieldsParseElement());
-        elementParsers.put("output_cmd", new ExportOutputCmdParseElement());
-        elementParsers.put("output_file", new ExportOutputFileParseElement());
         elementParsers.put("force_overwrite", new ExportForceOverwriteParseElement());
-        elementParsers.put("compression", new ExportCompressionParseElement());
-        elementParsers.put("explain", new ExplainParseElement());
+        elementParsers.put("directory", directoryParseElement);
         this.elementParsers = ImmutableMap.copyOf(elementParsers);
     }
 
     /**
-     * validate given payload
-     *
-     * @param context
-     */
-    private void validate(ExportContext context) {
-        if (!context.hasFieldNames()) {
-            throw new SearchParseException(context, "No export fields defined");
-        }
-        for (String field : context.fieldNames()) {
-            if (context.mapperService().name(field) == null && !field.equals("_version")) {
-                throw new SearchParseException(context, "Export field [" + field + "] does not exist in the mapping");
-            }
-        }
-
-        if (context.outputFile() != null) {
-            if (context.outputCmdArray() != null || context.outputCmd() != null) {
-                throw new SearchParseException(context, "Concurrent definition of 'output_cmd' and 'output_file'");
-            }
-        } else if (context.outputCmdArray() == null && context.outputCmd() == null) {
-            throw new SearchParseException(context, "'output_cmd' or 'output_file' has not been defined");
-        }
-
-    }
-
-    /**
-     * Main method of this class to parse given payload of _export action
+     * Main method of this class to parse given payload of _dump action
      *
      * @param context
      * @param source
@@ -72,6 +54,7 @@ public class ExportParser implements IExportParser {
      */
     public void parseSource(ExportContext context, BytesReference source) throws SearchParseException {
         XContentParser parser = null;
+        this.setDefaults(context);
         try {
             if (source != null) {
                 parser = XContentFactory.xContent(source).createParser(source);
@@ -90,7 +73,6 @@ public class ExportParser implements IExportParser {
                     }
                 }
             }
-            validate(context);
         } catch (Exception e) {
             String sSource = "_na_";
             try {
@@ -104,5 +86,19 @@ public class ExportParser implements IExportParser {
                 parser.close();
             }
         }
+    }
+
+    /**
+     * Set dump specific default values to the context like directory, compression or fields to export
+     *
+     * @param context
+     */
+    private void setDefaults(ExportContext context) {
+        directoryParseElement.setOutPutFile(context, DEFAULT_DIR);
+        context.compression(true);
+        for (int i = 0; i < DEFAULT_FIELDS.length; i++) {
+            context.fieldNames().add(DEFAULT_FIELDS[i]);
+        }
+
     }
 }
