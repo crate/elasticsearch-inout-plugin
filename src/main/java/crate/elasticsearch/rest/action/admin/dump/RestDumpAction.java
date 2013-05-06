@@ -12,11 +12,7 @@ import static org.elasticsearch.rest.RestRequest.Method.GET;
 import static org.elasticsearch.rest.RestRequest.Method.POST;
 
 /**
- * Created with IntelliJ IDEA.
- * User: bernd
- * Date: 03.05.13
- * Time: 10:05
- * To change this template use File | Settings | File Templates.
+ * Rest handler for _dump endpoint
  */
 public class RestDumpAction extends RestExportAction {
 
