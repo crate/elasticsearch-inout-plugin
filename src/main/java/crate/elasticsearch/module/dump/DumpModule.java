@@ -1,14 +1,8 @@
-package crate.elasticsearch.module.export;
+package crate.elasticsearch.module.dump;
 
 
-import crate.elasticsearch.action.export.AbstractTransportExportAction;
-import crate.elasticsearch.action.export.DumpAction;
-import crate.elasticsearch.action.export.ExportAction;
-import crate.elasticsearch.action.export.TransportDumpAction;
-import crate.elasticsearch.action.export.parser.DumpParser;
-import crate.elasticsearch.action.export.parser.ExportParser;
-import crate.elasticsearch.action.export.parser.IExportParser;
-import crate.elasticsearch.export.Exporter;
+import crate.elasticsearch.action.dump.TransportDumpAction;
+import crate.elasticsearch.action.dump.parser.DumpParser;
 import org.elasticsearch.action.GenericAction;
 import org.elasticsearch.action.support.TransportAction;
 import org.elasticsearch.common.inject.AbstractModule;

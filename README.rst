@@ -458,6 +458,60 @@ The JSON response of an import may look like this::
     - ``reason``: The error report of a specific node failure
 
 
+Dump
+====
+
+The _dump endpoint is a shortcut endpoint to export all underscore
+prefixed fields like _id, _source, _version etc. to either a given
+directory or to the sub folder 'dump' within the data directory of each
+node. Each file will get named by this pattern:
+
+    ${cluster}_${index}_${shard}.json.gz
+
+The endpoint is available on root level, on index level or on type
+level:
+
+    curl -X POST 'http://localhost:9200/_dump'
+
+    curl -X POST 'http://localhost:9200/myIndex/_dump'
+
+    curl -X POST 'http://localhost:9200/myIndex/myType/_dump'
+
+Since _dump might be called without any payload it's possible to
+access it via HTTP GET as well:
+
+    curl -X GET 'http://localhost:9200/_dump'
+
+Technically the call above is exactly the same like:
+
+    curl -X POST 'http://localhost:9200/_export' -d '{
+        "fields": ["_id", "_source", "_timestamp", "_ttl", "_version",
+                   "_index", "_type", "_routing"],
+        "output_file": "dump/${cluster}_${index}_${shard}.json.gz",
+        "compression": true }'
+
+
+Elements of the request body
+----------------------------
+
+``directory``
+~~~~~~~~~~~~~
+
+The directory option defines there to store exported files.  If the
+directory is a relative path, it is based on the absolute path of each
+node's first `node data location`. See ``output_file`` in export
+documentation for more information.
+
+``force_overwrite``
+~~~~~~~~~~~~~~~~~~~
+
+    "force_overwrite": true
+
+Boolean flag to force overwriting existing ``output_file``. This
+option is identical to the force_overwrite option of the _export
+endpoint.
+
+
 Installation
 ============
 
