@@ -12,6 +12,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
 import org.elasticsearch.ElasticSearchException;
@@ -72,11 +74,12 @@ public class Importer {
             if (context.file_pattern() == null) {
                 files = dir.listFiles();
             } else {
-                final String file_pattern = context.file_pattern();
+                final Pattern file_pattern = context.file_pattern();
                 files = dir.listFiles(new FilenameFilter() {
                     @Override
                     public boolean accept(File dir, String name) {
-                        if (name.matches(file_pattern)) {
+                        Matcher m = file_pattern.matcher(name);
+                        if (m.find()) {
                             return true;
                         }
                         return false;

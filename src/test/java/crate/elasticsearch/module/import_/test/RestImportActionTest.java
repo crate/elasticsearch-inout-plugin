@@ -303,6 +303,18 @@ public class RestImportActionTest extends TestCase {
     }
 
     /**
+     * A bad regex pattern leads to a failure response.
+     */
+    @Test
+    public void testBadFilePattern() {
+        String path = getClass().getResource("/importdata/import_8").getPath();
+        ImportResponse response = executeImportRequest("{\"directory\": \"" + path + "\", \"file_pattern\": \"(.*(d|||\"}");
+        List<Map<String, Object>> failures = getImportFailures(response);
+        assertEquals(1, failures.size());
+        assertTrue(failures.toString().contains("PatternSyntaxException: Unclosed group near index"));
+    }
+
+    /**
      * Make a subdirectory in each node's node data location.
      * @param directory
      */

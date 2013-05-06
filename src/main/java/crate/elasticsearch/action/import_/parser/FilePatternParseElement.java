@@ -1,5 +1,7 @@
 package crate.elasticsearch.action.import_.parser;
 
+import java.util.regex.Pattern;
+
 import org.elasticsearch.common.xcontent.XContentParser;
 
 import crate.elasticsearch.action.import_.ImportContext;
@@ -11,7 +13,8 @@ public class FilePatternParseElement implements ImportParseElement {
             throws Exception {
         XContentParser.Token token = parser.currentToken();
         if (token.isValue()) {
-            context.file_pattern(parser.text());
+            Pattern p = Pattern.compile(parser.text());
+            context.file_pattern(p);
         }
     }
 
