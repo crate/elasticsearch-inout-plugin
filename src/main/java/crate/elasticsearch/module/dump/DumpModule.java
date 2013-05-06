@@ -1,6 +1,7 @@
 package crate.elasticsearch.module.dump;
 
 
+import crate.elasticsearch.action.dump.DumpAction;
 import crate.elasticsearch.action.dump.TransportDumpAction;
 import crate.elasticsearch.action.dump.parser.DumpParser;
 import org.elasticsearch.action.GenericAction;
