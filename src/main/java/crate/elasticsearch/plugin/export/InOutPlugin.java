@@ -2,6 +2,8 @@ package crate.elasticsearch.plugin.export;
 
 import java.util.Collection;
 
+import crate.elasticsearch.module.dump.DumpModule;
+import crate.elasticsearch.rest.action.admin.dump.RestDumpAction;
 import org.elasticsearch.common.collect.Lists;
 import org.elasticsearch.common.inject.Module;
 import org.elasticsearch.plugins.AbstractPlugin;
@@ -25,12 +27,14 @@ public class InOutPlugin extends AbstractPlugin {
     public void onModule(RestModule restModule) {
         restModule.addRestAction(RestExportAction.class);
         restModule.addRestAction(RestImportAction.class);
+        restModule.addRestAction(RestDumpAction.class);
     }
 
     @Override
     public Collection<Class<? extends Module>> modules() {
         Collection<Class<? extends Module>> modules = Lists.newArrayList();
         modules.add(ExportModule.class);
+        modules.add(DumpModule.class);
         modules.add(ImportModule.class);
         return modules;
     }
