@@ -1,13 +1,14 @@
 package crate.elasticsearch.action.import_;
 
 import java.io.File;
+import java.util.regex.Pattern;
 
 public class ImportContext {
 
     private String nodePath;
     private boolean compression;
     private String directory;
-    private String file_pattern;
+    private Pattern file_pattern;
 
     public ImportContext(String nodePath) {
         this.nodePath = nodePath;
@@ -34,11 +35,11 @@ public class ImportContext {
         this.directory = directory;
     }
 
-    public String file_pattern() {
+    public Pattern file_pattern() {
         return file_pattern;
     }
 
-    public void file_pattern(String file_pattern) {
+    public void file_pattern(Pattern file_pattern) {
         this.file_pattern = file_pattern;
     }
 }

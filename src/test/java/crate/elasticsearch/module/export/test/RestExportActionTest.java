@@ -16,6 +16,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
 import junit.framework.TestCase;
@@ -540,9 +542,13 @@ public class RestExportActionTest extends TestCase {
         List<Map<String, Object>> infos = getExports(response);
         assertEquals(2, infos.size());
         String output_file_0 = infos.get(0).get("output_file").toString();
-        assertTrue(output_file_0.matches("(.*)/nodes/0/export.(\\d).users.json"));
         String output_file_1 = infos.get(1).get("output_file").toString();
-        assertTrue(output_file_1.matches("(.*)/nodes/1/export.(\\d).users.json"));
+        Pattern p = Pattern.compile("(.*)/nodes/(\\d)/export.(\\d).users.json");
+        Matcher m0 = p.matcher(output_file_0);
+        Matcher m1 = p.matcher(output_file_1);
+        assertTrue(m0.find());
+        assertTrue(m1.find());
+        assertTrue(m0.group(2) != m1.group(2));
     }
 
     private boolean deleteIndex(String name) {
