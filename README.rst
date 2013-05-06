@@ -481,34 +481,17 @@ The JSON response of an import may look like this::
 Dump
 ====
 
-The _dump endpoint is a shortcut endpoint to export all underscore
-prefixed fields like _id, _source, _version etc. to either a given
-directory or to the sub folder 'dump' within the data directory of each
-node. Each file will get named by this pattern:
+The idea behind dump is to export all relevant data to recreate the
+cluster as it was at the time of the dump.
 
-    ${cluster}_${index}_${shard}.json.gz
-
-The endpoint is available on root level, on index level or on type
-level:
+The basic usage of the endpoint is:
 
     curl -X POST 'http://localhost:9200/_dump'
 
-    curl -X POST 'http://localhost:9200/myIndex/_dump'
+All data will get saved to a subfolder within each nodes data directory.
 
-    curl -X POST 'http://localhost:9200/myIndex/myType/_dump'
-
-Since _dump might be called without any payload it's possible to
-access it via HTTP GET as well:
-
-    curl -X GET 'http://localhost:9200/_dump'
-
-Technically the call above is exactly the same like:
-
-    curl -X POST 'http://localhost:9200/_export' -d '{
-        "fields": ["_id", "_source", "_timestamp", "_ttl", "_version",
-                   "_index", "_type", "_routing"],
-        "output_file": "dump/${cluster}_${index}_${shard}.json.gz",
-        "compression": true }'
+It's possible to call _dump on root level, on index level or on type
+level.
 
 
 Elements of the request body
@@ -520,7 +503,8 @@ Elements of the request body
 The directory option defines there to store exported files.  If the
 directory is a relative path, it is based on the absolute path of each
 node's first `node data location`. See ``output_file`` in export
-documentation for more information.
+documentation for more information. If the directory was omitted the
+default location `dump`within the node data location will be used.
 
 ``force_overwrite``
 ~~~~~~~~~~~~~~~~~~~
