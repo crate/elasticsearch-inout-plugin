@@ -478,6 +478,44 @@ The JSON response of an import may look like this::
     - ``reason``: The error report of a specific node failure
 
 
+Dump
+====
+
+The idea behind dump is to export all relevant data to recreate the
+cluster as it was at the time of the dump.
+
+The basic usage of the endpoint is:
+
+    curl -X POST 'http://localhost:9200/_dump'
+
+All data will get saved to a subfolder within each nodes data directory.
+
+It's possible to call _dump on root level, on index level or on type
+level.
+
+
+Elements of the request body
+----------------------------
+
+``directory``
+~~~~~~~~~~~~~
+
+The directory option defines there to store exported files.  If the
+directory is a relative path, it is based on the absolute path of each
+node's first `node data location`. See ``output_file`` in export
+documentation for more information. If the directory was omitted the
+default location `dump`within the node data location will be used.
+
+``force_overwrite``
+~~~~~~~~~~~~~~~~~~~
+
+    "force_overwrite": true
+
+Boolean flag to force overwriting existing ``output_file``. This
+option is identical to the force_overwrite option of the _export
+endpoint.
+
+
 Installation
 ============
 

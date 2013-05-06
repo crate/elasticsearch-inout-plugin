@@ -2,7 +2,7 @@ package crate.elasticsearch.plugin.export;
 
 import java.util.Collection;
 
-import crate.elasticsearch.module.export.DumpModule;
+import crate.elasticsearch.module.dump.DumpModule;
 import crate.elasticsearch.rest.action.admin.dump.RestDumpAction;
 import org.elasticsearch.common.collect.Lists;
 import org.elasticsearch.common.inject.Module;

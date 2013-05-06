@@ -29,18 +29,14 @@ import org.elasticsearch.rest.RestController;
 import org.elasticsearch.rest.RestRequest;
 import org.elasticsearch.rest.XContentThrowableRestResponse;
 
-import crate.elasticsearch.action.export.DumpAction;
+import crate.elasticsearch.action.dump.DumpAction;
 import crate.elasticsearch.action.export.ExportRequest;
 import crate.elasticsearch.action.export.ExportResponse;
 import crate.elasticsearch.action.export.IndexCreationRequest;
 import crate.elasticsearch.rest.action.admin.export.RestExportAction;
 
 /**
- * Created with IntelliJ IDEA.
- * User: bernd
- * Date: 03.05.13
- * Time: 10:05
- * To change this template use File | Settings | File Templates.
+ * Rest handler for _dump endpoint
  */
 public class RestDumpAction extends RestExportAction {
 

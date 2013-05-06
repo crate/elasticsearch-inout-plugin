@@ -1,4 +1,4 @@
-package crate.elasticsearch.action.export.parser;
+package crate.elasticsearch.action.dump.parser;
 
 import crate.elasticsearch.action.export.ExportContext;
 import crate.elasticsearch.action.import_.ImportContext;

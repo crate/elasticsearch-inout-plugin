@@ -1,6 +1,5 @@
 package crate.elasticsearch.action.export;
 
-import crate.elasticsearch.action.export.parser.DumpParser;
 import crate.elasticsearch.action.export.parser.ExportParser;
 import crate.elasticsearch.export.Exporter;
 import org.elasticsearch.cluster.ClusterService;

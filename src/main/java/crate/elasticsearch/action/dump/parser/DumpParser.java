@@ -1,6 +1,8 @@
-package crate.elasticsearch.action.export.parser;
+package crate.elasticsearch.action.dump.parser;
 
 import crate.elasticsearch.action.export.ExportContext;
+import crate.elasticsearch.action.export.parser.ExportForceOverwriteParseElement;
+import crate.elasticsearch.action.export.parser.IExportParser;
 import crate.elasticsearch.action.import_.parser.DirectoryParseElement;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.collect.ImmutableMap;
@@ -20,11 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Created with IntelliJ IDEA.
- * User: bernd
- * Date: 03.05.13
- * Time: 15:36
- * To change this template use File | Settings | File Templates.
+ * Dump specific parser class
  */
 public class DumpParser implements IExportParser {
 
@@ -104,7 +102,6 @@ public class DumpParser implements IExportParser {
         for (int i = 0; i < DEFAULT_FIELDS.length; i++) {
             context.fieldNames().add(DEFAULT_FIELDS[i]);
         }
-
     }
 
     /**

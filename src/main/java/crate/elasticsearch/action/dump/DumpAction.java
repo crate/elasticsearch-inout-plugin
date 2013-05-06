@@ -1,5 +1,7 @@
-package crate.elasticsearch.action.export;
+package crate.elasticsearch.action.dump;
 
+import crate.elasticsearch.action.export.ExportRequest;
+import crate.elasticsearch.action.export.ExportResponse;
 import crate.elasticsearch.client.action.export.ExportRequestBuilder;
 import org.elasticsearch.action.Action;
 import org.elasticsearch.client.Client;
