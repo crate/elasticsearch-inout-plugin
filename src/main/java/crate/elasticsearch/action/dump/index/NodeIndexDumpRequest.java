@@ -1,4 +1,4 @@
-package crate.elasticsearch.action.export;
+package crate.elasticsearch.action.dump.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -6,21 +6,21 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.elasticsearch.action.support.nodes.NodesOperationRequest;
+import org.elasticsearch.action.support.nodes.NodeOperationRequest;
 import org.elasticsearch.cluster.metadata.MappingMetaData;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
 
-public class IndexCreationRequest extends NodesOperationRequest<IndexCreationRequest> {
+public class NodeIndexDumpRequest extends NodeOperationRequest {
 
     private Map<String, List<MappingMetaData>> mappings;
 
-    public void mappings(Map<String, List<MappingMetaData>> mappings) {
-        this.mappings = mappings;
+    public NodeIndexDumpRequest() {
     }
 
-    public Map<String, List<MappingMetaData>> mappings() {
-        return mappings;
+    public NodeIndexDumpRequest(String nodeId, IndexDumpRequest request) {
+        super(request, nodeId);
+        this.mappings = request.mappings();
     }
 
     @Override
@@ -51,5 +51,9 @@ public class IndexCreationRequest extends NodesOperationRequest<IndexCreationReq
                 MappingMetaData.writeTo(metaData, out);
             }
         }
+    }
+
+    public Map<String, List<MappingMetaData>> mappings() {
+        return mappings;
     }
 }

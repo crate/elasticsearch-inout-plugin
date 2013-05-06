@@ -3,6 +3,8 @@ package crate.elasticsearch.module.dump;
 
 import crate.elasticsearch.action.dump.DumpAction;
 import crate.elasticsearch.action.dump.TransportDumpAction;
+import crate.elasticsearch.action.dump.index.IndexDumpAction;
+import crate.elasticsearch.action.dump.index.TransportIndexDumpAction;
 import crate.elasticsearch.action.dump.parser.DumpParser;
 import org.elasticsearch.action.GenericAction;
 import org.elasticsearch.action.support.TransportAction;
@@ -20,8 +22,10 @@ public class DumpModule extends AbstractModule {
         MapBinder<GenericAction, TransportAction> transportActionsBinder = MapBinder.newMapBinder(binder(), GenericAction.class, TransportAction.class);
 
         transportActionsBinder.addBinding(DumpAction.INSTANCE).to(TransportDumpAction.class).asEagerSingleton();
+        transportActionsBinder.addBinding(IndexDumpAction.INSTANCE).to(TransportIndexDumpAction.class).asEagerSingleton();
 
         MapBinder<String, GenericAction> actionsBinder = MapBinder.newMapBinder(binder(), String.class, GenericAction.class);
         actionsBinder.addBinding(DumpAction.NAME).toInstance(DumpAction.INSTANCE);
+        actionsBinder.addBinding(IndexDumpAction.NAME).toInstance(IndexDumpAction.INSTANCE);
     }
 }

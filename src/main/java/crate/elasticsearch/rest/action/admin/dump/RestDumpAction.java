@@ -30,9 +30,10 @@ import org.elasticsearch.rest.RestRequest;
 import org.elasticsearch.rest.XContentThrowableRestResponse;
 
 import crate.elasticsearch.action.dump.DumpAction;
+import crate.elasticsearch.action.dump.index.IndexDumpAction;
+import crate.elasticsearch.action.dump.index.IndexDumpRequest;
 import crate.elasticsearch.action.export.ExportRequest;
 import crate.elasticsearch.action.export.ExportResponse;
-import crate.elasticsearch.action.export.IndexCreationRequest;
 import crate.elasticsearch.rest.action.admin.export.RestExportAction;
 
 /**
@@ -60,8 +61,7 @@ public class RestDumpAction extends RestExportAction {
     @Override
     public void handleRequest(RestRequest request, RestChannel channel) {
         try {
-            IndexCreationRequest icr = new IndexCreationRequest();
-            getMappings(request, channel, icr);
+            getMappings(request, channel);
         } catch (IOException e) {
             try {
                 channel.sendResponse(new XContentThrowableRestResponse(request, e));
@@ -74,7 +74,8 @@ public class RestDumpAction extends RestExportAction {
         super.handleRequest(request, channel);
     }
 
-    private boolean getMappings(RestRequest request, RestChannel channel, IndexCreationRequest icr) throws IOException {
+    private boolean getMappings(RestRequest request, RestChannel channel) throws IOException {
+        IndexDumpRequest icr = new IndexDumpRequest();
         final String[] indices = splitIndices(request.param("index"));
         final Set<String> types = ImmutableSet.copyOf(splitTypes(request.param("type")));
 
@@ -104,6 +105,7 @@ public class RestDumpAction extends RestExportAction {
             mappings.put(indexMetaData.index(), indexMappings);
         }
         icr.mappings(mappings);
+        client.execute(IndexDumpAction.INSTANCE, icr).actionGet();
         return true;
     }
 }
