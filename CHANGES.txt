@@ -5,6 +5,8 @@ Changes for Elasticsearch InOut Plugin
 Unreleased
 ==========
 
+ - added file_pattern parameter to import endpoint
+
  - support for relative paths on export and import
 
  - renamed 'node' in export output to 'node_id'
