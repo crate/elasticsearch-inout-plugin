@@ -31,9 +31,6 @@ public class RestDumpAction extends RestExportAction {
         controller.registerHandler(POST, "/_dump", this);
         controller.registerHandler(POST, "/{index}/_dump", this);
         controller.registerHandler(POST, "/{index}/{type}/_dump", this);
-        controller.registerHandler(GET, "/_dump", this);
-        controller.registerHandler(GET, "/{index}/_dump", this);
-        controller.registerHandler(GET, "/{index}/{type}/_dump", this);
     }
 
 }
