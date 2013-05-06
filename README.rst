@@ -181,8 +181,17 @@ Some variable substitution is possible (see Variable Substitution)
     "output_file": "/tmp/dump"
 
 A path to the resulting output file. The containing directory of the
-given ``output_file`` has to exist. The given ``output_file`` MUST NOT exist.
-Some variable substitution is possible (see Variable Substitution).
+given ``output_file`` has to exist. The given ``output_file`` MUST NOT exist,
+unless the parameter ``force_overwrite`` is set to true.
+
+If the path of the output file is relative, the files will be stored relative
+to each node's first `node data location`, which is usually a subdirectory of
+the configured data location. This absolute path can be seen in the JSON
+response of the request. If you don't know where this location is, you can do
+a dry-run with the ``explain`` element set to ``true`` to find out.
+
+Some variable substitution in the output_file's name is also possible (see
+Variable Substitution).
 
 - Required (if ``output_cmd`` has been omitted)
 
@@ -375,6 +384,10 @@ Elements of the request body
 
 Specifies the directory where the files to be imported reside. Every single
 node of the cluster imports files from that directory on it's file system.
+
+If the directory is a relative path, it is based on the absolute path of each
+node's first `node data location`. See ``output_file`` in export documentation
+for more information.
 
 ``compression``
 ~~~~~~~~~~~~~~~
