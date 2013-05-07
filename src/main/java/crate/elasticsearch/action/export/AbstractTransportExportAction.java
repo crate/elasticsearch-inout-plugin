@@ -1,8 +1,14 @@
 package crate.elasticsearch.action.export;
 
-import crate.elasticsearch.action.export.parser.ExportParser;
-import crate.elasticsearch.action.export.parser.IExportParser;
-import crate.elasticsearch.export.Exporter;
+import static org.elasticsearch.common.collect.Lists.newArrayList;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReferenceArray;
+
 import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.action.ShardOperationFailedException;
 import org.elasticsearch.action.support.DefaultShardOperationFailedException;
@@ -15,8 +21,6 @@ import org.elasticsearch.cluster.block.ClusterBlockLevel;
 import org.elasticsearch.cluster.routing.GroupShardsIterator;
 import org.elasticsearch.cluster.routing.ShardRouting;
 import org.elasticsearch.common.bytes.BytesReference;
-import org.elasticsearch.common.inject.Inject;
-import org.elasticsearch.common.inject.name.Named;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.env.NodeEnvironment;
 import org.elasticsearch.index.service.IndexService;
@@ -30,14 +34,8 @@ import org.elasticsearch.search.query.QueryPhaseExecutionException;
 import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.transport.TransportService;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicReferenceArray;
-
-import static org.elasticsearch.common.collect.Lists.newArrayList;
+import crate.elasticsearch.action.export.parser.IExportParser;
+import crate.elasticsearch.export.Exporter;
 
 
 /**

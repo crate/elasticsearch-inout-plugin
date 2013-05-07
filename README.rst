@@ -244,6 +244,30 @@ http://www.elasticsearch.org/guide/reference/query-dsl/
 
 - Optional
 
+``settings``
+~~~~~~~~~~~~
+
+    "settings": true
+
+Option to generate an index settings file next to the data files on all
+corresponding shards. The generated settings file has the generated name of
+the output file with the ``.settings`` extension. This option is only possible
+if the option ``output_file`` has been defined.
+
+- Optional (defaults to false)
+
+``mappings``
+~~~~~~~~~~~~
+
+    "mappings": true
+
+Option to generate an index mapping file next to the data files on all
+corresponding shards. The generated mapping file has the generated name of
+the output file with an ``.mapping`` extension. This option is only possible
+if the option ``output_file`` has been defined.
+
+- Optional (defaults to false)
+
 
 Get parameters
 --------------
@@ -488,7 +512,8 @@ The basic usage of the endpoint is:
 
     curl -X POST 'http://localhost:9200/_dump'
 
-All data will get saved to a subfolder within each nodes data directory.
+All data (including also settings and mappings) will get saved to a subfolder
+within each nodes data directory.
 
 It's possible to call _dump on root level, on index level or on type
 level.
