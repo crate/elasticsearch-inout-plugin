@@ -123,6 +123,8 @@ public class RestDumpActionTest extends TestCase {
      * be replaced with the index name - ${shard} : will be replaced with the
      * shard name
      * <p/>
+     * Also the .settings and .mapping files will be generated in the same path.
+     * <p/>
      * The response contains the index, the shard number, the node name and the
      * generated output file name of every shard result.
      */
@@ -134,6 +136,10 @@ public class RestDumpActionTest extends TestCase {
         String filename_1 = "/tmp/" + clusterName + "_users_1.json.gz";
         new File(filename_0).delete();
         new File(filename_1).delete();
+        new File(filename_0 + ".settings").delete();
+        new File(filename_1 + ".settings").delete();
+        new File(filename_0 + ".mapping").delete();
+        new File(filename_1 + ".mapping").delete();
 
         ExportResponse response = executeDumpRequest(
                 "{\"directory\": \"/tmp\"}");
@@ -159,6 +165,11 @@ public class RestDumpActionTest extends TestCase {
         assertEquals(2, lines_1.size());
         assertEquals("{\"_id\":\"2\",\"_source\":{\"name\":\"bike\"},\"_version\":1,\"_index\":\"users\",\"_type\":\"d\"}", lines_1.get(0));
         assertEquals("{\"_id\":\"4\",\"_source\":{\"name\":\"bus\"},\"_version\":1,\"_index\":\"users\",\"_type\":\"d\"}", lines_1.get(1));
+
+        assertTrue(new File(filename_0 + ".settings").exists());
+        assertTrue(new File(filename_0 + ".mapping").exists());
+        assertTrue(new File(filename_1 + ".settings").exists());
+        assertTrue(new File(filename_1 + ".mapping").exists());
     }
 
 

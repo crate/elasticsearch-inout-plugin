@@ -35,6 +35,8 @@ public class ExportParser implements IExportParser {
         elementParsers.put("force_overwrite", new ExportForceOverwriteParseElement());
         elementParsers.put("compression", new ExportCompressionParseElement());
         elementParsers.put("explain", new ExplainParseElement());
+        elementParsers.put("mappings", new ExportMappingsParseElement());
+        elementParsers.put("settings", new ExportSettingsParseElement());
         this.elementParsers = ImmutableMap.copyOf(elementParsers);
     }
 
@@ -52,15 +54,17 @@ public class ExportParser implements IExportParser {
                 throw new SearchParseException(context, "Export field [" + field + "] does not exist in the mapping");
             }
         }
-
         if (context.outputFile() != null) {
             if (context.outputCmdArray() != null || context.outputCmd() != null) {
                 throw new SearchParseException(context, "Concurrent definition of 'output_cmd' and 'output_file'");
             }
         } else if (context.outputCmdArray() == null && context.outputCmd() == null) {
             throw new SearchParseException(context, "'output_cmd' or 'output_file' has not been defined");
+        } else if (context.outputFile() == null && context.settings()) {
+            throw new SearchParseException(context, "Parameter 'settings' requires usage of 'output_file'");
+        } else if (context.outputFile() == null && context.mappings()) {
+            throw new SearchParseException(context, "Parameter 'mappings' requires usage of 'output_file'");
         }
-
     }
 
     /**
