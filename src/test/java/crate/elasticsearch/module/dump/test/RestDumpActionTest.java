@@ -55,6 +55,7 @@ public class RestDumpActionTest extends TestCase {
      * Without any given payload the dump endpoint will export to the default location
      * ``dump`` within the data folder of each node
      */
+    @Test
     public void testNoOption() throws IOException {
         deleteDefaultDir();
         ExportResponse response = executeDumpRequest();

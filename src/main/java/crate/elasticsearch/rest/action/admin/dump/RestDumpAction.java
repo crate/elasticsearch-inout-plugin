@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.elasticsearch.action.Action;
+import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.admin.cluster.state.ClusterStateRequest;
 import org.elasticsearch.action.admin.cluster.state.ClusterStateResponse;
 import org.elasticsearch.client.Client;
@@ -66,24 +67,51 @@ public class RestDumpAction extends RestExportAction {
     }
 
     @Override
-    public void handleRequest(RestRequest request, RestChannel channel) {
+    public void handleRequest(final RestRequest request, final RestChannel channel) {
         try {
-            if (!getMappings(request, channel)) {
-                return;
+            final IndexDumpResponse indexDumpResponse = writeMappings(request, channel);
+            if (indexDumpResponse != null) {
+                ExportRequest exportRequest = prepareExportRequest(request, channel);
+                client.execute(action(), exportRequest, new ActionListener<ExportResponse>() {
+
+                    public void onResponse(ExportResponse response) {
+                        try {
+                            XContentBuilder builder = RestXContentBuilder.restContentBuilder(request);
+                            builder.startObject();
+                            builder.field("metadata");
+                            indexDumpResponse.toXContent(builder, request);
+                            builder.field("data");
+                            response.toXContent(builder, request);
+                            builder.endObject();
+                            channel.sendResponse(new XContentRestResponse(request, OK, builder));
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            onFailure(e);
+                        }
+                    }
+
+                    public void onFailure(Throwable e) {
+                        e.printStackTrace();
+                        sendFailureResponse(request, channel, e);
+                    }
+                });
+
             }
         } catch (IOException e) {
-            try {
-                channel.sendResponse(new XContentThrowableRestResponse(request, e));
-            } catch (IOException e1) {
-                logger.error("Failed to send failure response", e1);
-            }
+            sendFailureResponse(request, channel, e);
             return;
         }
-
-        super.handleRequest(request, channel);
     }
 
-    private boolean getMappings(RestRequest request, RestChannel channel) throws IOException {
+    private void sendFailureResponse(RestRequest request, RestChannel channel, Throwable e) {
+        try {
+            channel.sendResponse(new XContentThrowableRestResponse(request, e));
+        } catch (IOException e1) {
+            logger.error("Failed to send failure response", e1);
+        }
+    }
+
+    private IndexDumpResponse writeMappings(RestRequest request, RestChannel channel) throws IOException {
         IndexDumpRequest idr = new IndexDumpRequest();
         if (request.hasContent()) {
             idr.source(request.content());
@@ -113,7 +141,7 @@ public class RestDumpAction extends RestExportAction {
 
         if (indices.length == 1 && metaData.indices().isEmpty()) {
             channel.sendResponse(new XContentThrowableRestResponse(request, new IndexMissingException(new Index(indices[0]))));
-            return false;
+            return null;
         }
         boolean hasTypes = !types.isEmpty();
         Map<String, List<MappingMetaData>> mappings = new HashMap<String,List<MappingMetaData>>();
@@ -130,10 +158,13 @@ public class RestDumpAction extends RestExportAction {
         IndexDumpResponse resp = client.execute(IndexDumpAction.INSTANCE, idr).actionGet();
         if (resp.nodeFailures() != null) {
             XContentBuilder builder = RestXContentBuilder.restContentBuilder(request);
+            builder.startObject();
+            builder.field("metadata");
             resp.toXContent(builder, request);
+            builder.endObject();
             channel.sendResponse(new XContentRestResponse(request, OK, builder));
-            return false;
+            return null;
         }
-        return true;
+        return resp;
     }
 }

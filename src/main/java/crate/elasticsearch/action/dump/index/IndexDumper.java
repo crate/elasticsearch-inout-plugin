@@ -19,7 +19,6 @@ public class IndexDumper {
         File dumpDir = new File(context.directory());
         Result result = new Result();
         result.mappingsFile = createMappingsFile(overwrite, dumpDir, request.mappings());
-        System.out.println(result.mappingsFile);
         return result;
     }
 
