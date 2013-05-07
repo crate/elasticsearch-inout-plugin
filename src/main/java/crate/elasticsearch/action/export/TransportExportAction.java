@@ -25,4 +25,8 @@ public class TransportExportAction extends AbstractTransportExportAction {
         super(settings, threadPool, clusterService, transportService, indicesService, scriptService, exportParser, exporter, nodeEnv);
     }
 
+    @Override
+    protected String transportAction() {
+        return ExportAction.NAME;
+    }
 }

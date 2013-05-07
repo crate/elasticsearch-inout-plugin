@@ -209,6 +209,17 @@ public class RestDumpActionTest extends TestCase {
      */
     @Test
     public void testWithMultipleNodes() {
+
+        // make sure target directory exists and is empty
+        File dumpDir = new File("/tmp/multipleNodes");
+        if (dumpDir.exists()) {
+            for (File c : dumpDir.listFiles()) {
+                c.delete();
+            }
+            dumpDir.delete();
+        }
+        dumpDir.mkdir();
+
         // Prepare a second node and wait for relocation
         esSetup2 = new EsSetup();
         esSetup2.execute(index("users", "d").withSource("{\"name\": \"motorbike\"}"));
@@ -216,10 +227,10 @@ public class RestDumpActionTest extends TestCase {
             setWaitForNodes("2").setWaitForRelocatingShards(0).execute().actionGet();
 
         // Do dump request
-        String source = "{\"force_overwrite\": true}";
+        String source = "{\"force_overwrite\": true, \"directory\":\"/tmp/multipleNodes\"}";
         ExportRequest exportRequest = new ExportRequest();
         exportRequest.source(source);
-        ExportResponse response = esSetup2.client().execute(
+        ExportResponse response = esSetup.client().execute(
                 DumpAction.INSTANCE, exportRequest).actionGet();
 
         // The two shard results are from different nodes and have no failures

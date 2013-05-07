@@ -43,7 +43,7 @@ import static org.elasticsearch.common.collect.Lists.newArrayList;
 /**
  *
  */
-public class AbstractTransportExportAction extends TransportBroadcastOperationAction<ExportRequest, ExportResponse, ShardExportRequest, ShardExportResponse> {
+public abstract class AbstractTransportExportAction extends TransportBroadcastOperationAction<ExportRequest, ExportResponse, ShardExportRequest, ShardExportResponse> {
 
     private final IndicesService indicesService;
 
@@ -73,11 +73,6 @@ public class AbstractTransportExportAction extends TransportBroadcastOperationAc
     @Override
     protected String executor() {
         return ThreadPool.Names.SEARCH;
-    }
-
-    @Override
-    protected String transportAction() {
-        return ExportAction.NAME;
     }
 
     @Override
