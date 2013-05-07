@@ -45,6 +45,33 @@ public class RestExportAction extends BaseRestHandler {
     }
 
     public void handleRequest(final RestRequest request, final RestChannel channel) {
+        ExportRequest exportRequest = prepareExportRequest(request, channel);
+        client.execute(action(), exportRequest, new ActionListener<ExportResponse>() {
+
+            public void onResponse(ExportResponse response) {
+                try {
+                    XContentBuilder builder = RestXContentBuilder.restContentBuilder(request);
+                    builder.startObject();
+                    response.toXContent(builder, request);
+                    builder.endObject();
+                    channel.sendResponse(new XContentRestResponse(request, OK, builder));
+                } catch (Exception e) {
+                    onFailure(e);
+                }
+            }
+
+            public void onFailure(Throwable e) {
+                try {
+                    channel.sendResponse(new XContentThrowableRestResponse(request, e));
+                } catch (IOException e1) {
+                    logger.error("Failed to send failure response", e1);
+                }
+            }
+        });
+
+    }
+
+    protected ExportRequest prepareExportRequest(final RestRequest request, final RestChannel channel) {
         ExportRequest exportRequest = new ExportRequest(RestActions.splitIndices(request.param("index")));
 
         if (request.hasParam("ignore_indices")) {
@@ -81,29 +108,8 @@ public class RestExportAction extends BaseRestHandler {
             } catch (IOException e1) {
                 logger.error("Failed to send failure response", e1);
             }
-            return;
+            return null;
         }
-
-        client.execute(action(), exportRequest, new ActionListener<ExportResponse>() {
-
-            public void onResponse(ExportResponse response) {
-                try {
-                    XContentBuilder builder = RestXContentBuilder.restContentBuilder(request);
-                    response.toXContent(builder, request);
-                    channel.sendResponse(new XContentRestResponse(request, OK, builder));
-                } catch (Exception e) {
-                    onFailure(e);
-                }
-            }
-
-            public void onFailure(Throwable e) {
-                try {
-                    channel.sendResponse(new XContentThrowableRestResponse(request, e));
-                } catch (IOException e1) {
-                    logger.error("Failed to send failure response", e1);
-                }
-            }
-        });
-
+        return exportRequest;
     }
 }

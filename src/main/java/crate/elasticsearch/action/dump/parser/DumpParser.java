@@ -1,9 +1,9 @@
 package crate.elasticsearch.action.dump.parser;
 
-import crate.elasticsearch.action.export.ExportContext;
-import crate.elasticsearch.action.export.parser.ExportForceOverwriteParseElement;
-import crate.elasticsearch.action.export.parser.IExportParser;
-import crate.elasticsearch.action.import_.parser.DirectoryParseElement;
+import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.collect.ImmutableMap;
 import org.elasticsearch.common.inject.Inject;
@@ -13,13 +13,11 @@ import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.search.SearchParseElement;
 import org.elasticsearch.search.SearchParseException;
 import org.elasticsearch.search.fetch.FetchPhase;
-import org.elasticsearch.search.fetch.FieldsParseElement;
-import org.elasticsearch.search.fetch.explain.ExplainParseElement;
 import org.elasticsearch.search.query.QueryPhase;
 
-import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
+import crate.elasticsearch.action.export.ExportContext;
+import crate.elasticsearch.action.export.parser.ExportForceOverwriteParseElement;
+import crate.elasticsearch.action.export.parser.IExportParser;
 
 /**
  * Dump specific parser class
@@ -56,7 +54,7 @@ public class DumpParser implements IExportParser {
         XContentParser parser = null;
         this.setDefaults(context);
         try {
-            if (source != null) {
+            if (source != null && source.length() > 0) {
                 parser = XContentFactory.xContent(source).createParser(source);
                 XContentParser.Token token;
                 while ((token = parser.nextToken()) != XContentParser.Token.END_OBJECT) {

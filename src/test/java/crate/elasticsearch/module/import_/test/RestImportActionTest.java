@@ -291,7 +291,6 @@ public class RestImportActionTest extends TestCase {
         List<Map<String, Object>> imports = getImports(response);
         assertEquals(1, imports.size());
         Map<String, Object> nodeInfo = imports.get(0);
-        System.out.println(imports);
         List imported = (List) nodeInfo.get("imported_files");
         assertTrue(imported.size() == 1);
         assertTrue(imported.get(0).toString().matches(
