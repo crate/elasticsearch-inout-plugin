@@ -1,6 +1,7 @@
 package crate.elasticsearch.rest.action.admin.dump;
 
 import static org.elasticsearch.rest.RestRequest.Method.POST;
+import static org.elasticsearch.rest.RestStatus.OK;
 import static org.elasticsearch.rest.action.support.RestActions.splitIndices;
 import static org.elasticsearch.rest.action.support.RestActions.splitTypes;
 
@@ -19,19 +20,25 @@ import org.elasticsearch.client.Requests;
 import org.elasticsearch.cluster.metadata.IndexMetaData;
 import org.elasticsearch.cluster.metadata.MappingMetaData;
 import org.elasticsearch.cluster.metadata.MetaData;
+import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.collect.ImmutableSet;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.index.Index;
 import org.elasticsearch.indices.IndexMissingException;
 import org.elasticsearch.rest.RestChannel;
 import org.elasticsearch.rest.RestController;
 import org.elasticsearch.rest.RestRequest;
+import org.elasticsearch.rest.XContentRestResponse;
 import org.elasticsearch.rest.XContentThrowableRestResponse;
+import org.elasticsearch.rest.action.support.RestActions;
+import org.elasticsearch.rest.action.support.RestXContentBuilder;
 
 import crate.elasticsearch.action.dump.DumpAction;
 import crate.elasticsearch.action.dump.index.IndexDumpAction;
 import crate.elasticsearch.action.dump.index.IndexDumpRequest;
+import crate.elasticsearch.action.dump.index.IndexDumpResponse;
 import crate.elasticsearch.action.export.ExportRequest;
 import crate.elasticsearch.action.export.ExportResponse;
 import crate.elasticsearch.rest.action.admin.export.RestExportAction;
@@ -61,7 +68,9 @@ public class RestDumpAction extends RestExportAction {
     @Override
     public void handleRequest(RestRequest request, RestChannel channel) {
         try {
-            getMappings(request, channel);
+            if (!getMappings(request, channel)) {
+                return;
+            }
         } catch (IOException e) {
             try {
                 channel.sendResponse(new XContentThrowableRestResponse(request, e));
@@ -75,7 +84,20 @@ public class RestDumpAction extends RestExportAction {
     }
 
     private boolean getMappings(RestRequest request, RestChannel channel) throws IOException {
-        IndexDumpRequest icr = new IndexDumpRequest();
+        IndexDumpRequest idr = new IndexDumpRequest();
+        if (request.hasContent()) {
+            idr.source(request.content());
+        } else {
+            String source = request.param("source");
+            if (source != null) {
+                idr.source(source);
+            } else {
+                BytesReference querySource = RestActions.parseQuerySource(request);
+                if (querySource != null) {
+                    idr.source(querySource);
+                }
+            }
+        }
         final String[] indices = splitIndices(request.param("index"));
         final Set<String> types = ImmutableSet.copyOf(splitTypes(request.param("type")));
 
@@ -104,8 +126,14 @@ public class RestDumpAction extends RestExportAction {
             }
             mappings.put(indexMetaData.index(), indexMappings);
         }
-        icr.mappings(mappings);
-        client.execute(IndexDumpAction.INSTANCE, icr).actionGet();
+        idr.mappings(mappings);
+        IndexDumpResponse resp = client.execute(IndexDumpAction.INSTANCE, idr).actionGet();
+        if (resp.nodeFailures() != null) {
+            XContentBuilder builder = RestXContentBuilder.restContentBuilder(request);
+            resp.toXContent(builder, request);
+            channel.sendResponse(new XContentRestResponse(request, OK, builder));
+            return false;
+        }
         return true;
     }
 }

@@ -1,15 +1,18 @@
 package crate.elasticsearch.module.dump;
 
 
-import crate.elasticsearch.action.dump.DumpAction;
-import crate.elasticsearch.action.dump.TransportDumpAction;
-import crate.elasticsearch.action.dump.index.IndexDumpAction;
-import crate.elasticsearch.action.dump.index.TransportIndexDumpAction;
-import crate.elasticsearch.action.dump.parser.DumpParser;
 import org.elasticsearch.action.GenericAction;
 import org.elasticsearch.action.support.TransportAction;
 import org.elasticsearch.common.inject.AbstractModule;
 import org.elasticsearch.common.inject.multibindings.MapBinder;
+
+import crate.elasticsearch.action.dump.DumpAction;
+import crate.elasticsearch.action.dump.TransportDumpAction;
+import crate.elasticsearch.action.dump.index.IndexDumpAction;
+import crate.elasticsearch.action.dump.index.IndexDumper;
+import crate.elasticsearch.action.dump.index.TransportIndexDumpAction;
+import crate.elasticsearch.action.dump.index.parser.IndexDumpParser;
+import crate.elasticsearch.action.dump.parser.DumpParser;
 
 public class DumpModule extends AbstractModule {
 
@@ -18,6 +21,8 @@ public class DumpModule extends AbstractModule {
         bind(TransportDumpAction.class).asEagerSingleton();
 
         bind(DumpParser.class).asEagerSingleton();
+        bind(IndexDumpParser.class).asEagerSingleton();
+        bind(IndexDumper.class).asEagerSingleton();
 
         MapBinder<GenericAction, TransportAction> transportActionsBinder = MapBinder.newMapBinder(binder(), GenericAction.class, TransportAction.class);
 

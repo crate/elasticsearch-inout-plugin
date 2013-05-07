@@ -20,14 +20,9 @@ public class IndexDumpResponse extends NodesOperationResponse<NodeIndexDumpRespo
     public IndexDumpResponse() {
     }
 
-    public IndexDumpResponse(List<NodeIndexDumpResponse> responses, int total,
-            int successfulNodes, int failedNodes, List<FailedNodeException> nodeFailures) {
+    public IndexDumpResponse(List<NodeIndexDumpResponse> responses, List<FailedNodeException> nodeFailures) {
         this.responses = responses;
         this.nodeFailures = nodeFailures;
-    }
-
-    public List<NodeIndexDumpResponse> getResponses() {
-        return responses;
     }
 
     @Override
@@ -85,4 +80,7 @@ public class IndexDumpResponse extends NodesOperationResponse<NodeIndexDumpRespo
         }
     }
 
+    public List<FailedNodeException> nodeFailures() {
+        return nodeFailures;
+    }
 }
