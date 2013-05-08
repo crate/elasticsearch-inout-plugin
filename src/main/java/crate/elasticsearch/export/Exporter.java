@@ -1,14 +1,6 @@
 package crate.elasticsearch.export;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
+import crate.elasticsearch.action.export.ExportContext;
 import org.apache.lucene.search.Query;
 import org.elasticsearch.action.admin.cluster.state.ClusterStateRequest;
 import org.elasticsearch.action.admin.cluster.state.ClusterStateResponse;
@@ -29,7 +21,14 @@ import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.search.fetch.FetchSubPhase;
 import org.elasticsearch.search.fetch.version.VersionFetchSubPhase;
 
-import crate.elasticsearch.action.export.ExportContext;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 public class Exporter {
 

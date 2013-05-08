@@ -1,13 +1,7 @@
 package crate.elasticsearch.action.import_;
 
-import static org.elasticsearch.common.collect.Lists.newArrayList;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicReferenceArray;
-
 import crate.elasticsearch.action.import_.parser.IImportParser;
+import crate.elasticsearch.import_.Importer;
 import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.action.FailedNodeException;
 import org.elasticsearch.action.support.nodes.TransportNodesOperationAction;
@@ -20,8 +14,12 @@ import org.elasticsearch.env.NodeEnvironment;
 import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.transport.TransportService;
 
-import crate.elasticsearch.action.import_.parser.ImportParser;
-import crate.elasticsearch.import_.Importer;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReferenceArray;
+
+import static org.elasticsearch.common.collect.Lists.newArrayList;
 
 public abstract class AbstractTransportImportAction extends TransportNodesOperationAction<ImportRequest, ImportResponse, NodeImportRequest, NodeImportResponse>{
 

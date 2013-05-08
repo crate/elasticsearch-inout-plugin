@@ -1,8 +1,6 @@
 package crate.elasticsearch.action.restore;
 
 import crate.elasticsearch.action.import_.AbstractTransportImportAction;
-import crate.elasticsearch.action.import_.ImportAction;
-import crate.elasticsearch.action.import_.parser.ImportParser;
 import crate.elasticsearch.action.restore.parser.RestoreParser;
 import crate.elasticsearch.import_.Importer;
 import org.elasticsearch.cluster.ClusterName;
@@ -12,8 +10,6 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.env.NodeEnvironment;
 import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.transport.TransportService;
-
-import javax.swing.plaf.basic.BasicInternalFrameTitlePane;
 
 /**
  *

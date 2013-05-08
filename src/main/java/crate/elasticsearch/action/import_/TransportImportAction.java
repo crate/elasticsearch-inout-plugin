@@ -10,8 +10,6 @@ import org.elasticsearch.env.NodeEnvironment;
 import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.transport.TransportService;
 
-import java.io.File;
-
 /**
  *
  */

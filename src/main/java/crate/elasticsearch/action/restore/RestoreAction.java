@@ -1,10 +1,7 @@
 package crate.elasticsearch.action.restore;
 
-import crate.elasticsearch.action.export.ExportRequest;
-import crate.elasticsearch.action.export.ExportResponse;
 import crate.elasticsearch.action.import_.ImportRequest;
 import crate.elasticsearch.action.import_.ImportResponse;
-import crate.elasticsearch.client.action.export.ExportRequestBuilder;
 import crate.elasticsearch.client.action.import_.ImportRequestBuilder;
 import org.elasticsearch.action.Action;
 import org.elasticsearch.client.Client;
