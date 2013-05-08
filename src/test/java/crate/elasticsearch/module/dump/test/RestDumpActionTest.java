@@ -109,9 +109,9 @@ public class RestDumpActionTest extends TestCase {
         assertEquals(0, infos.size());
         assertEquals(2, response.getShardFailures().length);
         assertTrue(response.getShardFailures()[0].reason().contains(
-                "No such file or directory"));
+                "Target folder /tmp/doesnotexist does not exist"));
         assertTrue(response.getShardFailures()[1].reason().contains(
-                "No such file or directory"));
+                "Target folder /tmp/doesnotexist does not exist"));
     }
 
     /**
