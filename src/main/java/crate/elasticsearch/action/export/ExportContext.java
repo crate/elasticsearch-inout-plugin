@@ -31,6 +31,8 @@ public class ExportContext extends SearchContext {
     private boolean forceOverride = false;
     private boolean compression;
     private String nodePath;
+    private boolean mappings = false;
+    private boolean settings = false;
 
     public ExportContext(long id, ShardSearchRequest request, SearchShardTarget shardTarget, Engine.Searcher engineSearcher, IndexService indexService, IndexShard indexShard, ScriptService scriptService, String nodePath) {
         super(id, request, shardTarget, engineSearcher, indexService, indexShard, scriptService);
@@ -64,6 +66,22 @@ public class ExportContext extends SearchContext {
             outputFile = new File(nodePath, outputFile).getAbsolutePath();
         }
         this.outputFile = outputFile;
+    }
+
+    public boolean mappings() {
+        return mappings;
+    }
+
+    public void mappings(boolean mappings) {
+        this.mappings = mappings;
+    }
+
+    public boolean settings() {
+        return settings;
+    }
+
+    public void settings(boolean settings) {
+        this.settings = settings;
     }
 
     public String nodePath() {

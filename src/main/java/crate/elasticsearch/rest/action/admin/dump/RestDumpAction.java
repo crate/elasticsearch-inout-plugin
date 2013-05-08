@@ -1,15 +1,15 @@
 package crate.elasticsearch.rest.action.admin.dump;
 
-import crate.elasticsearch.action.dump.DumpAction;
-import crate.elasticsearch.rest.action.admin.export.RestExportAction;
+import static org.elasticsearch.rest.RestRequest.Method.POST;
+
 import org.elasticsearch.action.Action;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.rest.RestController;
 
-import static org.elasticsearch.rest.RestRequest.Method.GET;
-import static org.elasticsearch.rest.RestRequest.Method.POST;
+import crate.elasticsearch.action.dump.DumpAction;
+import crate.elasticsearch.rest.action.admin.export.RestExportAction;
 
 /**
  * Rest handler for _dump endpoint
