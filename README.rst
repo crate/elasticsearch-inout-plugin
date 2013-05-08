@@ -488,7 +488,7 @@ The JSON response of an import may look like this::
         ]
     }
 
-..hint::
+.. hint::
 
     - ``imports``: List of successful imports
     - ``node_id'': The node id where the import happened
