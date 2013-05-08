@@ -30,6 +30,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Class to export data of given context
+ */
 public class Exporter {
 
     private static final ESLogger logger = Loggers.getLogger(Exporter.class);
@@ -51,6 +54,21 @@ public class Exporter {
         this.fetchSubPhases = new FetchSubPhase[]{versionPhase};
         this.injector = injector;
         this.settingsFilter = settingsFilter;
+    }
+
+    /**
+     * Check for permission problems
+     *
+     * @param context
+     * @throws ExportException
+     */
+    public void check(ExportContext context) throws ExportException {
+        if (context.outputFile() != null) {
+            File outputFile = new File(context.outputFile());
+            if (!new File(outputFile.getParent()).canWrite()) {
+                throw new ExportException(context, "Insufficient permissions to write into " + outputFile.getParent());
+            }
+        }
     }
 
     public Result execute(ExportContext context) {
@@ -158,6 +176,4 @@ public class Exporter {
             }
         }
     }
-
-
 }

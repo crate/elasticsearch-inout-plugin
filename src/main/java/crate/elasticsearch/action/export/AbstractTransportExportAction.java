@@ -1,14 +1,7 @@
 package crate.elasticsearch.action.export;
 
-import static org.elasticsearch.common.collect.Lists.newArrayList;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicReferenceArray;
-
+import crate.elasticsearch.action.export.parser.IExportParser;
+import crate.elasticsearch.export.Exporter;
 import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.action.ShardOperationFailedException;
 import org.elasticsearch.action.support.DefaultShardOperationFailedException;
@@ -34,8 +27,14 @@ import org.elasticsearch.search.query.QueryPhaseExecutionException;
 import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.transport.TransportService;
 
-import crate.elasticsearch.action.export.parser.IExportParser;
-import crate.elasticsearch.export.Exporter;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReferenceArray;
+
+import static org.elasticsearch.common.collect.Lists.newArrayList;
 
 
 /**
@@ -150,6 +149,7 @@ public abstract class AbstractTransportExportAction extends TransportBroadcastOp
             BytesReference source = request.source();
             exportParser.parseSource(context, source);
             context.preProcess();
+            exporter.check(context);
             try {
                 if (context.explain()) {
                     return new ShardExportResponse(shardTarget.nodeIdText(), request.index(), request.shardId(), context.outputCmd(), context.outputCmdArray(), context.outputFile());
