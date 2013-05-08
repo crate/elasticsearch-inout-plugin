@@ -525,11 +525,11 @@ Elements of the request body
 ``directory``
 ~~~~~~~~~~~~~
 
-The directory option defines there to store exported files.  If the
+The directory option defines where to store exported files.  If the
 directory is a relative path, it is based on the absolute path of each
 node's first `node data location`. See ``output_file`` in export
 documentation for more information. If the directory was omitted the
-default location `dump`within the node data location will be used.
+default location `dump` within the node data location will be used.
 
 ``force_overwrite``
 ~~~~~~~~~~~~~~~~~~~
