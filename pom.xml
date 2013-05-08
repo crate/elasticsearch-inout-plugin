@@ -14,7 +14,7 @@
         <url>https://github.com/crate/elasticsearch-inout-plugin</url>
     </scm>
 	<properties>
-		<elasticsearch.version>0.90.0.RC2</elasticsearch.version>
+		<elasticsearch.version>0.90.0</elasticsearch.version>
 	</properties>
 	<build>
 		<pluginManagement>
