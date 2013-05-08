@@ -5,6 +5,7 @@ Changes for Elasticsearch InOut Plugin
 Unreleased
 ==========
 
+ - updated elasticsearch to 0.90.0
 
  - added _restore endpoint
 
