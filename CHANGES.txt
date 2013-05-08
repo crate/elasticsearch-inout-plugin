@@ -5,6 +5,8 @@ Changes for Elasticsearch InOut Plugin
 Unreleased
 ==========
 
+ - implemented _restore endpoint
+
  - added file_pattern parameter to import endpoint
 
  - support for relative paths on export and import
