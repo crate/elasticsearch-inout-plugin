@@ -128,6 +128,15 @@ Import data into a specific type of an index::
     }
     '
 
+Use a regular expression to filter imported file names (e.g. for specific
+indexes)::
+
+    curl -X POST 'http://localhost:9200/_import' -d '{
+        "directory": "/tmp/es-data",
+        "file_pattern": "dump-myindex-(\\d).json"
+    }
+    '
+
 
 Exports
 =======
@@ -181,8 +190,17 @@ Some variable substitution is possible (see Variable Substitution)
     "output_file": "/tmp/dump"
 
 A path to the resulting output file. The containing directory of the
-given ``output_file`` has to exist. The given ``output_file`` MUST NOT exist.
-Some variable substitution is possible (see Variable Substitution).
+given ``output_file`` has to exist. The given ``output_file`` MUST NOT exist,
+unless the parameter ``force_overwrite`` is set to true.
+
+If the path of the output file is relative, the files will be stored relative
+to each node's first `node data location`, which is usually a subdirectory of
+the configured data location. This absolute path can be seen in the JSON
+response of the request. If you don't know where this location is, you can do
+a dry-run with the ``explain`` element set to ``true`` to find out.
+
+Some variable substitution in the output_file's name is also possible (see
+Variable Substitution).
 
 - Required (if ``output_cmd`` has been omitted)
 
@@ -225,6 +243,30 @@ query using the Query DSL. See
 http://www.elasticsearch.org/guide/reference/query-dsl/
 
 - Optional
+
+``settings``
+~~~~~~~~~~~~
+
+    "settings": true
+
+Option to generate an index settings file next to the data files on all
+corresponding shards. The generated settings file has the generated name of
+the output file with the ``.settings`` extension. This option is only possible
+if the option ``output_file`` has been defined.
+
+- Optional (defaults to false)
+
+``mappings``
+~~~~~~~~~~~~
+
+    "mappings": true
+
+Option to generate an index mapping file next to the data files on all
+corresponding shards. The generated mapping file has the generated name of
+the output file with an ``.mapping`` extension. This option is only possible
+if the option ``output_file`` has been defined.
+
+- Optional (defaults to false)
 
 
 Get parameters
@@ -376,6 +418,10 @@ Elements of the request body
 Specifies the directory where the files to be imported reside. Every single
 node of the cluster imports files from that directory on it's file system.
 
+If the directory is a relative path, it is based on the absolute path of each
+node's first `node data location`. See ``output_file`` in export documentation
+for more information.
+
 ``compression``
 ~~~~~~~~~~~~~~~
 
@@ -385,6 +431,17 @@ Option to activate decompression on the import files. Currently only the
 ``gzip`` compression type is available.
 
 - Optional (default is no decompression)
+
+``file_pattern``
+~~~~~~~~~~~~~~~~
+
+    "file_pattern": "index-(.*)-(\\d).json"
+
+Option to import only files with a given regular expression. Take care of
+double escaping, as the JSON is decoded too in the process. For more
+information on regular expressions visit http://www.regular-expressions.info/
+
+- Optional (default is no filtering)
 
 
 JSON Response
@@ -431,7 +488,7 @@ The JSON response of an import may look like this::
         ]
     }
 
-..hint::
+.. hint::
 
     - ``imports``: List of successful imports
     - ``node_id'': The node id where the import happened
@@ -443,6 +500,67 @@ The JSON response of an import may look like this::
     - ``invalidated``: Number of not imported objects because of invalidation (time to live exceeded)
     - ``failures`` (in root): List of failing node operations
     - ``reason``: The error report of a specific node failure
+
+
+Dump
+====
+
+The idea behind dump is to export all relevant data to recreate the
+cluster as it was at the time of the dump.
+
+The basic usage of the endpoint is:
+
+    curl -X POST 'http://localhost:9200/_dump'
+
+All data (including also settings and mappings) will get saved to a subfolder
+within each nodes data directory.
+
+It's possible to call _dump on root level, on index level or on type
+level.
+
+Elements of the request body
+----------------------------
+
+``directory``
+~~~~~~~~~~~~~
+
+The directory option defines where to store exported files.  If the
+directory is a relative path, it is based on the absolute path of each
+node's first `node data location`. See ``output_file`` in export
+documentation for more information. If the directory was omitted the
+default location `dump` within the node data location will be used.
+
+``force_overwrite``
+~~~~~~~~~~~~~~~~~~~
+
+    "force_overwrite": true
+
+Boolean flag to force overwriting existing ``output_file``. This
+option is identical to the force_overwrite option of the _export
+endpoint.
+
+
+Restore
+=======
+
+Dumped data is intended to get restored. This can be done by the _restore
+endpoint:
+
+    curl -X POST 'http://localhost:9200/_restore'
+
+It's possible to call _restore on root level, on index level or on type
+level.
+
+Elements of the request body
+----------------------------
+
+``directory``
+~~~~~~~~~~~~~
+
+Specifies the directory where the files to be restored reside. See
+``directory`` in import documentation for more details. If the
+directory was omitted the default location `dump` within the node data
+location will be used.
 
 
 Installation

@@ -12,6 +12,7 @@ import org.elasticsearch.search.SearchShardTarget;
 import org.elasticsearch.search.internal.SearchContext;
 import org.elasticsearch.search.internal.ShardSearchRequest;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,9 +30,13 @@ public class ExportContext extends SearchContext {
     private String outputFile;
     private boolean forceOverride = false;
     private boolean compression;
+    private String nodePath;
+    private boolean mappings = false;
+    private boolean settings = false;
 
-    public ExportContext(long id, ShardSearchRequest request, SearchShardTarget shardTarget, Engine.Searcher engineSearcher, IndexService indexService, IndexShard indexShard, ScriptService scriptService) {
+    public ExportContext(long id, ShardSearchRequest request, SearchShardTarget shardTarget, Engine.Searcher engineSearcher, IndexService indexService, IndexShard indexShard, ScriptService scriptService, String nodePath) {
         super(id, request, shardTarget, engineSearcher, indexService, indexShard, scriptService);
+        this.nodePath = nodePath;
     }
 
     public List<String> outputCmdArray() {
@@ -55,7 +60,32 @@ public class ExportContext extends SearchContext {
     }
 
     public void outputFile(String outputFile) {
-        this.outputFile = applyVars(outputFile);
+        outputFile = applyVars(outputFile);
+        File outFile = new File(outputFile);
+        if (!outFile.isAbsolute() && nodePath != null) {
+            outputFile = new File(nodePath, outputFile).getAbsolutePath();
+        }
+        this.outputFile = outputFile;
+    }
+
+    public boolean mappings() {
+        return mappings;
+    }
+
+    public void mappings(boolean mappings) {
+        this.mappings = mappings;
+    }
+
+    public boolean settings() {
+        return settings;
+    }
+
+    public void settings(boolean settings) {
+        this.settings = settings;
+    }
+
+    public String nodePath() {
+        return nodePath;
     }
 
     public boolean forceOverride() {

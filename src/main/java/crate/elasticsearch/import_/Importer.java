@@ -5,12 +5,15 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
 import org.elasticsearch.ElasticSearchException;
@@ -67,7 +70,23 @@ public class Importer {
         Date start = new Date();
         File dir = new File(context.directory());
         if (dir.isDirectory()) {
-            for (File file : dir.listFiles()) {
+            File[] files;
+            if (context.file_pattern() == null) {
+                files = dir.listFiles();
+            } else {
+                final Pattern file_pattern = context.file_pattern();
+                files = dir.listFiles(new FilenameFilter() {
+                    @Override
+                    public boolean accept(File dir, String name) {
+                        Matcher m = file_pattern.matcher(name);
+                        if (m.find()) {
+                            return true;
+                        }
+                        return false;
+                    }
+                });
+            }
+            for (File file : files) {
                 ImportCounts counts = handleFile(file, index, type, bulkSize, context.compression());
                 if (counts != null) {
                     result.importCounts.add(counts);
@@ -80,7 +99,7 @@ public class Importer {
 
     private ImportCounts handleFile(File file, String index, String type, int bulkSize, boolean compression) {
         if (file.isFile() && file.canRead()) {
-            ImportBulkListener bulkListener = new ImportBulkListener(file.getName());
+            ImportBulkListener bulkListener = new ImportBulkListener(file.getAbsolutePath());
             BulkProcessor bulkProcessor = BulkProcessor.builder(client, bulkListener)
                     .setBulkActions(bulkSize)
                     .setBulkSize(bulkByteSize)

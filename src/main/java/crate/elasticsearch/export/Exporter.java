@@ -1,15 +1,34 @@
 package crate.elasticsearch.export;
 
-import java.io.IOException;
-
+import crate.elasticsearch.action.export.ExportContext;
 import org.apache.lucene.search.Query;
+import org.elasticsearch.action.admin.cluster.state.ClusterStateRequest;
+import org.elasticsearch.action.admin.cluster.state.ClusterStateResponse;
+import org.elasticsearch.client.ClusterAdminClient;
+import org.elasticsearch.client.Requests;
+import org.elasticsearch.cluster.metadata.IndexMetaData;
+import org.elasticsearch.cluster.metadata.MappingMetaData;
+import org.elasticsearch.cluster.metadata.MetaData;
 import org.elasticsearch.common.inject.Inject;
+import org.elasticsearch.common.inject.Injector;
 import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.logging.Loggers;
+import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.settings.SettingsFilter;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentFactory;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.search.fetch.FetchSubPhase;
 import org.elasticsearch.search.fetch.version.VersionFetchSubPhase;
 
-import crate.elasticsearch.action.export.ExportContext;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 public class Exporter {
 
@@ -21,13 +40,24 @@ public class Exporter {
     }
 
     private final FetchSubPhase[] fetchSubPhases;
+    private final Injector injector;
+    private final SettingsFilter settingsFilter;
+
+    private ClusterAdminClient client;
 
     @Inject
-    public Exporter(VersionFetchSubPhase versionPhase) {
+    public Exporter(VersionFetchSubPhase versionPhase, Injector injector,
+            SettingsFilter settingsFilter) {
         this.fetchSubPhases = new FetchSubPhase[]{versionPhase};
+        this.injector = injector;
+        this.settingsFilter = settingsFilter;
     }
 
     public Result execute(ExportContext context) {
+        if (context.settings() || context.mappings()) {
+            writeSettingsOrMappings(context);
+        }
+
         logger.info("exporting {}/{}", context.shardTarget().index(),
                 context.shardTarget().getShardId());
         Query query = context.query();
@@ -60,5 +90,74 @@ public class Exporter {
 
         return res;
     }
+
+    private void writeSettingsOrMappings(ExportContext context) {
+        if (client == null) {
+            client = injector.getInstance(ClusterAdminClient.class);
+        }
+        ClusterStateRequest clusterStateRequest = Requests.clusterStateRequest()
+                .filterRoutingTable(true)
+                .filterNodes(true)
+                .filteredIndices(context.shardTarget().index());
+
+        clusterStateRequest.listenerThreaded(false);
+
+        ClusterStateResponse response = client.state(clusterStateRequest).actionGet();
+        MetaData metaData = response.getState().metaData();
+        IndexMetaData indexMetaData = metaData.iterator().next();
+        if (context.settings()) {
+            try {
+                XContentBuilder builder = XContentFactory.contentBuilder(XContentType.JSON);
+                builder.startObject();
+                builder.startObject(indexMetaData.index(), XContentBuilder.FieldCaseConversion.NONE);
+                builder.startObject("settings");
+                Settings settings = settingsFilter.filterSettings(indexMetaData.settings());
+                for (Map.Entry<String, String> entry: settings.getAsMap().entrySet()) {
+                    builder.field(entry.getKey(), entry.getValue());
+                }
+                builder.endObject();
+                builder.endObject();
+                builder.endObject();
+                File settingsFile = new File(context.outputFile() + ".settings");
+                if (!context.forceOverride() && settingsFile.exists()) {
+                    throw new IOException("File exists: " + settingsFile.getAbsolutePath());
+                }
+                OutputStream os = new FileOutputStream(settingsFile);
+                os.write(builder.bytes().toBytes());
+                os.flush();
+                os.close();
+            } catch (IOException e) {
+                throw new ExportException(context, "Failed to write settings for index " + indexMetaData.index(), e);
+            }
+        }
+        if (context.mappings()) {
+            try {
+                XContentBuilder builder = XContentFactory.contentBuilder(XContentType.JSON);
+                builder.startObject();
+                builder.startObject(indexMetaData.index(), XContentBuilder.FieldCaseConversion.NONE);
+                Set<String> types = new HashSet<String>(Arrays.asList(context.types()));
+                boolean noTypes = types.isEmpty();
+                for (MappingMetaData mappingMetaData : indexMetaData.mappings().values()) {
+                    if (noTypes || types.contains(mappingMetaData.type())) {
+                        builder.field(mappingMetaData.type());
+                        builder.map(mappingMetaData.sourceAsMap());
+                    }
+                }
+                builder.endObject();
+                builder.endObject();
+                File mappingsFile = new File(context.outputFile() + ".mapping");
+                if (!context.forceOverride() && mappingsFile.exists()) {
+                    throw new IOException("File exists: " + mappingsFile.getAbsolutePath());
+                }
+                OutputStream os = new FileOutputStream(mappingsFile);
+                os.write(builder.bytes().toBytes());
+                os.flush();
+                os.close();
+            } catch (IOException e) {
+                throw new ExportException(context, "Failed to write mappings for index " + indexMetaData.index(), e);
+            }
+        }
+    }
+
 
 }

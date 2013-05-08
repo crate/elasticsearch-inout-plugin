@@ -1,13 +1,13 @@
 package crate.elasticsearch.action.import_;
 
-import java.io.IOException;
-
 import org.elasticsearch.action.support.nodes.NodesOperationRequest;
 import org.elasticsearch.common.Required;
 import org.elasticsearch.common.bytes.BytesArray;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
+
+import java.io.IOException;
 
 public class ImportRequest extends NodesOperationRequest<ImportRequest> {
 

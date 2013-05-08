@@ -16,6 +16,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
 import junit.framework.TestCase;
@@ -31,14 +33,15 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.github.tlrx.elasticsearch.test.EsSetup;
+
 import crate.elasticsearch.action.export.ExportAction;
 import crate.elasticsearch.action.export.ExportRequest;
 import crate.elasticsearch.action.export.ExportResponse;
-import com.github.tlrx.elasticsearch.test.EsSetup;
 
 public class RestExportActionTest extends TestCase {
 
-    EsSetup esSetup;
+    EsSetup esSetup, esSetup2;
 
     @Before
     public void setUp() {
@@ -53,6 +56,9 @@ public class RestExportActionTest extends TestCase {
     @After
     public void tearDown() {
         esSetup.terminate();
+        if (esSetup2 != null) {
+            esSetup2.terminate();
+        }
     }
 
     public static Map<String, Object> toMap(ToXContent toXContent) throws IOException {
@@ -315,7 +321,7 @@ public class RestExportActionTest extends TestCase {
     @Test
     public void testWithMultipleNodes() {
         // Prepare a second node and wait for relocation
-        EsSetup esSetup2 = new EsSetup();
+        esSetup2 = new EsSetup();
         esSetup2.execute(index("users", "d").withSource("{\"name\": \"motorbike\"}"));
         esSetup2.client().admin().cluster().prepareHealth().setWaitForGreenStatus().
             setWaitForNodes("2").setWaitForRelocatingShards(0).execute().actionGet();
@@ -331,7 +337,6 @@ public class RestExportActionTest extends TestCase {
         assertEquals(0, response.getFailedShards());
         List<Map<String, Object>> infos = getExports(response);
         assertNotSame(infos.get(0).get("node_id"), infos.get(1).get("node_id"));
-        esSetup2.terminate();
     }
 
     /**
@@ -519,6 +524,119 @@ public class RestExportActionTest extends TestCase {
                 "{\"_id\":\"1\",\"_source\":{\"field1\":\"value1\"},\"_routing\":\"2\"}\n",
                 infos.get(1).get("stdout"));
     }
+
+    /**
+     * If the path of the output file is relative, the files are put to the data directory
+     * of each node in a sub directory /export .
+     */
+    @Test
+    public void testExportRelativeFilename() {
+        esSetup2 = new EsSetup();
+        esSetup2.execute(index("users", "d").withSource("{\"name\": \"motorbike\"}"));
+        esSetup2.client().admin().cluster().prepareHealth().setWaitForGreenStatus().
+            setWaitForNodes("2").setWaitForRelocatingShards(0).execute().actionGet();
+
+        ExportResponse response = executeExportRequest(
+                "{\"output_file\": \"export.${shard}.${index}.json\", \"fields\": [\"name\", \"_id\"], \"force_overwrite\": true}");
+
+        List<Map<String, Object>> infos = getExports(response);
+        assertEquals(2, infos.size());
+        String output_file_0 = infos.get(0).get("output_file").toString();
+        String output_file_1 = infos.get(1).get("output_file").toString();
+        Pattern p = Pattern.compile("(.*)/nodes/(\\d)/export.(\\d).users.json");
+        Matcher m0 = p.matcher(output_file_0);
+        Matcher m1 = p.matcher(output_file_1);
+        assertTrue(m0.find());
+        assertTrue(m1.find());
+        assertTrue(m0.group(2) != m1.group(2));
+    }
+
+    @Test
+    public void testSettings() throws IOException {
+        String clusterName = esSetup.client().admin().cluster().prepareHealth().
+                setWaitForGreenStatus().execute().actionGet().getClusterName();
+        String filename_0 = "/tmp/" + clusterName + ".0.users.export";
+        String filename_1 = "/tmp/" + clusterName + ".1.users.export";
+        new File(filename_0).delete();
+        new File(filename_1).delete();
+        new File(filename_0 += ".settings").delete();
+        new File(filename_1 += ".settings").delete();
+
+        ExportResponse response = executeExportRequest(
+                "{\"output_file\": \"/tmp/${cluster}.${shard}.${index}.export\", \"fields\": [\"name\", \"_id\"], \"settings\": true}");
+
+        List<Map<String, Object>> infos = getExports(response);
+        assertEquals(2, infos.size());
+        String settings_0 = new BufferedReader(new FileReader(new File(filename_0))).readLine();
+        assertTrue(settings_0.matches("\\{\"users\":\\{\"settings\":\\{\"index.number_of_replicas\":\"0\",\"index.number_of_shards\":\"2\",\"index.version.created\":\"(.*)\"\\}\\}\\}"));
+        String settings_1 = new BufferedReader(new FileReader(new File(filename_1))).readLine();
+        assertTrue(settings_1.matches("\\{\"users\":\\{\"settings\":\\{\"index.number_of_replicas\":\"0\",\"index.number_of_shards\":\"2\",\"index.version.created\":\"(.*)\"\\}\\}\\}"));
+    }
+
+    @Test
+    public void testSettingsFileExists() throws IOException {
+        testSettings();
+        ExportResponse response = executeExportRequest(
+                "{\"output_file\": \"/tmp/${cluster}.${shard}.${index}.export\", \"fields\": [\"name\", \"_id\"], \"settings\": true}");
+        List<Map<String, Object>> infos = getExports(response);
+        assertEquals(0, infos.size());
+        assertEquals(2, response.getShardFailures().length);
+        assertTrue(response.getShardFailures()[0].reason().contains(
+                "Export Failed [Failed to write settings for index users]]; nested: IOException[File exists"));
+    }
+
+    @Test
+    public void testSettingsWithOutputCmd() {
+        ExportResponse response = executeExportRequest(
+                "{\"output_cmd\": \"cat\", \"fields\": [\"name\", \"_id\"], \"settings\": true}");
+        List<Map<String, Object>> infos = getExports(response);
+        assertEquals(0, infos.size());
+        assertTrue(response.getShardFailures()[0].reason().contains("Parse Failure [Parameter 'settings' requires usage of 'output_file']]"));
+    }
+
+    public void testMappings() throws IOException {
+        String clusterName = esSetup.client().admin().cluster().prepareHealth().
+                setWaitForGreenStatus().execute().actionGet().getClusterName();
+        String filename_0 = "/tmp/" + clusterName + ".0.users.export";
+        String filename_1 = "/tmp/" + clusterName + ".1.users.export";
+        new File(filename_0).delete();
+        new File(filename_1).delete();
+        new File(filename_0 += ".mapping").delete();
+        new File(filename_1 += ".mapping").delete();
+
+        ExportResponse response = executeExportRequest(
+                "{\"output_file\": \"/tmp/${cluster}.${shard}.${index}.export\", \"fields\": [\"name\", \"_id\"], \"mappings\": true}");
+
+        List<Map<String, Object>> infos = getExports(response);
+        assertEquals(2, infos.size());
+        String mappings_0 = new BufferedReader(new FileReader(new File(filename_0))).readLine();
+        assertEquals("{\"users\":{\"d\":{\"properties\":{\"name\":{\"type\":\"string\",\"index\":\"not_analyzed\",\"store\":true,\"omit_norms\":true,\"index_options\":\"docs\"}}}}}", mappings_0);
+        String mappings_1 = new BufferedReader(new FileReader(new File(filename_1))).readLine();
+        assertEquals("{\"users\":{\"d\":{\"properties\":{\"name\":{\"type\":\"string\",\"index\":\"not_analyzed\",\"store\":true,\"omit_norms\":true,\"index_options\":\"docs\"}}}}}", mappings_1);
+    }
+
+    @Test
+    public void testMappingsFileExists() throws IOException {
+        testMappings();
+        ExportResponse response = executeExportRequest(
+                "{\"output_file\": \"/tmp/${cluster}.${shard}.${index}.export\", \"fields\": [\"name\", \"_id\"], \"mappings\": true}");
+        List<Map<String, Object>> infos = getExports(response);
+        assertEquals(0, infos.size());
+        assertEquals(2, response.getShardFailures().length);
+        System.out.println(response.getShardFailures()[0].reason());
+        assertTrue(response.getShardFailures()[0].reason().contains(
+                "Export Failed [Failed to write mappings for index users]]; nested: IOException[File exists"));
+    }
+
+    @Test
+    public void testMappingsWithOutputCmd() {
+        ExportResponse response = executeExportRequest(
+                "{\"output_cmd\": \"cat\", \"fields\": [\"name\", \"_id\"], \"mappings\": true}");
+        List<Map<String, Object>> infos = getExports(response);
+        assertEquals(0, infos.size());
+        assertTrue(response.getShardFailures()[0].reason().contains("Parse Failure [Parameter 'mappings' requires usage of 'output_file']]"));
+    }
+
 
     private boolean deleteIndex(String name) {
         try {

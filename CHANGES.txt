@@ -5,6 +5,18 @@ Changes for Elasticsearch InOut Plugin
 Unreleased
 ==========
 
+ - updated elasticsearch to 0.90.0
+
+ - added _restore endpoint
+
+ - added settings and mappings parameters to export endpoint
+
+ - added _dump endpoint
+
+ - added file_pattern parameter to import endpoint
+
+ - support for relative paths on export and import
+
  - renamed 'node' in export output to 'node_id'
 
 2013/05/01 0.2.0

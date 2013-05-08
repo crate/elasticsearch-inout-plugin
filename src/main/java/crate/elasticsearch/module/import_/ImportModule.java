@@ -1,14 +1,13 @@
 package crate.elasticsearch.module.import_;
 
-import org.elasticsearch.action.GenericAction;
-import org.elasticsearch.action.support.TransportAction;
-import org.elasticsearch.common.inject.AbstractModule;
-import org.elasticsearch.common.inject.multibindings.MapBinder;
-
 import crate.elasticsearch.action.import_.ImportAction;
 import crate.elasticsearch.action.import_.TransportImportAction;
 import crate.elasticsearch.action.import_.parser.ImportParser;
 import crate.elasticsearch.import_.Importer;
+import org.elasticsearch.action.GenericAction;
+import org.elasticsearch.action.support.TransportAction;
+import org.elasticsearch.common.inject.AbstractModule;
+import org.elasticsearch.common.inject.multibindings.MapBinder;
 
 public class ImportModule extends AbstractModule {
 
