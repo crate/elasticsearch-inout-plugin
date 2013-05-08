@@ -518,7 +518,6 @@ within each nodes data directory.
 It's possible to call _dump on root level, on index level or on type
 level.
 
-
 Elements of the request body
 ----------------------------
 
@@ -539,6 +538,29 @@ default location `dump` within the node data location will be used.
 Boolean flag to force overwriting existing ``output_file``. This
 option is identical to the force_overwrite option of the _export
 endpoint.
+
+
+Restore
+=======
+
+Dumped data is intended to get restored. This can be done by the _restore
+endpoint:
+
+    curl -X POST 'http://localhost:9200/_restore'
+
+It's possible to call _restore on root level, on index level or on type
+level.
+
+Elements of the request body
+----------------------------
+
+``directory``
+~~~~~~~~~~~~~
+
+Specifies the directory where the files to be restored reside. See
+``directory`` in import documentation for more details. If the
+directory was omitted the default location `dump` within the node data
+location will be used.
 
 
 Installation

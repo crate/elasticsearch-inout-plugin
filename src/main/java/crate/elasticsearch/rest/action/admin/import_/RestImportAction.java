@@ -1,38 +1,42 @@
 package crate.elasticsearch.rest.action.admin.import_;
 
-import static org.elasticsearch.rest.RestRequest.Method.POST;
-import static org.elasticsearch.rest.RestStatus.BAD_REQUEST;
-import static org.elasticsearch.rest.RestStatus.OK;
-
-import java.io.IOException;
-
+import crate.elasticsearch.action.import_.ImportAction;
+import crate.elasticsearch.action.import_.ImportRequest;
+import crate.elasticsearch.action.import_.ImportResponse;
+import org.elasticsearch.action.Action;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.rest.BaseRestHandler;
-import org.elasticsearch.rest.RestChannel;
-import org.elasticsearch.rest.RestController;
-import org.elasticsearch.rest.RestRequest;
-import org.elasticsearch.rest.XContentRestResponse;
-import org.elasticsearch.rest.XContentThrowableRestResponse;
+import org.elasticsearch.rest.*;
 import org.elasticsearch.rest.action.support.RestActions;
 import org.elasticsearch.rest.action.support.RestXContentBuilder;
 
-import crate.elasticsearch.action.import_.ImportAction;
-import crate.elasticsearch.action.import_.ImportRequest;
-import crate.elasticsearch.action.import_.ImportResponse;
+import java.io.IOException;
+
+import static org.elasticsearch.rest.RestRequest.Method.POST;
+import static org.elasticsearch.rest.RestStatus.BAD_REQUEST;
+import static org.elasticsearch.rest.RestStatus.OK;
 
 public class RestImportAction extends BaseRestHandler {
 
     @Inject
     public RestImportAction(Settings settings, Client client, RestController controller) {
         super(settings, client);
+        registerHandlers(controller);
+    }
+
+    protected void registerHandlers(RestController controller) {
         controller.registerHandler(POST, "/_import", this);
         controller.registerHandler(POST, "/{index}/_import", this);
         controller.registerHandler(POST, "/{index}/{type}/_import", this);
+    }
+
+
+    protected Action action() {
+        return ImportAction.INSTANCE;
     }
 
     public void handleRequest(final RestRequest request, final RestChannel channel) {
@@ -65,7 +69,7 @@ public class RestImportAction extends BaseRestHandler {
         }
 
 
-        client.execute(ImportAction.INSTANCE, importRequest, new ActionListener<ImportResponse>() {
+        client.execute(action(), importRequest, new ActionListener<ImportResponse>() {
 
             public void onResponse(ImportResponse response) {
                 try {

@@ -1,9 +1,8 @@
 package crate.elasticsearch.action.import_;
 
+import crate.elasticsearch.client.action.import_.ImportRequestBuilder;
 import org.elasticsearch.action.Action;
 import org.elasticsearch.client.Client;
-
-import crate.elasticsearch.client.action.import_.ImportRequestBuilder;
 
 public class ImportAction extends Action<ImportRequest, ImportResponse, ImportRequestBuilder> {
 
