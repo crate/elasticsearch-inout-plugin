@@ -77,7 +77,7 @@ public class ExportParser implements IExportParser {
     public void parseSource(ExportContext context, BytesReference source) throws SearchParseException {
         XContentParser parser = null;
         try {
-            if (source != null) {
+            if (source != null && source.length() != 0) {
                 parser = XContentFactory.xContent(source).createParser(source);
                 XContentParser.Token token;
                 while ((token = parser.nextToken()) != XContentParser.Token.END_OBJECT) {
