@@ -586,6 +586,11 @@ Specifies the directory where the files to be restored reside. See
 directory was omitted the default location `dump` within the node data
 location will be used.
 
+``settings`` and ``mappings``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Defaults to true on restore. See the Import documentation for more details.
+
 
 Installation
 ============

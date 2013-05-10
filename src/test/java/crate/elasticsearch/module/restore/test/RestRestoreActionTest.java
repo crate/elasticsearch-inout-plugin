@@ -9,8 +9,14 @@ import crate.elasticsearch.action.import_.ImportRequest;
 import crate.elasticsearch.action.import_.ImportResponse;
 import crate.elasticsearch.action.restore.RestoreAction;
 import junit.framework.TestCase;
+
+import org.elasticsearch.action.admin.cluster.state.ClusterStateRequest;
 import org.elasticsearch.action.get.GetRequestBuilder;
 import org.elasticsearch.action.get.GetResponse;
+import org.elasticsearch.client.Requests;
+import org.elasticsearch.cluster.metadata.IndexMetaData;
+import org.elasticsearch.cluster.metadata.MappingMetaData;
+import org.elasticsearch.common.collect.ImmutableMap;
 import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
@@ -81,6 +87,13 @@ public class RestRestoreActionTest extends TestCase {
 
         assertTrue(existsWithField("1", "name", "item1", "users", "d"));
         assertTrue(existsWithField("2", "name", "item2", "users", "d"));
+
+        ClusterStateRequest clusterStateRequest = Requests.clusterStateRequest().filteredIndices("users");
+        IndexMetaData metaData = node1.client().admin().cluster().state(clusterStateRequest).actionGet().getState().metaData().index("users");
+        assertEquals("{\"d\":{\"properties\":{\"name\":{\"type\":\"string\",\"index\":\"not_analyzed\",\"store\":true,\"omit_norms\":true,\"index_options\":\"docs\"}}}}",
+                metaData.mappings().get("d").source().toString());
+        assertEquals(2, metaData.numberOfShards());
+        assertEquals(0, metaData.numberOfReplicas());
     }
 
 
