@@ -4,14 +4,11 @@ import crate.elasticsearch.action.searchinto.SearchIntoAction;
 import crate.elasticsearch.action.searchinto.TransportSearchIntoAction;
 import crate.elasticsearch.action.searchinto.parser.SearchIntoParser;
 import crate.elasticsearch.searchinto.BulkWriterCollector;
-import crate.elasticsearch.searchinto.WriterCollector;
 import crate.elasticsearch.searchinto.WriterCollectorFactory;
 import org.elasticsearch.action.GenericAction;
 import org.elasticsearch.action.support.TransportAction;
 import org.elasticsearch.common.inject.AbstractModule;
-import org.elasticsearch.common.inject.Provider;
 import org.elasticsearch.common.inject.assistedinject.FactoryProvider;
-import org.elasticsearch.common.inject.internal.ProviderMethod;
 import org.elasticsearch.common.inject.multibindings.MapBinder;
 
 public class SearchIntoModule extends AbstractModule {
@@ -22,11 +19,10 @@ public class SearchIntoModule extends AbstractModule {
         bind(TransportSearchIntoAction.class).asEagerSingleton();
 
         bind(SearchIntoParser.class).asEagerSingleton();
-        //bind(SearchIntoer.class).asEagerSingleton();
 
         MapBinder<GenericAction, TransportAction> transportActionsBinder =
                 MapBinder.newMapBinder(
-                binder(), GenericAction.class, TransportAction.class);
+                        binder(), GenericAction.class, TransportAction.class);
 
         transportActionsBinder.addBinding(SearchIntoAction.INSTANCE).to(
                 TransportSearchIntoAction.class).asEagerSingleton();
@@ -37,28 +33,14 @@ public class SearchIntoModule extends AbstractModule {
                 SearchIntoAction.INSTANCE);
 
 
-
         MapBinder<String, WriterCollectorFactory> collectorBinder
                 = MapBinder.newMapBinder(binder(),
                 String.class, WriterCollectorFactory.class);
 
-        collectorBinder.addBinding(BulkWriterCollector.NAME).toProvider(FactoryProvider
-                .newFactory(WriterCollectorFactory.class,
-                        BulkWriterCollector.class));
-
-
-//                .to(BulkWriterCollector.class);
-//
-//                toProvider
-//                (new Provider<WriterCollector>() {
-//                    @Override
-//                    public WriterCollector get() {
-//                        return BulkWriterCollector.class;
-//                    }
-//                })
-//
-//                to(BulkWriterCollector.class);
-
+        collectorBinder.addBinding(BulkWriterCollector.NAME).toProvider(
+                FactoryProvider
+                        .newFactory(WriterCollectorFactory.class,
+                                BulkWriterCollector.class));
 
 
     }

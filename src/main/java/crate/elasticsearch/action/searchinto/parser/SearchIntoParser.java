@@ -18,7 +18,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Parser for payload given to _export action.
+ * Parser for payload given to _search_into action.
  */
 public class SearchIntoParser {
 
@@ -59,7 +59,7 @@ public class SearchIntoParser {
     }
 
     /**
-     * Main method of this class to parse given payload of _export action
+     * Main method of this class to parse given payload of _search_into action
      *
      * @param context
      * @param source

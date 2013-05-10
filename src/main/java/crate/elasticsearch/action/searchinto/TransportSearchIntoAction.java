@@ -120,7 +120,7 @@ public class TransportSearchIntoAction extends
 
     @Override
     protected ClusterBlockException checkRequestBlock(ClusterState state,
-            SearchIntoRequest exportRequest, String[] concreteIndices) {
+            SearchIntoRequest searchIntoRequest, String[] concreteIndices) {
         return state.blocks().indicesBlockedException(ClusterBlockLevel.READ,
                 concreteIndices);
     }

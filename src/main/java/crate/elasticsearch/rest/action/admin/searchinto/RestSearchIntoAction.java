@@ -38,48 +38,50 @@ public class RestSearchIntoAction extends BaseRestHandler {
 
     public void handleRequest(final RestRequest request,
             final RestChannel channel) {
-        SearchIntoRequest exportRequest = new SearchIntoRequest(
+        SearchIntoRequest searchIntoRequest = new SearchIntoRequest(
                 RestActions.splitIndices(request.param("index")));
 
         if (request.hasParam("ignore_indices")) {
-            exportRequest.ignoreIndices(IgnoreIndices.fromString(request.param(
-                    "ignore_indices")));
+            searchIntoRequest.ignoreIndices(IgnoreIndices.fromString(
+                    request.param(
+                            "ignore_indices")));
         }
-        exportRequest.listenerThreaded(false);
+        searchIntoRequest.listenerThreaded(false);
         try {
             BroadcastOperationThreading operationThreading =
                     BroadcastOperationThreading.fromString(
-                    request.param("operation_threading"),
-                    BroadcastOperationThreading.SINGLE_THREAD);
+                            request.param("operation_threading"),
+                            BroadcastOperationThreading.SINGLE_THREAD);
             if (operationThreading == BroadcastOperationThreading.NO_THREADS) {
                 // since we don't spawn, don't allow no_threads,
                 // but change it to a single thread
                 operationThreading = BroadcastOperationThreading.SINGLE_THREAD;
             }
-            exportRequest.operationThreading(operationThreading);
+            searchIntoRequest.operationThreading(operationThreading);
             if (request.hasContent()) {
-                exportRequest.source(request.content(),
+                searchIntoRequest.source(request.content(),
                         request.contentUnsafe());
             } else {
                 String source = request.param("source");
                 if (source != null) {
-                    exportRequest.source(source);
+                    searchIntoRequest.source(source);
                 } else {
                     BytesReference querySource = RestActions.parseQuerySource(
                             request);
                     if (querySource != null) {
-                        exportRequest.source(querySource, false);
+                        searchIntoRequest.source(querySource, false);
                     }
                 }
             }
-            exportRequest.routing(request.param("routing"));
-            exportRequest.types(splitTypes(request.param("type")));
-            exportRequest.preference(request.param("preference", "_primary"));
+            searchIntoRequest.routing(request.param("routing"));
+            searchIntoRequest.types(splitTypes(request.param("type")));
+            searchIntoRequest.preference(request.param("preference",
+                    "_primary"));
         } catch (Exception e) {
             try {
                 XContentBuilder builder = RestXContentBuilder
                         .restContentBuilder(
-                        request);
+                                request);
                 channel.sendResponse(new XContentRestResponse(request,
                         BAD_REQUEST, builder.startObject().field("error",
                         e.getMessage()).endObject()));
@@ -89,14 +91,14 @@ public class RestSearchIntoAction extends BaseRestHandler {
             return;
         }
 
-        client.execute(SearchIntoAction.INSTANCE, exportRequest,
+        client.execute(SearchIntoAction.INSTANCE, searchIntoRequest,
                 new ActionListener<SearchIntoResponse>() {
 
                     public void onResponse(SearchIntoResponse response) {
                         try {
                             XContentBuilder builder = RestXContentBuilder
                                     .restContentBuilder(
-                                    request);
+                                            request);
                             response.toXContent(builder, request);
                             channel.sendResponse(new XContentRestResponse(
                                     request, OK, builder));
