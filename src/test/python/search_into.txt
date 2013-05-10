@@ -1,0 +1,125 @@
+===========
+Search Into
+===========
+
+Via the ``_search_into`` endpoint it is possible to put the result of
+a given query directly into an index. It is inspired from the `Select
+Into SQL-Statement
+<http://www.w3schools.com/sql/sql_select_into.asp>`__
+
+Here are some common use-cases that might be fulfilled by using this
+endpoint.
+
+Reindex an existing Index
+=========================
+
+Say we have a given ``users`` index containing documents like this::
+
+    >>> get("/users/_search?pretty=1")
+    {..."hits" : {
+        "total" : 4,
+        ...{
+          "_index" : "users",
+          "_type" : "d",
+          "_id" : "1",
+          "_score" : 1.0, "_source" : { "name": "car"}
+        }...
+
+In order to re-index all documents of this index, the ``_source`` and
+``_id`` fields need to be copied into themselfs. Therefore the request
+for re-indexing looks like this::
+
+    >>> post("/users/_search_into?pretty=1", {"fields":["_id", "_source"]})
+    {
+      "writes" : [ {
+        "index" : "users",
+        "shard" : 0,
+        "node" : "1",
+        "total" : 2,
+        "succeeded" : 2,
+        "failed" : 0
+      }, {
+        "index" : "users",
+        "shard" : 1,
+        "node" : "1",
+        "total" : 2,
+        "succeeded" : 2,
+        "failed" : 0
+      } ],
+      "total" : 0,
+      "succeeded" : 0,
+      "failed" : 0,
+      "_shards" : {
+        "total" : 2,
+        "successful" : 2,
+        "failed" : 0
+      }
+    }
+
+The above output shows that writes happened from 2 shards, both on the
+index ``users`` and that each shard had 2 succeeded writes.
+
+The index data actually is the same as before::-
+
+    >>> get("/users/_search?pretty=1")
+    {..."hits" : {
+        "total" : 4,
+        ...{
+          "_index" : "users",
+          "_type" : "d",
+          "_id" : "1",
+          "_score" : 1.0, "_source" : { "name": "car"}
+        }...
+
+
+Copy an existing index
+======================
+
+To copy a whole index, the ``_index`` field source needs to be defined as a
+string literal like this::
+
+    >>> fields = ["_id", "_source", ["_index", "'newindex'"]]
+
+There are two special things happening here. When defining a field as an
+array of 2 items, the first item is considered as the target-field name and
+the second item is considered as the source value. The above example
+defines a string literal (denoted by the surrounding apostrophes) as
+the value of the ``_index`` field.
+
+    >>> post("/users/_search_into?pretty=1", {"fields":fields})
+    {
+      "writes" : [ {
+        "index" : "users",
+        "shard" : 0,
+        "node" : "1",
+        "total" : 2,
+        "succeeded" : 2,
+        "failed" : 0
+      }, {
+        "index" : "users",
+        "shard" : 1,
+        "node" : "1",
+        "total" : 2,
+        "succeeded" : 2,
+        "failed" : 0
+      }...
+
+Now a new index with the same content was created::
+
+
+    >>> post("/newindex/_flush")
+    {"ok":true,"_shards":{"total":1,"successful":1,"failed":0}}
+
+    >>> post("/newindex/_refresh")
+    {"ok":true,"_shards":{"total":1,"successful":1,"failed":0}}
+
+
+    >>> get("/newindex/_search?pretty=1")
+    {..."hits" : {
+        "total" : 4,
+        ...{
+          "_index" : "newindex",
+          "_type" : "d",
+          "_id" : "1",
+          "_score" : 1.0, "_source" : {"name":"car"}
+        }...
