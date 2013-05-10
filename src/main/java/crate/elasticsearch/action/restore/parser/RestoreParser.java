@@ -1,40 +1,43 @@
-package crate.elasticsearch.action.import_.parser;
+package crate.elasticsearch.action.restore.parser;
 
-import java.util.HashMap;
-import java.util.Map;
-
+import crate.elasticsearch.action.dump.parser.DumpParser;
+import crate.elasticsearch.action.import_.ImportContext;
+import crate.elasticsearch.action.import_.parser.DirectoryParseElement;
+import crate.elasticsearch.action.import_.parser.IImportParser;
+import crate.elasticsearch.action.import_.parser.ImportParseElement;
+import crate.elasticsearch.action.import_.parser.ImportParseException;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.collect.ImmutableMap;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentHelper;
 import org.elasticsearch.common.xcontent.XContentParser;
-import org.elasticsearch.search.SearchParseException;
 
-import crate.elasticsearch.action.import_.ImportContext;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Pattern;
 
-public class ImportParser implements IImportParser {
+public class RestoreParser implements IImportParser {
 
     private final ImmutableMap<String, ImportParseElement> elementParsers;
 
-    public ImportParser() {
+    public static final String FILE_PATTERN = ".*_.*_.*\\.json\\.gz";
+
+    public RestoreParser() {
         Map<String, ImportParseElement> elementParsers = new HashMap<String, ImportParseElement>();
         elementParsers.put("directory", new DirectoryParseElement());
-        elementParsers.put("compression", new ImportCompressionParseElement());
-        elementParsers.put("file_pattern", new FilePatternParseElement());
-        elementParsers.put("mappings", new ImportMappingsParseElement());
-        elementParsers.put("settings", new ImportSettingsParseElement());
         this.elementParsers = ImmutableMap.copyOf(elementParsers);
     }
 
     /**
-     * Main method of this class to parse given payload of _export action
+     * Main method of this class to parse given payload of _restore action
      *
      * @param context
      * @param source
-     * @throws SearchParseException
+     * @throws org.elasticsearch.search.SearchParseException
      */
     public void parseSource(ImportContext context, BytesReference source) throws ImportParseException {
         XContentParser parser = null;
+        this.setDefaults(context);
         try {
             if (source != null && source.length() != 0) {
                 parser = XContentFactory.xContent(source).createParser(source);
@@ -53,7 +56,9 @@ public class ImportParser implements IImportParser {
                     }
                 }
             }
-            validate(context);
+            if (context.directory() == null) {
+                context.directory(DumpParser.DEFAULT_DIR);
+            }
         } catch (Exception e) {
             String sSource = "_na_";
             try {
@@ -70,13 +75,13 @@ public class ImportParser implements IImportParser {
     }
 
     /**
-     * validate given payload
+     * Set restore specific default values to the context like compression and file_pattern
      *
      * @param context
      */
-    private void validate(ImportContext context) {
-        if (context.directory() == null || context.directory().isEmpty()) {
-            throw new ImportParseException(context, "No directory defined");
-        }
+    private void setDefaults(ImportContext context) {
+        context.compression(true);
+        Pattern p = Pattern.compile(FILE_PATTERN);
+        context.file_pattern(p);
     }
 }

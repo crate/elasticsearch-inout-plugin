@@ -1,27 +1,10 @@
 package crate.elasticsearch.module.export.test;
 
-import static com.github.tlrx.elasticsearch.test.EsSetup.createIndex;
-import static com.github.tlrx.elasticsearch.test.EsSetup.deleteAll;
-import static com.github.tlrx.elasticsearch.test.EsSetup.fromClassPath;
-import static com.github.tlrx.elasticsearch.test.EsSetup.index;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.zip.GZIPInputStream;
-
+import com.github.tlrx.elasticsearch.test.EsSetup;
+import crate.elasticsearch.action.export.ExportAction;
+import crate.elasticsearch.action.export.ExportRequest;
+import crate.elasticsearch.action.export.ExportResponse;
 import junit.framework.TestCase;
-
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -33,11 +16,16 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.github.tlrx.elasticsearch.test.EsSetup;
+import java.io.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.zip.GZIPInputStream;
 
-import crate.elasticsearch.action.export.ExportAction;
-import crate.elasticsearch.action.export.ExportRequest;
-import crate.elasticsearch.action.export.ExportResponse;
+import static com.github.tlrx.elasticsearch.test.EsSetup.*;
 
 public class RestExportActionTest extends TestCase {
 
@@ -549,6 +537,29 @@ public class RestExportActionTest extends TestCase {
         assertTrue(m0.find());
         assertTrue(m1.find());
         assertTrue(m0.group(2) != m1.group(2));
+    }
+
+    /**
+     * If the target folder does not allow to write to the export will abort with a proper response
+     */
+    @Test
+    public void testPermissions() {
+        File restrictedFolder = new File("/tmp/testRestricted");
+        if (restrictedFolder.exists()) {
+            for (File c : restrictedFolder.listFiles()) {
+                c.delete();
+            }
+            restrictedFolder.delete();
+        }
+        restrictedFolder.mkdir();
+        restrictedFolder.setWritable(false);
+
+        ExportResponse response = executeExportRequest(
+                "{\"output_file\": \"/tmp/testRestricted/export.json\", \"fields\": [\"_id\"]}");
+        assertEquals(2, response.getFailedShards());
+        assertTrue(response.getShardFailures()[0].reason().contains(
+                "Insufficient permissions to write into /tmp/testRestricted"));
+        restrictedFolder.delete();
     }
 
     @Test

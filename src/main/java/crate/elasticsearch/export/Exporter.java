@@ -1,14 +1,6 @@
 package crate.elasticsearch.export;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
+import crate.elasticsearch.action.export.ExportContext;
 import org.apache.lucene.search.Query;
 import org.elasticsearch.action.admin.cluster.state.ClusterStateRequest;
 import org.elasticsearch.action.admin.cluster.state.ClusterStateResponse;
@@ -29,8 +21,18 @@ import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.search.fetch.FetchSubPhase;
 import org.elasticsearch.search.fetch.version.VersionFetchSubPhase;
 
-import crate.elasticsearch.action.export.ExportContext;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
+/**
+ * Class to export data of given context
+ */
 public class Exporter {
 
     private static final ESLogger logger = Loggers.getLogger(Exporter.class);
@@ -52,6 +54,25 @@ public class Exporter {
         this.fetchSubPhases = new FetchSubPhase[]{versionPhase};
         this.injector = injector;
         this.settingsFilter = settingsFilter;
+    }
+
+    /**
+     * Check for permission problems
+     *
+     * @param context
+     * @throws ExportException
+     */
+    public void check(ExportContext context) throws ExportException {
+        if (context.outputFile() != null) {
+            File outputFile = new File(context.outputFile());
+            File targetFolder = new File(outputFile.getParent());
+            if (!targetFolder.exists()) {
+                throw new ExportException(context, "Target folder " + outputFile.getParent() + " does not exist");
+            }
+            if (!targetFolder.canWrite()) {
+                throw new ExportException(context, "Insufficient permissions to write into " + outputFile.getParent());
+            }
+        }
     }
 
     public Result execute(ExportContext context) {
@@ -159,6 +180,4 @@ public class Exporter {
             }
         }
     }
-
-
 }
