@@ -124,7 +124,6 @@ public class Importer {
                 }
             }
             } catch (Exception e) {
-                e.printStackTrace();
                 throw new ElasticSearchException("::" ,e);
             }
             // import data according to the given data file pattern
@@ -194,9 +193,7 @@ public class Importer {
             try {
                 bulkListener.get();
             } catch (InterruptedException e1) {
-                e1.printStackTrace();
             } catch (ExecutionException e1) {
-                e1.printStackTrace();
             }
             return bulkListener.importCounts();
         }
@@ -297,7 +294,6 @@ public class Importer {
                                 }
                             }
                         } catch (IOException e) {
-                            e.printStackTrace();
                             throw new SettingsImportException("Error while creating index " + key + " from settings file " + settingsFile.getAbsolutePath(), e);
                         }
                     }
@@ -337,10 +333,13 @@ public class Importer {
                                         PutMappingRequest mappingRequest = new PutMappingRequest(index);
                                         mappingRequest.type(type);
                                         mappingRequest.source(mapping);
-                                        if (client.admin().indices().putMapping(mappingRequest).actionGet().isAcknowledged()) {
-                                            created.add(type);
+                                        try {
+                                            if (client.admin().indices().putMapping(mappingRequest).actionGet().isAcknowledged()) {
+                                                created.add(type);
+                                            }
+                                        } catch (IndexMissingException e) {
+                                            throw new MappingImportException("Unable to create mapping. Index " + index + " missing.", e);
                                         }
-
                                     }
                                 }
                             }
