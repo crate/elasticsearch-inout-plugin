@@ -21,6 +21,8 @@ public class ImportParser implements IImportParser {
         elementParsers.put("directory", new DirectoryParseElement());
         elementParsers.put("compression", new ImportCompressionParseElement());
         elementParsers.put("file_pattern", new FilePatternParseElement());
+        elementParsers.put("mappings", new ImportMappingsParseElement());
+        elementParsers.put("settings", new ImportSettingsParseElement());
         this.elementParsers = ImmutableMap.copyOf(elementParsers);
     }
 

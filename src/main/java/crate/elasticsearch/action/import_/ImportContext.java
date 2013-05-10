@@ -9,6 +9,8 @@ public class ImportContext {
     private boolean compression;
     private String directory;
     private Pattern file_pattern;
+    private boolean mappings = false;
+    private boolean settings = false;
 
     public ImportContext(String nodePath) {
         this.nodePath = nodePath;
@@ -41,5 +43,21 @@ public class ImportContext {
 
     public void file_pattern(Pattern file_pattern) {
         this.file_pattern = file_pattern;
+    }
+
+    public boolean mappings() {
+        return mappings;
+    }
+
+    public void mappings(boolean mappings) {
+        this.mappings = mappings;
+    }
+
+    public boolean settings() {
+        return settings;
+    }
+
+    public void settings(boolean settings) {
+        this.settings = settings;
     }
 }

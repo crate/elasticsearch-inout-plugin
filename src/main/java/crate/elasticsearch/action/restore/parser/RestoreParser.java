@@ -38,6 +38,8 @@ public class RestoreParser implements IImportParser {
     public void parseSource(ImportContext context, BytesReference source) throws ImportParseException {
         XContentParser parser = null;
         this.setDefaults(context);
+        context.settings(true);
+        context.mappings(true);
         try {
             if (source != null && source.length() != 0) {
                 parser = XContentFactory.xContent(source).createParser(source);
