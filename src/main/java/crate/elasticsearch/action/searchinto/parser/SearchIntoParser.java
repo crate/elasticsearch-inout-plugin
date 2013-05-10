@@ -41,7 +41,7 @@ public class SearchIntoParser {
      */
     private void validate(SearchIntoContext context) {
         if (!context.hasFieldNames()) {
-            throw new SearchParseException(context, "No inout fields defined");
+            throw new SearchParseException(context, "No fields defined");
         }
 
         for (String field : context.fieldNames()) {
