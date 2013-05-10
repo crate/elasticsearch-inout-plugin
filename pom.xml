@@ -15,11 +15,12 @@
     </scm>
 	<properties>
 		<elasticsearch.version>0.90.0</elasticsearch.version>
-	</properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
 	<build>
 		<pluginManagement>
 			<plugins>
-				<plugin>
+                <plugin>
 					<groupId>org.eclipse.m2e</groupId>
 					<artifactId>lifecycle-mapping</artifactId>
 					<version>1.0.0</version>
