@@ -1,17 +1,22 @@
 package crate.elasticsearch.doctests;
 
-import com.github.tlrx.elasticsearch.test.EsSetup;
+import static com.github.tlrx.elasticsearch.test.EsSetup.createIndex;
+import static com.github.tlrx.elasticsearch.test.EsSetup.deleteAll;
+import static com.github.tlrx.elasticsearch.test.EsSetup.fromClassPath;
 import junit.framework.TestCase;
+
 import org.junit.After;
 import org.junit.Before;
-import org.python.core.*;
+import org.python.core.Py;
+import org.python.core.PyArray;
+import org.python.core.PyList;
+import org.python.core.PyString;
+import org.python.core.PySystemState;
 import org.python.util.PythonInterpreter;
-
-import static com.github.tlrx.elasticsearch.test.EsSetup.*;
 
 public class DocTest extends TestCase {
 
-    EsSetup esSetup, esSetup2;
+    StoreEsSetup esSetup, esSetup2;
 
     private static final String PY_TEST = "src/test/python/tests.py";
 
@@ -40,12 +45,12 @@ public class DocTest extends TestCase {
         if (interp == null) {
             resetInterpreter();
         }
-        esSetup = new EsSetup();
+        esSetup = new StoreEsSetup();
         esSetup.execute(deleteAll(), createIndex("users").withSettings(
                 fromClassPath("essetup/settings/test_a.json")).withMapping("d",
                 fromClassPath("essetup/mappings/test_a.json")).withData(
                 fromClassPath("essetup/data/test_a.json")));
-        esSetup.client().admin().indices().prepareRefresh("users").execute();
+        esSetup.client().admin().indices().prepareRefresh("users").execute().actionGet();
     }
 
     @After
@@ -58,6 +63,10 @@ public class DocTest extends TestCase {
 
     public void testSearchInto() throws Exception {
         execDocFile("search_into.txt");
+    }
+
+    public void testReindex() throws Exception {
+        execDocFile("reindex.txt");
     }
 
 }

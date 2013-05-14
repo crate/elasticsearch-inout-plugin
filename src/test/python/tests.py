@@ -24,11 +24,19 @@ class Endpoint(object):
         req.add_data(body)
         print urllib2.urlopen(req).read()
 
+    def put(self, path, data=''):
+        req = self._req(path)
+        body = json.dumps(data)
+        req.add_data(body)
+        req.get_method = lambda: 'PUT'
+        print urllib2.urlopen(req).read()
+
 
 def setUp(test):
     ep = Endpoint()
     test.globs['get'] = ep.get
     test.globs['post'] = ep.post
+    test.globs['put'] = ep.put
 
 
 def test_suite(fname):
