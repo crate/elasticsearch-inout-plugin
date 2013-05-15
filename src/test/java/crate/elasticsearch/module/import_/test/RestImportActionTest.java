@@ -12,25 +12,14 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import junit.framework.TestCase;
-
 import org.elasticsearch.action.admin.cluster.state.ClusterStateRequest;
-import org.elasticsearch.action.admin.indices.stats.IndicesStatsRequest;
 import org.elasticsearch.action.get.GetRequestBuilder;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.Requests;
 import org.elasticsearch.cluster.metadata.IndexMetaData;
 import org.elasticsearch.cluster.metadata.MappingMetaData;
 import org.elasticsearch.common.collect.ImmutableMap;
-import org.elasticsearch.common.xcontent.ToXContent;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
-import org.elasticsearch.common.xcontent.XContentType;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
-
-import com.github.tlrx.elasticsearch.test.EsSetup;
 
 import crate.elasticsearch.action.export.ExportAction;
 import crate.elasticsearch.action.export.ExportRequest;
@@ -38,27 +27,9 @@ import crate.elasticsearch.action.export.ExportResponse;
 import crate.elasticsearch.action.import_.ImportAction;
 import crate.elasticsearch.action.import_.ImportRequest;
 import crate.elasticsearch.action.import_.ImportResponse;
+import crate.elasticsearch.module.AbstractRestActionTest;
 
-public class RestImportActionTest extends TestCase {
-
-    EsSetup node1, node2;
-
-    @Before
-    public void setUp() {
-        // create two nodes and wait for synchronization
-        node1 = new EsSetup();
-        node1.execute(deleteAll(), createIndex("users").withSettings(
-                fromClassPath("essetup/settings/test_a.json")).withMapping("d",
-                        fromClassPath("essetup/mappings/test_a.json")));
-    }
-
-    @After
-    public void tearDown() {
-        node1.terminate();
-        if (node2 != null) {
-            node2.terminate();
-        }
-    }
+public class RestImportActionTest extends AbstractRestActionTest {
 
     /**
      * An import directory must be specified in the post data of the request, otherwise
@@ -123,7 +94,7 @@ public class RestImportActionTest extends TestCase {
         request.index("another_index");
         request.type("e");
         request.source("{\"directory\": \"" + path + "\"}");
-        ImportResponse response = node1.client().execute(ImportAction.INSTANCE, request).actionGet();
+        ImportResponse response = esSetup.client().execute(ImportAction.INSTANCE, request).actionGet();
 
         List<Map<String, Object>> imports = getImports(response);
         Map<String, Object> nodeInfo = imports.get(0);
@@ -156,7 +127,7 @@ public class RestImportActionTest extends TestCase {
      */
     @Test
     public void testFields() {
-        node1.execute(deleteAll(), createIndex("test").withSettings(
+        esSetup.execute(deleteAll(), createIndex("test").withSettings(
                 fromClassPath("essetup/settings/test_a.json")).withMapping("d",
                         "{\"d\": {\"_timestamp\": {\"enabled\": true, \"store\": \"yes\"}}}"));
 
@@ -172,7 +143,7 @@ public class RestImportActionTest extends TestCase {
         assertTrue(nodeInfo.get("imported_files").toString().matches(
                 "\\[\\{file_name=(.*)/importdata/import_4/import_4.json, successes=2, failures=0, invalidated=1}]"));
 
-        GetRequestBuilder rb = new GetRequestBuilder(node1.client(), "test");
+        GetRequestBuilder rb = new GetRequestBuilder(esSetup.client(), "test");
         GetResponse res = rb.setType("d").setId("402").setFields("_ttl", "_timestamp", "_routing").execute().actionGet();
         assertEquals("the_routing", res.getField("_routing").getValue());
         assertTrue(ttl - Long.valueOf(res.getField("_ttl").getValue().toString()) < 10000);
@@ -256,12 +227,12 @@ public class RestImportActionTest extends TestCase {
     public void testImportRelativeFilename() {
         setUpSecondNode();
         // create sample data
-        node1.execute(deleteAll(), createIndex("users").withSettings(
+        esSetup.execute(deleteAll(), createIndex("users").withSettings(
                 fromClassPath("essetup/settings/test_a.json")).withMapping("d",
                         fromClassPath("essetup/mappings/test_a.json")));
-        node1.execute(index("users", "d", "1").withSource("{\"name\": \"item1\"}"));
-        node1.execute(index("users", "d", "2").withSource("{\"name\": \"item2\"}"));
-        node2.client().admin().cluster().prepareHealth().setWaitForGreenStatus().
+        esSetup.execute(index("users", "d", "1").withSource("{\"name\": \"item1\"}"));
+        esSetup.execute(index("users", "d", "2").withSource("{\"name\": \"item2\"}"));
+        esSetup2.client().admin().cluster().prepareHealth().setWaitForGreenStatus().
             setWaitForNodes("2").setWaitForRelocatingShards(0).execute().actionGet();
 
         makeNodeDataLocationDirectories("myExport");
@@ -269,8 +240,8 @@ public class RestImportActionTest extends TestCase {
         // export data and recreate empty index
         ExportRequest exportRequest = new ExportRequest();
         exportRequest.source("{\"output_file\": \"myExport/export.${shard}.${index}.json\", \"fields\": [\"_source\", \"_id\", \"_index\", \"_type\"], \"force_overwrite\": true}");
-        node1.client().execute(ExportAction.INSTANCE, exportRequest).actionGet();
-        node1.execute(deleteAll(), createIndex("users").withSettings(
+        esSetup.client().execute(ExportAction.INSTANCE, exportRequest).actionGet();
+        esSetup.execute(deleteAll(), createIndex("users").withSettings(
                 fromClassPath("essetup/settings/test_a.json")).withMapping("d",
                         fromClassPath("essetup/mappings/test_a.json")));
 
@@ -325,7 +296,7 @@ public class RestImportActionTest extends TestCase {
         executeImportRequest("{\"directory\": \"" + path + "\", \"settings\": true}");
 
         ClusterStateRequest clusterStateRequest = Requests.clusterStateRequest().filteredIndices("index1");
-        IndexMetaData stats = node1.client().admin().cluster().state(clusterStateRequest).actionGet().getState().metaData().index("index1");
+        IndexMetaData stats = esSetup.client().admin().cluster().state(clusterStateRequest).actionGet().getState().metaData().index("index1");
         assertEquals(2, stats.numberOfShards());
         assertEquals(1, stats.numberOfReplicas());
     }
@@ -350,23 +321,22 @@ public class RestImportActionTest extends TestCase {
 
     @Test
     public void testMappings() {
-        node1.execute(createIndex("index1"));
+        esSetup.execute(createIndex("index1"));
         String path = getClass().getResource("/importdata/import_9").getPath();
         executeImportRequest("{\"directory\": \"" + path + "\", \"mappings\": true}");
 
         ClusterStateRequest clusterStateRequest = Requests.clusterStateRequest().filteredIndices("index1");
-        ImmutableMap<String, MappingMetaData> mappings = node1.client().admin().cluster().state(clusterStateRequest).actionGet().getState().metaData().index("index1").getMappings();
+        ImmutableMap<String, MappingMetaData> mappings = esSetup.client().admin().cluster().state(clusterStateRequest).actionGet().getState().metaData().index("index1").getMappings();
         assertEquals("{\"1\":{\"_timestamp\":{\"enabled\":true,\"store\":true},\"_ttl\":{\"enabled\":true,\"default\":86400000},\"properties\":{\"name\":{\"type\":\"string\",\"store\":true}}}}",
                 mappings.get("1").source().toString());
     }
 
     @Test
     public void testMappingNotFound() {
-        node1.execute(createIndex("index1"));
+        esSetup.execute(createIndex("index1"));
         String path = getClass().getResource("/importdata/import_1").getPath();
         ImportResponse response = executeImportRequest("{\"directory\": \"" + path + "\", \"mappings\": true}");
         List<Map<String, Object>> failures = getImportFailures(response);
-        System.out.println(failures.get(0).get("reason").toString());
         assertTrue(failures.get(0).get("reason").toString().matches(
                 "(.*)Mapping file (.*)/importdata/import_1/import_1.json.mapping could not be found.(.*)"));
     }
@@ -378,7 +348,7 @@ public class RestImportActionTest extends TestCase {
     private void makeNodeDataLocationDirectories(String directory) {
         ExportRequest exportRequest = new ExportRequest();
         exportRequest.source("{\"output_file\": \"" + directory + "\", \"fields\": [\"_source\", \"_id\", \"_index\", \"_type\"], \"force_overwrite\": true, \"explain\": true}");
-        ExportResponse explain = node1.client().execute(ExportAction.INSTANCE, exportRequest).actionGet();
+        ExportResponse explain = esSetup.client().execute(ExportAction.INSTANCE, exportRequest).actionGet();
 
         try {
             Map<String, Object> res = toMap(explain);
@@ -390,30 +360,14 @@ public class RestImportActionTest extends TestCase {
         }
     }
 
-    /**
-     * Set up a second node and wait  for green status
-     */
-    private void setUpSecondNode() {
-        node2 = new EsSetup();
-        node2.execute(deleteAll());
-        node2.client().admin().cluster().prepareHealth().setWaitForGreenStatus().execute().actionGet();
-    }
-
     private boolean existsWithField(String id, String field, String value) {
         return existsWithField(id, field, value, "test", "d");
     }
 
     private boolean existsWithField(String id, String field, String value, String index, String type) {
-        GetRequestBuilder rb = new GetRequestBuilder(node1.client(), index);
+        GetRequestBuilder rb = new GetRequestBuilder(esSetup.client(), index);
         GetResponse res = rb.setType(type).setId(id).execute().actionGet();
         return res.isExists() && res.getSourceAsMap().get(field).equals(value);
-    }
-
-    private static Map<String, Object> toMap(ToXContent toXContent) throws IOException {
-        XContentBuilder builder = XContentFactory.contentBuilder(XContentType.JSON);
-        toXContent.toXContent(builder, ToXContent.EMPTY_PARAMS);
-        return XContentFactory.xContent(XContentType.JSON).createParser(
-                builder.string()).mapOrderedAndClose();
     }
 
     private static List<Map<String, Object>> getImports(ImportResponse resp) {
@@ -438,7 +392,7 @@ public class RestImportActionTest extends TestCase {
     private ImportResponse executeImportRequest(String source) {
         ImportRequest request = new ImportRequest();
         request.source(source);
-        return node1.client().execute(ImportAction.INSTANCE, request).actionGet();
+        return esSetup.client().execute(ImportAction.INSTANCE, request).actionGet();
     }
 
 }

@@ -1,60 +1,34 @@
 package crate.elasticsearch.module.export.test;
 
-import com.github.tlrx.elasticsearch.test.EsSetup;
-import crate.elasticsearch.action.export.ExportAction;
-import crate.elasticsearch.action.export.ExportRequest;
-import crate.elasticsearch.action.export.ExportResponse;
-import junit.framework.TestCase;
-import org.elasticsearch.client.Client;
-import org.elasticsearch.common.xcontent.ToXContent;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
-import org.elasticsearch.common.xcontent.XContentType;
-import org.elasticsearch.index.VersionType;
-import org.elasticsearch.indices.IndexMissingException;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import static com.github.tlrx.elasticsearch.test.EsSetup.createIndex;
+import static com.github.tlrx.elasticsearch.test.EsSetup.deleteAll;
+import static com.github.tlrx.elasticsearch.test.EsSetup.fromClassPath;
+import static com.github.tlrx.elasticsearch.test.EsSetup.index;
 
-import java.io.*;
-import java.util.ArrayList;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.zip.GZIPInputStream;
 
-import static com.github.tlrx.elasticsearch.test.EsSetup.*;
+import org.elasticsearch.client.Client;
+import org.elasticsearch.index.VersionType;
+import org.elasticsearch.indices.IndexMissingException;
+import org.junit.Test;
 
-public class RestExportActionTest extends TestCase {
+import com.github.tlrx.elasticsearch.test.EsSetup;
 
-    EsSetup esSetup, esSetup2;
+import crate.elasticsearch.action.export.ExportAction;
+import crate.elasticsearch.action.export.ExportRequest;
+import crate.elasticsearch.action.export.ExportResponse;
+import crate.elasticsearch.module.AbstractRestActionTest;
 
-    @Before
-    public void setUp() {
-        esSetup = new EsSetup();
-        esSetup.execute(deleteAll(), createIndex("users").withSettings(
-                fromClassPath("essetup/settings/test_a.json")).withMapping("d",
-                        fromClassPath("essetup/mappings/test_a.json")).withData(
-                                fromClassPath("essetup/data/test_a.json")));
-        esSetup.client().admin().indices().prepareRefresh("users").execute();
-    }
-
-    @After
-    public void tearDown() {
-        esSetup.terminate();
-        if (esSetup2 != null) {
-            esSetup2.terminate();
-        }
-    }
-
-    public static Map<String, Object> toMap(ToXContent toXContent) throws IOException {
-        XContentBuilder builder = XContentFactory.contentBuilder(XContentType.JSON);
-        toXContent.toXContent(builder, ToXContent.EMPTY_PARAMS);
-        return XContentFactory.xContent(XContentType.JSON).createParser(
-                builder.string()).mapOrderedAndClose();
-    }
+public class RestExportActionTest extends AbstractRestActionTest {
 
     /**
      * Either one of the parameters 'output_cmd' or 'output_file' is required.
@@ -634,7 +608,6 @@ public class RestExportActionTest extends TestCase {
         List<Map<String, Object>> infos = getExports(response);
         assertEquals(0, infos.size());
         assertEquals(2, response.getShardFailures().length);
-        System.out.println(response.getShardFailures()[0].reason());
         assertTrue(response.getShardFailures()[0].reason().contains(
                 "Export Failed [Failed to write mappings for index users]]; nested: IOException[File exists"));
     }
@@ -697,42 +670,6 @@ public class RestExportActionTest extends TestCase {
             fail("File not found");
         }
         return readLines(filename, reader);
-    }
-
-    /**
-     * Get a list of lines from a gzipped file.
-     * Test fails if file not found or IO exception happens.
-     *
-     * @param filename the file name to read
-     * @return a list of strings
-     */
-    private List<String> readLinesFromGZIP(String filename) {
-        BufferedReader reader = null;
-        try {
-            reader = new BufferedReader(new InputStreamReader(
-                    new GZIPInputStream(new FileInputStream(new File(filename)))));
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            fail("File not found");
-        } catch (IOException e) {
-            e.printStackTrace();
-            fail("IO Excsption while reading ZIP stream");
-        }
-        return readLines(filename, reader);
-    }
-
-    private List<String> readLines(String filename, BufferedReader reader) {
-        List<String> lines = new ArrayList<String>();
-        try {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                lines.add(line);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-            fail("IO Exception occured while reading file");
-        }
-        return lines;
     }
 
     private void assertShardInfoCommand(Map<String, Object> map, String index,
