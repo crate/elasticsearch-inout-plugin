@@ -73,5 +73,14 @@ public abstract class AbstractSearchIntoParser implements ISearchIntoParser {
      * @param context
      */
     protected void validate(SearchIntoContext context) {
+        if (context.hasFieldNames() && context.fieldNames().contains("_source")) {
+            String index = context.mapperService().index().getName();
+            for (String type : context.mapperService().types()) {
+                if (!context.mapperService().documentMapper(type).sourceMapper().enabled()) {
+                    throw new SearchParseException(context,
+                            "The _source field of index " + index + " and type " + type + " is not stored.");
+                }
+            }
+        }
     }
 }

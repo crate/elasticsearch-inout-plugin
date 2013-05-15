@@ -49,7 +49,7 @@ public class SearchIntoParser extends AbstractSearchIntoParser implements ISearc
                                 "the mapping");
             }
         }
-
+        super.validate(context);
     }
 
     @Override

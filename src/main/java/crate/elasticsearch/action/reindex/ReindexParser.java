@@ -40,10 +40,10 @@ public class ReindexParser extends AbstractSearchIntoParser implements ISearchIn
     @Override
     public void parseSource(SearchIntoContext context, BytesReference source)
             throws SearchParseException {
-        super.parseSource(context, source);
         context.fieldNames().add("_id");
         context.fieldNames().add("_source");
         context.outputNames().put("_id", "_id");
         context.outputNames().put("_source", "_source");
+        super.parseSource(context, source);
     }
 }
