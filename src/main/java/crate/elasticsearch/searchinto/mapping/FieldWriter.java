@@ -73,36 +73,33 @@ public class FieldWriter {
             this.name = name;
         }
 
-        private Map<String, Object> writeToMap(Object root, Object value, String part) {
-            if (root == null) {
-                root = new HashMap<String, Object>();
-            } else if (!(root instanceof Map)) {
-                throw new ElasticSearchException("Error on rewriting objects: Mixed objects and values");
-            }
+        /**
+         * Method to recursively create a nested object
+         */
+        private void writeMap(Map<String, Object> root, Object value, String part) {
             if (part.contains(".")) {
                 String[] parts = part.split("\\.", 2);
-                ((Map<String, Object>) root).put(parts[0], writeToMap(((Map<String, Object>) root).get(parts[0]), value, parts[1]));
+                Object o = root.get(parts[0]);
+                if (o == null) {
+                    o = new HashMap<String, Object>();
+                } else if (!(o instanceof Map)) {
+                    throw new ElasticSearchException("Error on rewriting objects: Mixed objects and values");
+                }
+                Map<String, Object> sub = (Map<String, Object>) o;
+                writeMap(sub, value, parts[1]);
+                root.put(parts[0], sub);
             } else {
                 if (((Map<String, Object>) root).get(part) instanceof Map) {
                     throw new ElasticSearchException("Error on rewriting objects: Mixed objects and values");
                 }
-                ((Map<String, Object>)root).put(part, value);
+                root.put(part, value);
             }
-            return (Map<String, Object>) root;
         }
 
         @Override
         public void write(IndexRequestBuilder builder, Object value) {
             if (value != null) {
-                if (name.contains(".")) {
-                    String[] list = name.split("\\.", 2);
-                    builder.source.put(list[0], writeToMap(builder.source.get(list[0]), value, list[1]));
-                } else {
-                    if (builder.source.get(name) instanceof Map) {
-                        throw new ElasticSearchException("Error on rewriting objects: Mixed objects and values");
-                    }
-                    builder.source.put(name, value);
-                }
+                writeMap(builder.source, value, name);
             }
         }
     }
