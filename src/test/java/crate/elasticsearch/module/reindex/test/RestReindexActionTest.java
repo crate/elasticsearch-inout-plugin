@@ -24,7 +24,7 @@ public class RestReindexActionTest extends AbstractRestActionTest {
         SearchIntoRequest request = new SearchIntoRequest("test");
         SearchIntoResponse res = esSetup.client().execute(ReindexAction.INSTANCE, request).actionGet();
         assertEquals(1, res.getFailedShards());
-        assertTrue(res.getShardFailures()[0].reason().contains("Parse Failure [The field [_source] of index test and type a is not enabled.]"));
+        assertTrue(res.getShardFailures()[0].reason().contains("Parse Failure [The _source field of index test and type a is not stored.]"));
     }
 
     private static List<Map<String, Object>> get(SearchIntoResponse resp, String key) {

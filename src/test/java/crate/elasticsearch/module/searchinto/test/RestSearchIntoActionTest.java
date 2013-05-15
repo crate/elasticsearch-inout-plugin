@@ -25,7 +25,7 @@ public class RestSearchIntoActionTest extends AbstractRestActionTest {
         request.source("{\"fields\": [\"_id\", \"_source\", [\"_index\", \"'newindex'\"]]}");
         SearchIntoResponse res = esSetup.client().execute(SearchIntoAction.INSTANCE, request).actionGet();
         assertEquals(1, res.getFailedShards());
-        assertTrue(res.getShardFailures()[0].reason().contains("Parse Failure [The field [_source] of index test and type a is not enabled.]"));
+        assertTrue(res.getShardFailures()[0].reason().contains("Parse Failure [The _source field of index test and type a is not stored.]"));
     }
 
     private static List<Map<String, Object>> get(SearchIntoResponse resp, String key) {
