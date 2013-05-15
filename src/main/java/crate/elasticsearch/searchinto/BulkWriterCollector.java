@@ -1,13 +1,13 @@
 package crate.elasticsearch.searchinto;
 
 import crate.elasticsearch.action.searchinto.SearchIntoContext;
+import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkProcessor;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.client.transport.NoNodeAvailableException;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.inject.assistedinject.Assisted;
@@ -155,26 +155,26 @@ public class BulkWriterCollector extends WriterCollector {
     }
 
 
+    private void closeClient() {
+        if (transportClient != null) {
+            TransportClient tc = ((TransportClient) transportClient);
+            for (TransportAddress address : tc.transportAddresses()) {
+                tc.removeTransportAddress(address);
+            }
+            transportClient.close();
+        }
+
+    }
+
     @Override
     public void close() throws WriterException {
         logger.debug("close()");
-        Throwable throwable = null;
         try {
             bulkProcessor.close();
-        } catch (NoNodeAvailableException e) {
-            throwable = e;
-        } finally {
-            if (transportClient != null) {
-                TransportClient tc = ((TransportClient) transportClient);
-                for (TransportAddress address : tc.transportAddresses()) {
-                    tc.removeTransportAddress(address);
-                }
-                tc.close();
-            }
-            if (throwable != null) {
+        } catch (ElasticSearchException e) {
+            closeClient();
             throw new WriterException(context,
-                    "BulkListener interrupted on " + "close", throwable);
-            }
+                    "BulkListener interrupted on " + "close", e);
         }
 
         try {
@@ -187,6 +187,7 @@ public class BulkWriterCollector extends WriterCollector {
             throw new WriterException(context,
                     "BulkListener execution " + "failed on close", e);
         }
+        closeClient();
     }
 
     @Override
