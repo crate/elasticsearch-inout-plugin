@@ -1,10 +1,17 @@
 package crate.elasticsearch.searchinto.mapping;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.common.collect.ImmutableMap;
 import org.elasticsearch.common.collect.MapBuilder;
-import org.elasticsearch.index.mapper.internal.*;
-
-import java.util.Map;
+import org.elasticsearch.index.mapper.internal.IdFieldMapper;
+import org.elasticsearch.index.mapper.internal.IndexFieldMapper;
+import org.elasticsearch.index.mapper.internal.SourceFieldMapper;
+import org.elasticsearch.index.mapper.internal.TTLFieldMapper;
+import org.elasticsearch.index.mapper.internal.TimestampFieldMapper;
+import org.elasticsearch.index.mapper.internal.TypeFieldMapper;
 
 public class FieldWriter {
 
@@ -66,10 +73,36 @@ public class FieldWriter {
             this.name = name;
         }
 
+        private Map<String, Object> writeToMap(Object root, Object value, String part) {
+            if (root == null) {
+                root = new HashMap<String, Object>();
+            } else if (!(root instanceof Map)) {
+                throw new ElasticSearchException("Error on rewriting objects: Mixed objects and values");
+            }
+            if (part.contains(".")) {
+                String[] parts = part.split("\\.", 2);
+                ((Map<String, Object>) root).put(parts[0], writeToMap(((Map<String, Object>) root).get(parts[0]), value, parts[1]));
+            } else {
+                if (((Map<String, Object>) root).get(part) instanceof Map) {
+                    throw new ElasticSearchException("Error on rewriting objects: Mixed objects and values");
+                }
+                ((Map<String, Object>)root).put(part, value);
+            }
+            return (Map<String, Object>) root;
+        }
+
         @Override
         public void write(IndexRequestBuilder builder, Object value) {
             if (value != null) {
-                builder.source.put(name, value);
+                if (name.contains(".")) {
+                    String[] list = name.split("\\.", 2);
+                    builder.source.put(list[0], writeToMap(builder.source.get(list[0]), value, list[1]));
+                } else {
+                    if (builder.source.get(name) instanceof Map) {
+                        throw new ElasticSearchException("Error on rewriting objects: Mixed objects and values");
+                    }
+                    builder.source.put(name, value);
+                }
             }
         }
     }
