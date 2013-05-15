@@ -625,7 +625,7 @@ a given query directly into an index::
     }'
 
 An example can be found in the `Search Into DocTest
-<src/test/python/search_into.txt>`_.
+<src/test/python/search_into.rst>`_.
 
 
 Installation
