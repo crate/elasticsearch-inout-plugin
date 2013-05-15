@@ -621,7 +621,7 @@ Via the ``_search_into`` endpoint it is possible to put the result of
 a given query directly into an index::
 
     curl -X POST 'http://localhost:9200/oldindex/_search_into -d '{
-        fields: ["_id", "_source", ["_index", "'newindex'"]]
+        "fields": ["_id", "_source", ["_index", "'newindex'"]]
     }'
 
 An example can be found in the `Search Into DocTest
