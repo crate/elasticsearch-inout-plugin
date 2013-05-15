@@ -7,10 +7,13 @@ import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.inject.assistedinject.Assisted;
 import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.logging.Loggers;
+import org.elasticsearch.common.settings.ImmutableSettings;
+import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.unit.ByteSizeUnit;
 import org.elasticsearch.common.unit.ByteSizeValue;
 import org.elasticsearch.common.unit.TimeValue;
@@ -53,11 +56,34 @@ public class BulkWriterCollector extends WriterCollector {
         this.client = client;
     }
 
+    /**
+     * determine which client to use depending on context
+     *
+     * @return injected client or TransportClient
+     */
+    private Client getClient() {
+
+        SearchIntoContext ctx = (SearchIntoContext)context;
+        if (ctx.targetNodes().isEmpty()) {
+            return client;
+        } else {
+            ImmutableSettings.Builder builder = ImmutableSettings.settingsBuilder();
+            builder.put("config.ignore_system_properties", true);
+            builder.put("client.transport.sniff", true);
+            builder.put("client.transport.ignore_cluster_name", true);
+            Client c = new TransportClient(builder, false);
+            for (InetSocketTransportAddress address : ctx.targetNodes()) {
+                ((TransportClient)c).addTransportAddress(address);
+            }
+            return c;
+        }
+    }
 
     @Override
     public void open() throws WriterException {
+
         bulkListener = new BulkListener();
-        bulkProcessor = BulkProcessor.builder(client,
+        bulkProcessor = BulkProcessor.builder(getClient(),
                 bulkListener).setBulkActions(1000).setBulkSize(
                 new ByteSizeValue(5, ByteSizeUnit.MB)).setFlushInterval(
                 TimeValue.timeValueSeconds(5)).setConcurrentRequests(

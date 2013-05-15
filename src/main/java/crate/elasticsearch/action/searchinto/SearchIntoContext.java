@@ -1,5 +1,8 @@
 package crate.elasticsearch.action.searchinto;
 
+import org.elasticsearch.common.collect.ImmutableList;
+import org.elasticsearch.common.collect.Lists;
+import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.index.engine.Engine;
 import org.elasticsearch.index.service.IndexService;
 import org.elasticsearch.index.shard.service.IndexShard;
@@ -9,6 +12,7 @@ import org.elasticsearch.search.internal.SearchContext;
 import org.elasticsearch.search.internal.ShardSearchRequest;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -18,6 +22,9 @@ public class SearchIntoContext extends SearchContext {
 
     // currently we only support index targets
     private String targetType = "index";
+
+    private List<InetSocketTransportAddress> targetNodes;
+
 
     public Map<String, String> outputNames() {
         return outputNames;
@@ -38,4 +45,16 @@ public class SearchIntoContext extends SearchContext {
         // this is currently the only type supported
         return targetType;
     }
+
+    public List<InetSocketTransportAddress> targetNodes() {
+        if (targetNodes == null) {
+            targetNodes = Lists.newArrayList();
+        }
+        return targetNodes;
+    }
+
+    public void emptyTargetNodes() {
+        this.targetNodes = ImmutableList.of();
+    }
+
 }
