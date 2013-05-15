@@ -9,8 +9,15 @@ import com.github.tlrx.elasticsearch.test.provider.LocalClientProvider;
 
 public class StoreLocalClientProvider extends LocalClientProvider implements ClientProvider {
 
+    private Settings settings;
+
     public StoreLocalClientProvider() {
         super();
+    }
+
+    public StoreLocalClientProvider(Settings settings) {
+        super(settings);
+        this.settings = settings;
     }
 
     protected Settings buildNodeSettings() {
@@ -26,6 +33,10 @@ public class StoreLocalClientProvider extends LocalClientProvider implements Cli
                 .put("index.number_of_replicas", "0")
                 .put("cluster.routing.schedule", "50ms")
                 .put("node.local", true);
+
+        if (settings != null) {
+            builder.put(settings);
+        }
 
         return builder.build();
     }

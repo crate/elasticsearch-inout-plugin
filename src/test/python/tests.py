@@ -42,6 +42,8 @@ def setUp(test):
     test.globs['post'] = ep.post
     test.globs['put'] = ep.put
     test.globs['refresh'] = ep.refresh
+    ep2 = Endpoint('http://localhost:9201')
+    test.globs['node2'] = ep2
 
 
 def test_suite(fname):

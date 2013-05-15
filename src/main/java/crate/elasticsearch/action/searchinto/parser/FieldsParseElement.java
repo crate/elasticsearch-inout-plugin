@@ -1,14 +1,14 @@
 package crate.elasticsearch.action.searchinto.parser;
 
-import crate.elasticsearch.action.searchinto.SearchIntoContext;
+import java.util.Map;
+
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.script.SearchScript;
 import org.elasticsearch.search.SearchParseElement;
 import org.elasticsearch.search.fetch.script.ScriptFieldsContext;
 import org.elasticsearch.search.internal.SearchContext;
 
-import java.util.List;
-import java.util.Map;
+import crate.elasticsearch.action.searchinto.SearchIntoContext;
 
 /**
  * parses the fields field which looks like
@@ -22,8 +22,6 @@ import java.util.Map;
  */
 
 public class FieldsParseElement implements SearchParseElement {
-
-    private List<List<String>> fieldMap;
 
     public static final String SCRIPT_FIELD_PREFIX = "__script_field_";
 

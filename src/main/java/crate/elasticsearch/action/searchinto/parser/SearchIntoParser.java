@@ -27,6 +27,7 @@ public class SearchIntoParser extends AbstractSearchIntoParser implements ISearc
                 SearchParseElement>();
         elementParsers.putAll(queryPhase.parseElements());
         elementParsers.put("fields", new FieldsParseElement());
+        elementParsers.put("targetNodes", new TargetNodesParseElement());
         elementParsers.put("explain", new ExplainParseElement());
         this.elementParsers = ImmutableMap.copyOf(elementParsers);
     }

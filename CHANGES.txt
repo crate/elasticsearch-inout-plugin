@@ -5,6 +5,10 @@ Changes for Elasticsearch InOut Plugin
 Unreleased
 ==========
 
+ - added reindex endpoint
+
+ - added cross cluster support for _search_into endpoint
+
  - added settings and mappings parameters to import endpoint
 
  - updated elasticsearch to 0.90.0
