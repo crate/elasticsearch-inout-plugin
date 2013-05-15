@@ -9,6 +9,9 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.rest.RestController;
 
 import crate.elasticsearch.action.dump.DumpAction;
+import crate.elasticsearch.action.export.ExportRequest;
+import crate.elasticsearch.action.export.ExportResponse;
+import crate.elasticsearch.client.action.export.ExportRequestBuilder;
 import crate.elasticsearch.rest.action.admin.export.RestExportAction;
 
 /**
@@ -22,7 +25,7 @@ public class RestDumpAction extends RestExportAction {
     }
 
     @Override
-    protected Action action() {
+    protected Action<ExportRequest, ExportResponse, ExportRequestBuilder> action() {
         return DumpAction.INSTANCE;
     }
 

@@ -1,8 +1,12 @@
 package crate.elasticsearch.rest.action.admin.export;
 
-import crate.elasticsearch.action.export.ExportAction;
-import crate.elasticsearch.action.export.ExportRequest;
-import crate.elasticsearch.action.export.ExportResponse;
+import static org.elasticsearch.rest.RestRequest.Method.POST;
+import static org.elasticsearch.rest.RestStatus.BAD_REQUEST;
+import static org.elasticsearch.rest.RestStatus.OK;
+import static org.elasticsearch.rest.action.support.RestActions.splitTypes;
+
+import java.io.IOException;
+
 import org.elasticsearch.action.Action;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.support.IgnoreIndices;
@@ -12,16 +16,19 @@ import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.rest.*;
+import org.elasticsearch.rest.BaseRestHandler;
+import org.elasticsearch.rest.RestChannel;
+import org.elasticsearch.rest.RestController;
+import org.elasticsearch.rest.RestRequest;
+import org.elasticsearch.rest.XContentRestResponse;
+import org.elasticsearch.rest.XContentThrowableRestResponse;
 import org.elasticsearch.rest.action.support.RestActions;
 import org.elasticsearch.rest.action.support.RestXContentBuilder;
 
-import java.io.IOException;
-
-import static org.elasticsearch.rest.RestRequest.Method.POST;
-import static org.elasticsearch.rest.RestStatus.BAD_REQUEST;
-import static org.elasticsearch.rest.RestStatus.OK;
-import static org.elasticsearch.rest.action.support.RestActions.splitTypes;
+import crate.elasticsearch.action.export.ExportAction;
+import crate.elasticsearch.action.export.ExportRequest;
+import crate.elasticsearch.action.export.ExportResponse;
+import crate.elasticsearch.client.action.export.ExportRequestBuilder;
 
 /**
  *
@@ -40,7 +47,7 @@ public class RestExportAction extends BaseRestHandler {
         controller.registerHandler(POST, "/{index}/{type}/_export", this);
     }
 
-    protected Action action() {
+    protected Action<ExportRequest, ExportResponse, ExportRequestBuilder> action() {
         return ExportAction.INSTANCE;
     }
 
