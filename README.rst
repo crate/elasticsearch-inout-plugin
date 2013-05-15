@@ -592,6 +592,19 @@ location will be used.
 Defaults to true on restore. See the Import documentation for more details.
 
 
+Search Into
+===========
+
+Via the ``_search_into`` endpoint it is possible to put the result of
+a given query directly into an index. The query can be any search query.
+
+    curl -X POST 'http://localhost:9200/oldindex/_search_into -d '{
+        fields: ["_id", "_source", ["_index", "'newindex'"]]
+    }'
+
+An example can be found in the `DocTests <src/test/python/search_into.txt>`_.
+
+
 Installation
 ============
 
