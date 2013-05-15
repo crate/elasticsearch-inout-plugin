@@ -2,6 +2,8 @@ package crate.elasticsearch.doctests;
 
 import com.github.tlrx.elasticsearch.test.EsSetup;
 import junit.framework.TestCase;
+import org.elasticsearch.common.settings.ImmutableSettings;
+import org.elasticsearch.common.settings.Settings;
 import org.junit.After;
 import org.junit.Before;
 import org.python.core.*;
@@ -40,12 +42,26 @@ public class DocTest extends TestCase {
         if (interp == null) {
             resetInterpreter();
         }
-        esSetup = new EsSetup();
+        Settings s1 = ImmutableSettings.settingsBuilder()
+                .put("cluster.name", "a")
+                .put("node.local", false)
+                .build();
+
+        esSetup = new EsSetup(s1);
         esSetup.execute(deleteAll(), createIndex("users").withSettings(
                 fromClassPath("essetup/settings/test_a.json")).withMapping("d",
                 fromClassPath("essetup/mappings/test_a.json")).withData(
                 fromClassPath("essetup/data/test_a.json")));
-        esSetup.client().admin().indices().prepareRefresh("users").execute();
+        esSetup.client().admin().indices().prepareRefresh("users").execute().actionGet();
+
+        Settings s2 = ImmutableSettings.settingsBuilder()
+                .put("cluster.name", "b")
+                .put("node.local", false)
+                .build();
+        esSetup2 = new EsSetup(s2);
+        esSetup2.execute(deleteAll());
+
+
     }
 
     @After
