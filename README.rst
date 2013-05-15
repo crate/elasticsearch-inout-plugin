@@ -592,6 +592,42 @@ location will be used.
 Defaults to true on restore. See the Import documentation for more details.
 
 
+Reindex
+=======
+
+The ``_reindex`` endpoint can reindex documents of a given search query.
+
+Reindex all indexes::
+
+    curl -X POST 'http://localhost:9200/_reindex'
+
+Reindex a specific index::
+
+    curl -X POST 'http://localhost:9200/myIndex/_reindex'
+
+Reindex documents of a specified query::
+
+    curl -X POST 'http://localhost:9200/myIndex/aType/_reindex' -d '{
+        "query": {"text": {"name": "tobereindexed"}}
+    }'
+
+An example can be found in the `Reindex DocTest <src/test/python/reindex.rst>`_.
+
+
+Search Into
+===========
+
+Via the ``_search_into`` endpoint it is possible to put the result of
+a given query directly into an index::
+
+    curl -X POST 'http://localhost:9200/oldindex/_search_into -d '{
+        "fields": ["_id", "_source", ["_index", "'newindex'"]]
+    }'
+
+An example can be found in the `Search Into DocTest
+<src/test/python/search_into.rst>`_.
+
+
 Installation
 ============
 

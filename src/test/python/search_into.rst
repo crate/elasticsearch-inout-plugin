@@ -10,67 +10,6 @@ Into SQL-Statement
 Here are some common use-cases that might be fulfilled by using this
 endpoint.
 
-Reindex an existing Index
-=========================
-
-Say we have a given ``users`` index containing documents like this::
-
-    >>> get("/users/_search?pretty=1")
-    {..."hits" : {
-        "total" : 4,
-        ...{
-          "_index" : "users",
-          "_type" : "d",
-          "_id" : "1",
-          "_score" : 1.0, "_source" : { "name": "car"}
-        }...
-
-In order to re-index all documents of this index, the ``_source`` and
-``_id`` fields need to be copied into themselfs. Therefore the request
-for re-indexing looks like this::
-
-    >>> post("/users/_search_into?pretty=1", {"fields":["_id", "_source"]})
-    {
-      "writes" : [ {
-        "index" : "users",
-        "shard" : 0,
-        "node" : "...",
-        "total" : 2,
-        "succeeded" : 2,
-        "failed" : 0
-      }, {
-        "index" : "users",
-        "shard" : 1,
-        "node" : "...",
-        "total" : 2,
-        "succeeded" : 2,
-        "failed" : 0
-      } ],
-      "total" : 0,
-      "succeeded" : 0,
-      "failed" : 0,
-      "_shards" : {
-        "total" : 2,
-        "successful" : 2,
-        "failed" : 0
-      }
-    }
-
-The above output shows that writes happened from 2 shards, both on the
-index ``users`` and that each shard had 2 succeeded writes.
-
-The index data actually is the same as before::-
-
-    >>> get("/users/_search?pretty=1")
-    {..."hits" : {
-        "total" : 4,
-        ...{
-          "_index" : "users",
-          "_type" : "d",
-          "_id" : "1",
-          "_score" : 1.0, "_source" : { "name": "car"}
-        }...
-
 
 Copy an existing index
 ======================

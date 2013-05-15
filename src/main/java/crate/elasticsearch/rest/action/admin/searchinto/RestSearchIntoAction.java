@@ -1,8 +1,13 @@
 package crate.elasticsearch.rest.action.admin.searchinto;
 
-import crate.elasticsearch.action.searchinto.SearchIntoAction;
-import crate.elasticsearch.action.searchinto.SearchIntoRequest;
-import crate.elasticsearch.action.searchinto.SearchIntoResponse;
+import static org.elasticsearch.rest.RestRequest.Method.POST;
+import static org.elasticsearch.rest.RestStatus.BAD_REQUEST;
+import static org.elasticsearch.rest.RestStatus.OK;
+import static org.elasticsearch.rest.action.support.RestActions.splitTypes;
+
+import java.io.IOException;
+
+import org.elasticsearch.action.Action;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.support.IgnoreIndices;
 import org.elasticsearch.action.support.broadcast.BroadcastOperationThreading;
@@ -11,16 +16,19 @@ import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.rest.*;
+import org.elasticsearch.rest.BaseRestHandler;
+import org.elasticsearch.rest.RestChannel;
+import org.elasticsearch.rest.RestController;
+import org.elasticsearch.rest.RestRequest;
+import org.elasticsearch.rest.XContentRestResponse;
+import org.elasticsearch.rest.XContentThrowableRestResponse;
 import org.elasticsearch.rest.action.support.RestActions;
 import org.elasticsearch.rest.action.support.RestXContentBuilder;
 
-import java.io.IOException;
-
-import static org.elasticsearch.rest.RestRequest.Method.POST;
-import static org.elasticsearch.rest.RestStatus.BAD_REQUEST;
-import static org.elasticsearch.rest.RestStatus.OK;
-import static org.elasticsearch.rest.action.support.RestActions.splitTypes;
+import crate.elasticsearch.action.searchinto.SearchIntoAction;
+import crate.elasticsearch.action.searchinto.SearchIntoRequest;
+import crate.elasticsearch.action.searchinto.SearchIntoResponse;
+import crate.elasticsearch.client.action.searchinto.SearchIntoRequestBuilder;
 
 /**
  *
@@ -31,9 +39,17 @@ public class RestSearchIntoAction extends BaseRestHandler {
     public RestSearchIntoAction(Settings settings, Client client,
             RestController controller) {
         super(settings, client);
+        registerHandlers(controller);
+    }
+
+    protected void registerHandlers(RestController controller) {
         controller.registerHandler(POST, "/_search_into", this);
         controller.registerHandler(POST, "/{index}/_search_into", this);
         controller.registerHandler(POST, "/{index}/{type}/_search_into", this);
+    }
+
+    protected Action<SearchIntoRequest, SearchIntoResponse, SearchIntoRequestBuilder> action() {
+        return SearchIntoAction.INSTANCE;
     }
 
     public void handleRequest(final RestRequest request,
@@ -91,7 +107,7 @@ public class RestSearchIntoAction extends BaseRestHandler {
             return;
         }
 
-        client.execute(SearchIntoAction.INSTANCE, searchIntoRequest,
+        client.execute(action(), searchIntoRequest,
                 new ActionListener<SearchIntoResponse>() {
 
                     public void onResponse(SearchIntoResponse response) {

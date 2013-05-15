@@ -1,19 +1,24 @@
 package crate.elasticsearch.doctests;
 
-import com.github.tlrx.elasticsearch.test.EsSetup;
+import static com.github.tlrx.elasticsearch.test.EsSetup.createIndex;
+import static com.github.tlrx.elasticsearch.test.EsSetup.deleteAll;
+import static com.github.tlrx.elasticsearch.test.EsSetup.fromClassPath;
 import junit.framework.TestCase;
+
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
 import org.junit.After;
 import org.junit.Before;
-import org.python.core.*;
+import org.python.core.Py;
+import org.python.core.PyArray;
+import org.python.core.PyList;
+import org.python.core.PyString;
+import org.python.core.PySystemState;
 import org.python.util.PythonInterpreter;
-
-import static com.github.tlrx.elasticsearch.test.EsSetup.*;
 
 public class DocTest extends TestCase {
 
-    EsSetup esSetup, esSetup2;
+    StoreEsSetup esSetup, esSetup2;
 
     private static final String PY_TEST = "src/test/python/tests.py";
 
@@ -47,7 +52,7 @@ public class DocTest extends TestCase {
                 .put("node.local", false)
                 .build();
 
-        esSetup = new EsSetup(s1);
+        esSetup = new StoreEsSetup(s1);
         esSetup.execute(deleteAll(), createIndex("users").withSettings(
                 fromClassPath("essetup/settings/test_a.json")).withMapping("d",
                 fromClassPath("essetup/mappings/test_a.json")).withData(
@@ -58,10 +63,8 @@ public class DocTest extends TestCase {
                 .put("cluster.name", "b")
                 .put("node.local", false)
                 .build();
-        esSetup2 = new EsSetup(s2);
+        esSetup2 = new StoreEsSetup(s2);
         esSetup2.execute(deleteAll());
-
-
     }
 
     @After
@@ -73,7 +76,11 @@ public class DocTest extends TestCase {
     }
 
     public void testSearchInto() throws Exception {
-        execDocFile("search_into.txt");
+        execDocFile("search_into.rst");
+    }
+
+    public void testReindex() throws Exception {
+        execDocFile("reindex.rst");
     }
 
 }
