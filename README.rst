@@ -611,7 +611,7 @@ Reindex documents of a specified query::
         "query": {"text": {"name": "tobereindexed"}}
     }'
 
-An example can be found in the `Reindex DocTest <src/test/python/reindex.txt>`_.
+An example can be found in the `Reindex DocTest <src/test/python/reindex.rst>`_.
 
 
 Search Into

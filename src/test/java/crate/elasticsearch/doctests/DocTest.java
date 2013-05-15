@@ -80,7 +80,7 @@ public class DocTest extends TestCase {
     }
 
     public void testReindex() throws Exception {
-        execDocFile("reindex.txt");
+        execDocFile("reindex.rst");
     }
 
 }
