@@ -8,10 +8,6 @@ with a given query.
 Reindex an existing Index
 =========================
 
-    >>> def refresh():
-    ...     post("/_flush")
-    ...     post("/_refresh")
-
 Create an index 'test' with a custom analyzer with the stop word 'guy'::
 
     >>> put("/test", {"settings": {"index": {"number_of_shards":1,

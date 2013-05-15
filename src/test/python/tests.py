@@ -31,12 +31,17 @@ class Endpoint(object):
         req.get_method = lambda: 'PUT'
         print urllib2.urlopen(req).read()
 
+    def refresh(self):
+        self.post("/_flush")
+        self.post("/_refresh")
+
 
 def setUp(test):
     ep = Endpoint()
     test.globs['get'] = ep.get
     test.globs['post'] = ep.post
     test.globs['put'] = ep.put
+    test.globs['refresh'] = ep.refresh
 
 
 def test_suite(fname):
