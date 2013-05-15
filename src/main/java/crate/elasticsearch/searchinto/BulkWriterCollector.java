@@ -1,6 +1,7 @@
 package crate.elasticsearch.searchinto;
 
 import crate.elasticsearch.action.searchinto.SearchIntoContext;
+import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkProcessor;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -14,6 +15,7 @@ import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.logging.Loggers;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.common.transport.TransportAddress;
 import org.elasticsearch.common.unit.ByteSizeUnit;
 import org.elasticsearch.common.unit.ByteSizeValue;
 import org.elasticsearch.common.unit.TimeValue;
@@ -35,6 +37,7 @@ public class BulkWriterCollector extends WriterCollector {
             BulkWriterCollector.class);
 
     private Client client;
+    private Client transportClient;
     private BulkProcessor bulkProcessor;
 
     private final AtomicLong startedDocs = new AtomicLong(0);
@@ -65,17 +68,19 @@ public class BulkWriterCollector extends WriterCollector {
 
         SearchIntoContext ctx = (SearchIntoContext)context;
         if (ctx.targetNodes().isEmpty()) {
+            transportClient = null;
             return client;
         } else {
             ImmutableSettings.Builder builder = ImmutableSettings.settingsBuilder();
             builder.put("config.ignore_system_properties", true);
             builder.put("client.transport.sniff", true);
             builder.put("client.transport.ignore_cluster_name", true);
-            Client c = new TransportClient(builder, false);
+            builder.put("client.transport.ignore_cluster_name", true);
+            transportClient = new TransportClient(builder, false);
             for (InetSocketTransportAddress address : ctx.targetNodes()) {
-                ((TransportClient)c).addTransportAddress(address);
+                ((TransportClient)transportClient).addTransportAddress(address);
             }
-            return c;
+            return transportClient;
         }
     }
 
@@ -150,10 +155,28 @@ public class BulkWriterCollector extends WriterCollector {
     }
 
 
+    private void closeClient() {
+        if (transportClient != null) {
+            TransportClient tc = ((TransportClient) transportClient);
+            for (TransportAddress address : tc.transportAddresses()) {
+                tc.removeTransportAddress(address);
+            }
+            transportClient.close();
+        }
+
+    }
+
     @Override
     public void close() throws WriterException {
         logger.debug("close()");
-        bulkProcessor.close();
+        try {
+            bulkProcessor.close();
+        } catch (ElasticSearchException e) {
+            closeClient();
+            throw new WriterException(context,
+                    "BulkListener interrupted on " + "close", e);
+        }
+
         try {
             bulkListener.get();
         } catch (InterruptedException e) {
@@ -164,6 +187,7 @@ public class BulkWriterCollector extends WriterCollector {
             throw new WriterException(context,
                     "BulkListener execution " + "failed on close", e);
         }
+        closeClient();
     }
 
     @Override
