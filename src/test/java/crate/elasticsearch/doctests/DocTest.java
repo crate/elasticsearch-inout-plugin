@@ -76,11 +76,11 @@ public class DocTest extends TestCase {
     }
 
     public void testSearchInto() throws Exception {
-        execDocFile("search_into.txt");
+        execDocFile("search_into.rst");
     }
 
     public void testReindex() throws Exception {
-        execDocFile("reindex.txt");
+        execDocFile("reindex.rst");
     }
 
 }
