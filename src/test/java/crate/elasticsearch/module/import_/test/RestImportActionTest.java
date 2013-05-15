@@ -14,8 +14,14 @@ import java.util.Map;
 
 import junit.framework.TestCase;
 
+import org.elasticsearch.action.admin.cluster.state.ClusterStateRequest;
+import org.elasticsearch.action.admin.indices.stats.IndicesStatsRequest;
 import org.elasticsearch.action.get.GetRequestBuilder;
 import org.elasticsearch.action.get.GetResponse;
+import org.elasticsearch.client.Requests;
+import org.elasticsearch.cluster.metadata.IndexMetaData;
+import org.elasticsearch.cluster.metadata.MappingMetaData;
+import org.elasticsearch.common.collect.ImmutableMap;
 import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
@@ -291,7 +297,6 @@ public class RestImportActionTest extends TestCase {
         List<Map<String, Object>> imports = getImports(response);
         assertEquals(1, imports.size());
         Map<String, Object> nodeInfo = imports.get(0);
-        System.out.println(imports);
         List imported = (List) nodeInfo.get("imported_files");
         assertTrue(imported.size() == 1);
         assertTrue(imported.get(0).toString().matches(
@@ -312,6 +317,58 @@ public class RestImportActionTest extends TestCase {
         List<Map<String, Object>> failures = getImportFailures(response);
         assertEquals(1, failures.size());
         assertTrue(failures.toString().contains("PatternSyntaxException: Unclosed group near index"));
+    }
+
+    @Test
+    public void testSettings() {
+        String path = getClass().getResource("/importdata/import_9").getPath();
+        executeImportRequest("{\"directory\": \"" + path + "\", \"settings\": true}");
+
+        ClusterStateRequest clusterStateRequest = Requests.clusterStateRequest().filteredIndices("index1");
+        IndexMetaData stats = node1.client().admin().cluster().state(clusterStateRequest).actionGet().getState().metaData().index("index1");
+        assertEquals(2, stats.numberOfShards());
+        assertEquals(1, stats.numberOfReplicas());
+    }
+
+    @Test
+    public void testSettingsNotFound() {
+        String path = getClass().getResource("/importdata/import_1").getPath();
+        ImportResponse response = executeImportRequest("{\"directory\": \"" + path + "\", \"settings\": true}");
+        List<Map<String, Object>> failures = getImportFailures(response);
+        assertTrue(failures.get(0).get("reason").toString().matches(
+                "(.*)Settings file (.*)/importdata/import_1/import_1.json.settings could not be found.(.*)"));
+    }
+
+    @Test
+    public void testMappingsWithoutIndex() {
+        String path = getClass().getResource("/importdata/import_9").getPath();
+        ImportResponse response = executeImportRequest("{\"directory\": \"" + path + "\", \"mappings\": true}");
+        List<Map<String, Object>> failures = getImportFailures(response);
+        assertEquals(1, failures.size());
+        assertTrue(failures.get(0).get("reason").toString().contains("Unable to create mapping. Index index1 missing."));
+    }
+
+    @Test
+    public void testMappings() {
+        node1.execute(createIndex("index1"));
+        String path = getClass().getResource("/importdata/import_9").getPath();
+        executeImportRequest("{\"directory\": \"" + path + "\", \"mappings\": true}");
+
+        ClusterStateRequest clusterStateRequest = Requests.clusterStateRequest().filteredIndices("index1");
+        ImmutableMap<String, MappingMetaData> mappings = node1.client().admin().cluster().state(clusterStateRequest).actionGet().getState().metaData().index("index1").getMappings();
+        assertEquals("{\"1\":{\"_timestamp\":{\"enabled\":true,\"store\":true},\"_ttl\":{\"enabled\":true,\"default\":86400000},\"properties\":{\"name\":{\"type\":\"string\",\"store\":true}}}}",
+                mappings.get("1").source().toString());
+    }
+
+    @Test
+    public void testMappingNotFound() {
+        node1.execute(createIndex("index1"));
+        String path = getClass().getResource("/importdata/import_1").getPath();
+        ImportResponse response = executeImportRequest("{\"directory\": \"" + path + "\", \"mappings\": true}");
+        List<Map<String, Object>> failures = getImportFailures(response);
+        System.out.println(failures.get(0).get("reason").toString());
+        assertTrue(failures.get(0).get("reason").toString().matches(
+                "(.*)Mapping file (.*)/importdata/import_1/import_1.json.mapping could not be found.(.*)"));
     }
 
     /**

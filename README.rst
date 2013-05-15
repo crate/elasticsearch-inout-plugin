@@ -443,6 +443,30 @@ information on regular expressions visit http://www.regular-expressions.info/
 
 - Optional (default is no filtering)
 
+``settings``
+~~~~~~~~~~~~
+
+    "settings": true
+
+Option to import index settings. All files in the import directory with an
+eponymic data file without the ``.settings`` extension will be handled. Also
+use the ``file_pattern`` option to reduce imported settings files. The format
+of a settings file is the same as the JSON output of ``_settings`` GET requests.
+
+- Optional (defaults to false)
+
+``mappings``
+~~~~~~~~~~~~
+
+    "mappings": true
+
+Option to import index mappings. All files in the import directory with an
+eponymic data file without the ``.mapping`` extension will be handled. Also
+use the ``file_pattern`` option to reduce imported mapping files. The format
+of a mapping file is the same as the JSON output of ``_mapping`` GET requests.
+
+- Optional (defaults to false)
+
 
 JSON Response
 -------------
@@ -561,6 +585,11 @@ Specifies the directory where the files to be restored reside. See
 ``directory`` in import documentation for more details. If the
 directory was omitted the default location `dump` within the node data
 location will be used.
+
+``settings`` and ``mappings``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Defaults to true on restore. See the Import documentation for more details.
 
 
 Installation
