@@ -5,6 +5,9 @@ Changes for Elasticsearch InOut Plugin
 Unreleased
 ==========
 
+2013/06/10 0.4.0
+================
+
  - elasticsearch 0.90.1 compatibility
 
  - added support for nested in-fields on search_into
