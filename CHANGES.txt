@@ -5,6 +5,8 @@ Changes for Elasticsearch InOut Plugin
 Unreleased
 ==========
 
+ - fixed tests due to platform differences
+
  - elasticsearch 0.90.2 compatibility
 
 2013/06/10 0.4.0

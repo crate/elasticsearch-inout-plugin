@@ -170,7 +170,7 @@ public class RestImportActionTest extends AbstractRestActionTest {
         List<Map<String, Object>> imports = getImports(response);
         assertEquals(2, imports.size());
 
-        String result = "\\[\\{file_name=(.*)/importdata/import_5/import_5_a.json, successes=1, failures=0\\}, \\{file_name=(.*)import_5_b.json, successes=1, failures=0\\}\\]";
+        String result = "\\[\\{file_name=(.*)/importdata/import_5/import_5_[ab].json, successes=1, failures=0\\}, \\{file_name=(.*)import_5_[ab].json, successes=1, failures=0\\}\\]";
         Map<String, Object> nodeInfo = imports.get(0);
         assertNotNull(nodeInfo.get("node_id"));
         assertTrue(Long.valueOf(nodeInfo.get("took").toString()) > 0);
