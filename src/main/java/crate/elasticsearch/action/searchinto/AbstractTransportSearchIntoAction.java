@@ -13,6 +13,7 @@ import org.elasticsearch.action.ShardOperationFailedException;
 import org.elasticsearch.action.support.DefaultShardOperationFailedException;
 import org.elasticsearch.action.support.broadcast.BroadcastShardOperationFailedException;
 import org.elasticsearch.action.support.broadcast.TransportBroadcastOperationAction;
+import org.elasticsearch.cache.recycler.CacheRecycler;
 import org.elasticsearch.cluster.ClusterService;
 import org.elasticsearch.cluster.ClusterState;
 import org.elasticsearch.cluster.block.ClusterBlockException;
@@ -53,16 +54,19 @@ public abstract class AbstractTransportSearchIntoAction extends
 
     private final ISearchIntoParser parser;
 
+    private final CacheRecycler cacheRecycler;
+
     private final Writer writer;
 
     @Inject
     public AbstractTransportSearchIntoAction(Settings settings,
             ThreadPool threadPool, ClusterService clusterService,
-            TransportService transportService,
+            TransportService transportService, CacheRecycler cacheRecycler,
             IndicesService indicesService, ScriptService scriptService,
             ISearchIntoParser parser, Writer writer) {
         super(settings, threadPool, clusterService, transportService);
         this.indicesService = indicesService;
+        this.cacheRecycler = cacheRecycler;
         this.scriptService = scriptService;
         this.parser = parser;
         this.writer = writer;
@@ -163,11 +167,9 @@ public abstract class AbstractTransportSearchIntoAction extends
                 clusterService.localNode().id(), request.index(),
                 request.shardId());
         SearchIntoContext context = new SearchIntoContext(0,
-                new ShardSearchRequest().types(
-                        request.types()).filteringAliases(
-                        request.filteringAliases()), shardTarget,
-                indexShard.searcher(), indexService, indexShard,
-                scriptService);
+            new ShardSearchRequest().types(request.types()).filteringAliases(request.filteringAliases()),
+            shardTarget, indexShard.searcher(), indexService, indexShard, scriptService, cacheRecycler
+        );
         SearchIntoContext.setCurrent(context);
 
         try {

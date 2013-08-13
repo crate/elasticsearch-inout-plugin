@@ -1,5 +1,6 @@
 package crate.elasticsearch.action.searchinto;
 
+import org.elasticsearch.cache.recycler.CacheRecycler;
 import org.elasticsearch.common.collect.ImmutableList;
 import org.elasticsearch.common.collect.Lists;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
@@ -36,9 +37,9 @@ public class SearchIntoContext extends SearchContext {
     public SearchIntoContext(long id, ShardSearchRequest request,
             SearchShardTarget shardTarget, Engine.Searcher engineSearcher,
             IndexService indexService, IndexShard indexShard,
-            ScriptService scriptService) {
+            ScriptService scriptService, CacheRecycler cacheRecycler) {
         super(id, request, shardTarget, engineSearcher, indexService,
-                indexShard, scriptService);
+                indexShard, scriptService, cacheRecycler);
     }
 
     public String targetType() {

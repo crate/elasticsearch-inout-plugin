@@ -370,7 +370,7 @@ public class Importer {
                 .filteredIndices(indexes.toArray(new String[indexes.size()]));
         clusterStateRequest.listenerThreaded(false);
         ClusterStateResponse response = client.admin().cluster().state(clusterStateRequest).actionGet();
-        return response.getState().metaData().indices();
+        return ImmutableMap.copyOf(response.getState().metaData().indices());
     }
 
 
