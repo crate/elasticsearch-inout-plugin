@@ -3,6 +3,7 @@ package crate.elasticsearch.action.export;
 import crate.elasticsearch.export.Output;
 import crate.elasticsearch.export.OutputCommand;
 import crate.elasticsearch.export.OutputFile;
+import org.elasticsearch.cache.recycler.CacheRecycler;
 import org.elasticsearch.cluster.ClusterName;
 import org.elasticsearch.index.engine.Engine;
 import org.elasticsearch.index.service.IndexService;
@@ -34,8 +35,10 @@ public class ExportContext extends SearchContext {
     private boolean mappings = false;
     private boolean settings = false;
 
-    public ExportContext(long id, ShardSearchRequest request, SearchShardTarget shardTarget, Engine.Searcher engineSearcher, IndexService indexService, IndexShard indexShard, ScriptService scriptService, String nodePath) {
-        super(id, request, shardTarget, engineSearcher, indexService, indexShard, scriptService);
+    public ExportContext(long id, ShardSearchRequest request, SearchShardTarget shardTarget,
+                         Engine.Searcher engineSearcher, IndexService indexService, IndexShard indexShard,
+                         ScriptService scriptService, CacheRecycler cacheRecycler, String nodePath) {
+        super(id, request, shardTarget, engineSearcher, indexService, indexShard, scriptService, cacheRecycler);
         this.nodePath = nodePath;
     }
 

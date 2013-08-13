@@ -7,6 +7,7 @@ import org.elasticsearch.action.ShardOperationFailedException;
 import org.elasticsearch.action.support.DefaultShardOperationFailedException;
 import org.elasticsearch.action.support.broadcast.BroadcastShardOperationFailedException;
 import org.elasticsearch.action.support.broadcast.TransportBroadcastOperationAction;
+import org.elasticsearch.cache.recycler.CacheRecycler;
 import org.elasticsearch.cluster.ClusterService;
 import org.elasticsearch.cluster.ClusterState;
 import org.elasticsearch.cluster.block.ClusterBlockException;
@@ -50,15 +51,19 @@ public abstract class AbstractTransportExportAction extends TransportBroadcastOp
 
     private final Exporter exporter;
 
+    private final CacheRecycler cacheRecycler;
+
     private String nodePath;
 
     public AbstractTransportExportAction(Settings settings, ThreadPool threadPool, ClusterService clusterService,
                                          TransportService transportService, IndicesService indicesService,
-                                         ScriptService scriptService, IExportParser exportParser, Exporter exporter,
+                                         ScriptService scriptService, CacheRecycler cacheRecycler,
+                                         IExportParser exportParser, Exporter exporter,
                                          NodeEnvironment nodeEnv) {
         super(settings, threadPool, clusterService, transportService);
         this.indicesService = indicesService;
         this.scriptService = scriptService;
+        this.cacheRecycler = cacheRecycler;
         this.exportParser = exportParser;
         this.exporter = exporter;
         File[] paths = nodeEnv.nodeDataLocations();
@@ -142,7 +147,9 @@ public abstract class AbstractTransportExportAction extends TransportBroadcastOp
         IndexShard indexShard = indexService.shardSafe(request.shardId());
 
         SearchShardTarget shardTarget = new SearchShardTarget(clusterService.localNode().id(), request.index(), request.shardId());
-        ExportContext context = new ExportContext(0, new ShardSearchRequest().types(request.types()).filteringAliases(request.filteringAliases()), shardTarget, indexShard.searcher(), indexService, indexShard, scriptService, nodePath);
+        ExportContext context = new ExportContext(0,
+            new ShardSearchRequest().types(request.types()).filteringAliases(request.filteringAliases()),
+            shardTarget, indexShard.searcher(), indexService, indexShard, scriptService, cacheRecycler, nodePath);
         ExportContext.setCurrent(context);
 
         try {
