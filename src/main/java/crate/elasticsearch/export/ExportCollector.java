@@ -15,6 +15,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
 import org.elasticsearch.common.bytes.BytesReference;
+import org.elasticsearch.common.io.Streams;
 import org.elasticsearch.common.io.stream.BytesStreamOutput;
 import org.elasticsearch.common.text.StringAndBytesText;
 import org.elasticsearch.common.text.Text;
@@ -171,12 +172,9 @@ public class ExportCollector extends Collector {
 
         searchHit.shardTarget(context.shardTarget());
         exportFields.hit(searchHit);
-        BytesStreamOutput os = new BytesStreamOutput();
-        XContentBuilder builder = new XContentBuilder(XContentFactory.xContent(XContentType.JSON), os);
+        XContentBuilder builder = new XContentBuilder(XContentFactory.xContent(XContentType.JSON), out);
         exportFields.toXContent(builder, ToXContent.EMPTY_PARAMS);
         builder.flush();
-        BytesReference bytes = os.bytes();
-        out.write(bytes.array(), bytes.arrayOffset(), bytes.length());
         out.write('\n');
         out.flush();
         numExported++;
