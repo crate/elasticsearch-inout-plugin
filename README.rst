@@ -640,4 +640,4 @@ Installation
   mvn clean package
 * Install the plugin: /path/to/elasticsearch/bin/plugin -install
   elasticsearch-inout-plugin -url
-  file:///$PWD/target/releases/elasticsearch-inout-plugin-$version.jar
+  file:///$PWD/target/elasticsearch-inout-plugin-$version.jar
