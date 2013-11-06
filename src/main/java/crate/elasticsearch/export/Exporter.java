@@ -75,7 +75,7 @@ public class Exporter {
         }
     }
 
-    public Result execute(ExportContext context) {
+    public synchronized Result execute(ExportContext context) {
         if (context.settings() || context.mappings()) {
             writeSettingsOrMappings(context);
         }
