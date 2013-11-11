@@ -1,32 +1,24 @@
 package crate.elasticsearch.module.export.test;
 
-import static com.github.tlrx.elasticsearch.test.EsSetup.createIndex;
-import static com.github.tlrx.elasticsearch.test.EsSetup.deleteAll;
-import static com.github.tlrx.elasticsearch.test.EsSetup.fromClassPath;
-import static com.github.tlrx.elasticsearch.test.EsSetup.index;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
+import com.github.tlrx.elasticsearch.test.EsSetup;
+import crate.elasticsearch.action.export.ExportAction;
+import crate.elasticsearch.action.export.ExportRequest;
+import crate.elasticsearch.action.export.ExportResponse;
+import crate.elasticsearch.module.AbstractRestActionTest;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.index.VersionType;
 import org.elasticsearch.indices.IndexMissingException;
 import org.junit.Test;
 
-import com.github.tlrx.elasticsearch.test.EsSetup;
+import java.io.*;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-import crate.elasticsearch.action.export.ExportAction;
-import crate.elasticsearch.action.export.ExportRequest;
-import crate.elasticsearch.action.export.ExportResponse;
-import crate.elasticsearch.module.AbstractRestActionTest;
+import static com.github.tlrx.elasticsearch.test.EsSetup.*;
 
 public class RestExportActionTest extends AbstractRestActionTest {
 
@@ -231,17 +223,40 @@ public class RestExportActionTest extends AbstractRestActionTest {
      */
     @Test
     public void testForceOverwrite() {
-        String filename = "/tmp/filename.export";
-        ExportResponse response = executeExportRequest("{\"output_file\": \"" + filename +
-                "\", \"fields\": [\"name\"], \"force_overwrite\": \"true\"}");
+        String filename = "/tmp/filename-" + System.currentTimeMillis() + "-${index}-${shard}.export";
+        int lineCount= 0;
+        {
+            ExportResponse response = executeExportRequest("{\"output_file\": \"" + filename +
+                    "\", \"fields\": [\"name\"], \"force_overwrite\": \"false\"}");
 
-        List<Map<String, Object>> infos = getExports(response);
-        assertEquals(2, infos.size());
-        assertEquals("/tmp/filename.export", infos.get(0).get("output_file").toString());
-        assertEquals("/tmp/filename.export", infos.get(1).get("output_file").toString());
-        List<String> lines = readLines(filename);
-        assertEquals(2, lines.size());
-        assertEquals("{\"name\":\"bike\"}", lines.get(0));
+            List<Map<String, Object>> infos = getExports(response);
+            assertEquals(2, infos.size());
+            String out1 = infos.get(0).get("output_file").toString();
+            String out2 = infos.get(1).get("output_file").toString();
+            List<String> lines = readLines(out1);
+            lines.addAll(readLines(out2));
+            assertTrue(lines.size() > 0);
+            lineCount = lines.size();
+        }
+        {
+            ExportResponse response = executeExportRequest("{\"output_file\": \"" + filename +
+                    "\", \"fields\": [\"name\"], \"force_overwrite\": \"false\"}");
+
+            List<Map<String, Object>> infos = getExports(response);
+            assertEquals(0, infos.size());
+        }
+        {
+            ExportResponse response = executeExportRequest("{\"output_file\": \"" + filename +
+                    "\", \"fields\": [\"name\"], \"force_overwrite\": \"true\"}");
+
+            List<Map<String, Object>> infos = getExports(response);
+            assertEquals(2, infos.size());
+            String out1 = infos.get(0).get("output_file").toString();
+            String out2 = infos.get(1).get("output_file").toString();
+            List<String> lines = readLines(out1);
+            lines.addAll(readLines(out2));
+            assertEquals(lineCount, lines.size());
+        }
     }
 
     /**
@@ -286,7 +301,7 @@ public class RestExportActionTest extends AbstractRestActionTest {
         esSetup2 = new EsSetup();
         esSetup2.execute(index("users", "d").withSource("{\"name\": \"motorbike\"}"));
         esSetup2.client().admin().cluster().prepareHealth().setWaitForGreenStatus().
-            setWaitForNodes("2").setWaitForRelocatingShards(0).execute().actionGet();
+                setWaitForNodes("2").setWaitForRelocatingShards(0).execute().actionGet();
 
         // Do export request
         String source = "{\"output_cmd\": \"cat\", \"fields\": [\"name\"]}";
@@ -308,7 +323,7 @@ public class RestExportActionTest extends AbstractRestActionTest {
     public void testWithQuery() {
         ExportResponse response = executeExportRequest(
                 "{\"output_file\": \"/tmp/query-${shard}.json\", \"fields\": [\"name\"], " +
-                "\"query\": {\"match\": {\"name\":\"bus\"}}, \"force_overwrite\": true}");
+                        "\"query\": {\"match\": {\"name\":\"bus\"}}, \"force_overwrite\": true}");
 
         assertEquals(0, response.getFailedShards());
         List<Map<String, Object>> infos = getExports(response);
@@ -404,10 +419,10 @@ public class RestExportActionTest extends AbstractRestActionTest {
      * as a field.
      */
     @Test
-    public void testTimestampStored(){
+    public void testTimestampStored() {
         esSetup.execute(deleteAll(), createIndex("tsstored").withSettings(
                 fromClassPath("essetup/settings/test_a.json")).withMapping("d",
-                        "{\"d\": {\"_timestamp\": {\"enabled\": true, \"store\": \"yes\"}}}"));
+                "{\"d\": {\"_timestamp\": {\"enabled\": true, \"store\": \"yes\"}}}"));
         Client client = esSetup.client();
         client.prepareIndex("tsstored", "d", "1").setSource(
                 "field1", "value1").setTimestamp("123").execute().actionGet();
@@ -438,7 +453,7 @@ public class RestExportActionTest extends AbstractRestActionTest {
     public void testTTLEnabled() {
         esSetup.execute(deleteAll(), createIndex("ttlenabled").withSettings(
                 fromClassPath("essetup/settings/test_a.json")).withMapping("d",
-                        "{\"d\": {\"_ttl\": {\"enabled\": true, \"default\": \"1d\"}}}"));
+                "{\"d\": {\"_ttl\": {\"enabled\": true, \"default\": \"1d\"}}}"));
         Client client = esSetup.client();
         client.prepareIndex("ttlenabled", "d", "1").setSource("field1", "value1").execute().actionGet();
         client.admin().indices().prepareRefresh().execute().actionGet();
@@ -449,7 +464,7 @@ public class RestExportActionTest extends AbstractRestActionTest {
         List<Map<String, Object>> infos = getExports(response);
         String stdout = infos.get(1).get("stdout").toString();
         assertTrue(stdout.startsWith("{\"_id\":\"1\",\"_ttl\":"));
-        String lsplit  = stdout.substring(18);
+        String lsplit = stdout.substring(18);
         long ttl = Long.valueOf(lsplit.substring(0, lsplit.length() - 2));
         long diff = ttl - now.getTime();
         assertTrue(diff < 86400000 && diff > 86390000);
@@ -496,7 +511,7 @@ public class RestExportActionTest extends AbstractRestActionTest {
         esSetup2 = new EsSetup();
         esSetup2.execute(index("users", "d").withSource("{\"name\": \"motorbike\"}"));
         esSetup2.client().admin().cluster().prepareHealth().setWaitForGreenStatus().
-            setWaitForNodes("2").setWaitForRelocatingShards(0).execute().actionGet();
+                setWaitForNodes("2").setWaitForRelocatingShards(0).execute().actionGet();
 
         ExportResponse response = executeExportRequest(
                 "{\"output_file\": \"export.${shard}.${index}.json\", \"fields\": [\"name\", \"_id\"], \"force_overwrite\": true}");
@@ -673,7 +688,7 @@ public class RestExportActionTest extends AbstractRestActionTest {
     }
 
     private void assertShardInfoCommand(Map<String, Object> map, String index,
-            int exitcode, String stdout, String stderr, String cmd) {
+                                        int exitcode, String stdout, String stderr, String cmd) {
         assertEquals(index, map.get("index"));
         assertEquals(exitcode, map.get("exitcode"));
         assertEquals(stderr, map.get("stderr"));
