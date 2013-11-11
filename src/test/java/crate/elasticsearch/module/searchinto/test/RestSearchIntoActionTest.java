@@ -11,6 +11,7 @@ import org.elasticsearch.action.get.GetRequestBuilder;
 import org.elasticsearch.action.get.GetResponse;
 import org.junit.Test;
 
+import crate.elasticsearch.action.import_.ImportResponse;
 import crate.elasticsearch.action.searchinto.SearchIntoAction;
 import crate.elasticsearch.action.searchinto.SearchIntoRequest;
 import crate.elasticsearch.action.searchinto.SearchIntoResponse;
@@ -18,7 +19,58 @@ import crate.elasticsearch.module.AbstractRestActionTest;
 
 public class RestSearchIntoActionTest extends AbstractRestActionTest {
 
-    @Test
+	@Test
+    public void testSearchIntoWithScriptElementModifyingField() {
+        esSetup.execute(createIndex("test").withMapping("a",
+                "{\"a\":{\"_source\": {\"enabled\": true}}}"));
+        esSetup.execute(index("test", "a", "1").withSource("{\"name\": \"John\"}"));
+        SearchIntoRequest request = new SearchIntoRequest("test");
+        request.source("{\"fields\": [\"_id\", \"_source\", [\"_index\", \"'newindex'\"]]" + ", \"script\": \"ctx._source.name += ' scripted'\"}");
+        SearchIntoResponse res = esSetup.client().execute(SearchIntoAction.INSTANCE, request).actionGet();
+        assertEquals(1, res.getSuccessfulShards());
+        List<Map<String, Object>> writes = getWrites(res);
+        assertEquals(1, writes.size());
+        GetRequestBuilder rb = new GetRequestBuilder(esSetup.client(), "newindex");
+        GetResponse gr = rb.setType("a").setId("1").setFields("name").execute().actionGet();
+        assertEquals("John scripted", gr.getField("name").getValue());
+     }
+	
+	@Test
+    public void testSearchIntoWithScriptElementAddingField() {
+        esSetup.execute(createIndex("test").withMapping("a",
+                "{\"a\":{\"_source\": {\"enabled\": true}}}"));
+        esSetup.execute(index("test", "a", "1").withSource("{\"name\": \"John\"}"));
+        SearchIntoRequest request = new SearchIntoRequest("test");
+        request.source("{\"fields\": [\"_id\", \"_source\", [\"_index\", \"'newindex'\"]]" + ", \"script\": \"ctx._source.name1 =  ctx._source.name + ' scripted'\"}");
+        SearchIntoResponse res = esSetup.client().execute(SearchIntoAction.INSTANCE, request).actionGet();
+        assertEquals(1, res.getSuccessfulShards());
+        List<Map<String, Object>> writes = getWrites(res);
+        assertEquals(1, writes.size());
+        GetRequestBuilder rb = new GetRequestBuilder(esSetup.client(), "newindex");
+        GetResponse gr = rb.setType("a").setId("1").setFields("name1").execute().actionGet();
+        assertEquals("John scripted", gr.getField("name1").getValue());
+     }
+	
+	@Test
+    public void testSearchIntoWithScriptElementDeletingRecord() {
+        esSetup.execute(createIndex("test").withMapping("a",
+                "{\"a\":{\"_source\": {\"enabled\": true}}}"));
+        esSetup.execute(createIndex("newindex").withMapping("a",
+                "{\"a\":{\"_source\": {\"enabled\": true}}}"));
+        esSetup.execute(index("test", "a", "1").withSource("{\"name\": \"John\"}"));
+        SearchIntoRequest request = new SearchIntoRequest("test");
+        request.source("{\"fields\": [\"_id\", \"_source\", [\"_index\", \"'newindex'\"]]" + ", \"script\": \"if (ctx._id == '1') ctx.op = 'delete'; \"}");
+        SearchIntoResponse res = esSetup.client().execute(SearchIntoAction.INSTANCE, request).actionGet();
+        assertEquals(1, res.getSuccessfulShards());
+        List<Map<String, Object>> writes = getWrites(res);
+        assertEquals(1, writes.size());
+        GetRequestBuilder rb = new GetRequestBuilder(esSetup.client(), "newindex");
+        GetResponse gr = rb.setType("a").setId("1").setFields("name").execute().actionGet();
+        assertFalse(gr.isExists());
+     }
+	
+
+	@Test
     public void testSearchIntoWithoutSource() {
         esSetup.execute(createIndex("test").withMapping("a",
                 "{\"a\":{\"_source\": {\"enabled\": false}}}"));
@@ -29,6 +81,7 @@ public class RestSearchIntoActionTest extends AbstractRestActionTest {
         assertEquals(1, res.getFailedShards());
         assertTrue(res.getShardFailures()[0].reason().contains("Parse Failure [The _source field of index test and type a is not stored.]"));
     }
+    
 
     @Test
     public void testNestedObjectsRewriting() {
@@ -36,7 +89,6 @@ public class RestSearchIntoActionTest extends AbstractRestActionTest {
         SearchIntoRequest request = new SearchIntoRequest("test");
         request.source("{\"fields\": [\"_id\", [\"x.city\", \"_source.city\"], [\"x.surname\", \"_source.name.surname\"], [\"x.name\", \"_source.name.name\"], [\"_index\", \"'newindex'\"]]}");
         SearchIntoResponse res = esSetup.client().execute(SearchIntoAction.INSTANCE, request).actionGet();
-
         GetRequestBuilder rb = new GetRequestBuilder(esSetup.client(), "newindex");
         GetResponse getRes = rb.setType("a").setId("1").execute().actionGet();
         assertTrue(getRes.isExists());
@@ -88,5 +140,11 @@ public class RestSearchIntoActionTest extends AbstractRestActionTest {
         }
         return (List<Map<String, Object>>) res.get(key);
     }
+    
+    private static List<Map<String, Object>> getWrites(SearchIntoResponse resp) {
+        return get(resp, "writes");
+    }
+    
+
 
 }

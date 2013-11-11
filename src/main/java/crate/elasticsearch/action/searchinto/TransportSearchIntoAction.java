@@ -10,6 +10,7 @@ import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.transport.TransportService;
 
 import crate.elasticsearch.action.searchinto.parser.SearchIntoParser;
+import crate.elasticsearch.script.ScriptProvider;
 import crate.elasticsearch.searchinto.Writer;
 
 
@@ -23,9 +24,10 @@ public class TransportSearchIntoAction extends AbstractTransportSearchIntoAction
             ThreadPool threadPool, ClusterService clusterService,
             TransportService transportService, CacheRecycler cacheRecycler,
             IndicesService indicesService, ScriptService scriptService,
+            ScriptProvider scriptProvider,
             SearchIntoParser parser, Writer writer) {
         super(settings, threadPool, clusterService, transportService, cacheRecycler, indicesService,
-            scriptService, parser, writer);
+            scriptService, scriptProvider, parser, writer);
     }
 
     @Override

@@ -15,6 +15,7 @@ import org.elasticsearch.search.query.QueryPhase;
 import crate.elasticsearch.action.searchinto.SearchIntoContext;
 import crate.elasticsearch.action.searchinto.parser.AbstractSearchIntoParser;
 import crate.elasticsearch.action.searchinto.parser.ISearchIntoParser;
+import crate.elasticsearch.script.ScriptParser;
 
 /**
  * Parser for pay load given to _reindex action.
@@ -22,9 +23,9 @@ import crate.elasticsearch.action.searchinto.parser.ISearchIntoParser;
 public class ReindexParser extends AbstractSearchIntoParser implements ISearchIntoParser {
 
     private final ImmutableMap<String, SearchParseElement> elementParsers;
-
     @Inject
-    public ReindexParser(QueryPhase queryPhase, FetchPhase fetchPhase) {
+    public ReindexParser(QueryPhase queryPhase, FetchPhase fetchPhase, ScriptParser scriptParser) {
+    	super(scriptParser);
         Map<String, SearchParseElement> elementParsers = new HashMap<String,
                 SearchParseElement>();
         elementParsers.putAll(queryPhase.parseElements());
@@ -39,7 +40,7 @@ public class ReindexParser extends AbstractSearchIntoParser implements ISearchIn
 
     @Override
     public void parseSource(SearchIntoContext context, BytesReference source)
-            throws SearchParseException {
+            throws SearchParseException {    
         context.fieldNames().add("_id");
         context.fieldNames().add("_source");
         context.outputNames().put("_id", "_id");

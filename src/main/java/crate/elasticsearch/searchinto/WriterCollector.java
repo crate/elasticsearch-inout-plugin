@@ -7,6 +7,9 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
 import org.elasticsearch.common.inject.Inject;
+import org.elasticsearch.common.logging.ESLogger;
+import org.elasticsearch.common.logging.ESLoggerFactory;
+import org.elasticsearch.common.logging.Loggers;
 import org.elasticsearch.common.text.StringAndBytesText;
 import org.elasticsearch.common.text.Text;
 import org.elasticsearch.index.fieldvisitor.*;
@@ -27,6 +30,8 @@ import static org.elasticsearch.common.collect.Lists.newArrayList;
 
 public abstract class WriterCollector extends Collector {
 
+	protected final ESLogger logger = ESLoggerFactory.getLogger(this.getClass().getName());
+    
     private List<String> extractFieldNames;
     protected FieldsVisitor fieldsVisitor;
     protected SearchIntoContext context;

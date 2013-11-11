@@ -33,9 +33,8 @@ import org.elasticsearch.search.internal.ShardSearchRequest;
 import org.elasticsearch.search.query.QueryPhaseExecutionException;
 import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.transport.TransportService;
-
 import crate.elasticsearch.action.searchinto.parser.ISearchIntoParser;
-import crate.elasticsearch.action.searchinto.parser.SearchIntoParser;
+import crate.elasticsearch.script.ScriptProvider;
 import crate.elasticsearch.searchinto.Writer;
 import crate.elasticsearch.searchinto.WriterResult;
 
@@ -51,6 +50,8 @@ public abstract class AbstractTransportSearchIntoAction extends
     private final IndicesService indicesService;
 
     private final ScriptService scriptService;
+    
+    private ScriptProvider scriptProvider;
 
     private final ISearchIntoParser parser;
 
@@ -63,11 +64,13 @@ public abstract class AbstractTransportSearchIntoAction extends
             ThreadPool threadPool, ClusterService clusterService,
             TransportService transportService, CacheRecycler cacheRecycler,
             IndicesService indicesService, ScriptService scriptService,
+            ScriptProvider scriptProvider,
             ISearchIntoParser parser, Writer writer) {
         super(settings, threadPool, clusterService, transportService);
         this.indicesService = indicesService;
         this.cacheRecycler = cacheRecycler;
         this.scriptService = scriptService;
+        this.scriptProvider = scriptProvider;
         this.parser = parser;
         this.writer = writer;
     }
@@ -171,10 +174,11 @@ public abstract class AbstractTransportSearchIntoAction extends
             shardTarget, indexShard.acquireSearcher("inout-plugin"), indexService, indexShard, scriptService, cacheRecycler
         );
         SearchIntoContext.setCurrent(context);
-
         try {
             BytesReference source = request.source();
             parser.parseSource(context, source);
+            scriptProvider.prepareContextForScriptExecution(context, scriptService);
+            
             context.preProcess();
             try {
                 if (context.explain()) {
