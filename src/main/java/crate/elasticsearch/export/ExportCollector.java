@@ -23,15 +23,13 @@ import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentType;
-import org.elasticsearch.index.fieldvisitor.CustomFieldsVisitor;
-import org.elasticsearch.index.fieldvisitor.FieldsVisitor;
-import org.elasticsearch.index.fieldvisitor.JustUidFieldsVisitor;
-import org.elasticsearch.index.fieldvisitor.UidAndSourceFieldsVisitor;
+import org.elasticsearch.index.fieldvisitor.*;
 import org.elasticsearch.index.mapper.DocumentMapper;
 import org.elasticsearch.index.mapper.FieldMappers;
 import org.elasticsearch.index.mapper.internal.SourceFieldMapper;
 import org.elasticsearch.search.SearchHitField;
 import org.elasticsearch.search.fetch.FetchSubPhase;
+import org.elasticsearch.search.fetch.source.FetchSourceContext;
 import org.elasticsearch.search.internal.InternalSearchHit;
 import org.elasticsearch.search.internal.InternalSearchHitField;
 
@@ -62,17 +60,21 @@ public class ExportCollector extends Collector {
 
         if (!context.hasFieldNames()) {
             if (context.hasPartialFields()) {
-                // partial fields need the source, so fetch it, but don't return it
+                // partial fields need the source, so fetch it
                 fieldsVisitor = new UidAndSourceFieldsVisitor();
-            } else if (context.hasScriptFields()) {
-                // we ask for script fields, and no field names, don't load the source
-                fieldsVisitor = new JustUidFieldsVisitor();
             } else {
-                sourceRequested = true;
-                fieldsVisitor = new UidAndSourceFieldsVisitor();
+                // no fields specified, default to return source if no explicit indication
+                if (!context.hasScriptFields() && !context.hasFetchSourceContext()) {
+                    context.fetchSourceContext(new FetchSourceContext(true));
+                }
+                fieldsVisitor = context.sourceRequested() ? new UidAndSourceFieldsVisitor() : new JustUidFieldsVisitor();
             }
         } else if (context.fieldNames().isEmpty()) {
-            fieldsVisitor = new JustUidFieldsVisitor();
+            if (context.sourceRequested()) {
+                fieldsVisitor = new UidAndSourceFieldsVisitor();
+            } else {
+                fieldsVisitor = new JustUidFieldsVisitor();
+            }
         } else {
             boolean loadAllStored = false;
             Set<String> fieldNames = null;
@@ -82,7 +84,11 @@ public class ExportCollector extends Collector {
                     continue;
                 }
                 if (fieldName.equals(SourceFieldMapper.NAME)) {
-                    sourceRequested = true;
+                    if (context.hasFetchSourceContext()) {
+                        context.fetchSourceContext().fetchSource(true);
+                    } else {
+                        context.fetchSourceContext(new FetchSourceContext(true));
+                    }
                     continue;
                 }
                 FieldMappers x = context.smartNameFieldMappers
@@ -100,15 +106,11 @@ public class ExportCollector extends Collector {
                 }
             }
             if (loadAllStored) {
-                if (sourceRequested || extractFieldNames != null) {
-                    fieldsVisitor = new CustomFieldsVisitor(true, true); // load everything, including _source
-                } else {
-                    fieldsVisitor = new CustomFieldsVisitor(true, false);
-                }
+                fieldsVisitor = new AllFieldsVisitor(); // load everything, including _source
             } else if (fieldNames != null) {
-                boolean loadSource = extractFieldNames != null || sourceRequested;
+                boolean loadSource = extractFieldNames != null || context.sourceRequested();
                 fieldsVisitor = new CustomFieldsVisitor(fieldNames, loadSource);
-            } else if (extractFieldNames != null || sourceRequested) {
+            } else if (extractFieldNames != null || context.sourceRequested()) {
                 fieldsVisitor = new UidAndSourceFieldsVisitor();
             } else {
                 fieldsVisitor = new JustUidFieldsVisitor();
@@ -159,8 +161,8 @@ public class ExportCollector extends Collector {
 
         InternalSearchHit searchHit = new InternalSearchHit(doc,
                 fieldsVisitor.uid().id(), typeText,
-                sourceRequested ? fieldsVisitor.source() : null,
-                searchFields);
+                searchFields).sourceRef(fieldsVisitor.source());
+
 
         for (FetchSubPhase fetchSubPhase : fetchSubPhases) {
             FetchSubPhase.HitContext hitContext = new FetchSubPhase.HitContext();

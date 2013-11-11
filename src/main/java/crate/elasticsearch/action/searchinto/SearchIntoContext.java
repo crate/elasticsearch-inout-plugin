@@ -9,7 +9,7 @@ import org.elasticsearch.index.service.IndexService;
 import org.elasticsearch.index.shard.service.IndexShard;
 import org.elasticsearch.script.ScriptService;
 import org.elasticsearch.search.SearchShardTarget;
-import org.elasticsearch.search.internal.SearchContext;
+import org.elasticsearch.search.internal.DefaultSearchContext;
 import org.elasticsearch.search.internal.ShardSearchRequest;
 
 import java.util.HashMap;
@@ -19,7 +19,7 @@ import java.util.Map;
 /**
  * Container class for inout specific informations.
  */
-public class SearchIntoContext extends SearchContext {
+public class SearchIntoContext extends DefaultSearchContext {
 
     // currently we only support index targets
     private String targetType = "index";

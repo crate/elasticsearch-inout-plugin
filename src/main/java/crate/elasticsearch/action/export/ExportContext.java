@@ -10,6 +10,7 @@ import org.elasticsearch.index.service.IndexService;
 import org.elasticsearch.index.shard.service.IndexShard;
 import org.elasticsearch.script.ScriptService;
 import org.elasticsearch.search.SearchShardTarget;
+import org.elasticsearch.search.internal.DefaultSearchContext;
 import org.elasticsearch.search.internal.SearchContext;
 import org.elasticsearch.search.internal.ShardSearchRequest;
 
@@ -20,7 +21,7 @@ import java.util.List;
 /**
  * Container class for export specific informations.
  */
-public class ExportContext extends SearchContext {
+public class ExportContext extends DefaultSearchContext {
 
     private static final String VAR_SHARD = "${shard}";
     private static final String VAR_INDEX = "${index}";

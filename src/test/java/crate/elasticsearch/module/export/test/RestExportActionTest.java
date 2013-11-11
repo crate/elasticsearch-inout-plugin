@@ -231,17 +231,40 @@ public class RestExportActionTest extends AbstractRestActionTest {
      */
     @Test
     public void testForceOverwrite() {
-        String filename = "/tmp/filename.export";
-        ExportResponse response = executeExportRequest("{\"output_file\": \"" + filename +
-                "\", \"fields\": [\"name\"], \"force_overwrite\": \"true\"}");
+        String filename = "/tmp/filename-" + System.currentTimeMillis() + "-${index}-${shard}.export";
+        int lineCount= 0;
+        {
+            ExportResponse response = executeExportRequest("{\"output_file\": \"" + filename +
+                    "\", \"fields\": [\"name\"], \"force_overwrite\": \"false\"}");
 
-        List<Map<String, Object>> infos = getExports(response);
-        assertEquals(2, infos.size());
-        assertEquals("/tmp/filename.export", infos.get(0).get("output_file").toString());
-        assertEquals("/tmp/filename.export", infos.get(1).get("output_file").toString());
-        List<String> lines = readLines(filename);
-        assertEquals(2, lines.size());
-        assertEquals("{\"name\":\"bike\"}", lines.get(0));
+            List<Map<String, Object>> infos = getExports(response);
+            assertEquals(2, infos.size());
+            String out1 = infos.get(0).get("output_file").toString();
+            String out2 = infos.get(1).get("output_file").toString();
+            List<String> lines = readLines(out1);
+            lines.addAll(readLines(out2));
+            assertTrue(lines.size() > 0);
+            lineCount = lines.size();
+        }
+        {
+            ExportResponse response = executeExportRequest("{\"output_file\": \"" + filename +
+                    "\", \"fields\": [\"name\"], \"force_overwrite\": \"false\"}");
+
+            List<Map<String, Object>> infos = getExports(response);
+            assertEquals(0, infos.size());
+        }
+        {
+            ExportResponse response = executeExportRequest("{\"output_file\": \"" + filename +
+                    "\", \"fields\": [\"name\"], \"force_overwrite\": \"true\"}");
+
+            List<Map<String, Object>> infos = getExports(response);
+            assertEquals(2, infos.size());
+            String out1 = infos.get(0).get("output_file").toString();
+            String out2 = infos.get(1).get("output_file").toString();
+            List<String> lines = readLines(out1);
+            lines.addAll(readLines(out2));
+            assertEquals(lineCount, lines.size());
+        }
     }
 
     /**
