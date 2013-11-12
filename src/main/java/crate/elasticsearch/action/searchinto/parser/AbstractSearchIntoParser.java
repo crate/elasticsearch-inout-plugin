@@ -2,15 +2,19 @@ package crate.elasticsearch.action.searchinto.parser;
 
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.collect.ImmutableMap;
+import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentHelper;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.search.SearchParseElement;
 import org.elasticsearch.search.SearchParseException;
-
 import crate.elasticsearch.action.searchinto.SearchIntoContext;
+import crate.elasticsearch.script.ScriptParseElement;
+import crate.elasticsearch.script.ScriptParser;
 
-public abstract class AbstractSearchIntoParser implements ISearchIntoParser {
+public abstract class AbstractSearchIntoParser  implements ISearchIntoParser {
+
+
 
     /**
      * Main method of this class to parse given payload of _search_into action
@@ -20,8 +24,16 @@ public abstract class AbstractSearchIntoParser implements ISearchIntoParser {
      * @throws org.elasticsearch.search.SearchParseException
      *
      */
-    public void parseSource(SearchIntoContext context,
+	private final ImmutableMap<String, ScriptParseElement> scriptElementParsers;
+	
+	@Inject
+    public AbstractSearchIntoParser(ScriptParser scriptParser) {
+		this.scriptElementParsers = ImmutableMap.copyOf(scriptParser.scriptElementParsers());
+	}
+
+	public void parseSource(SearchIntoContext context,
             BytesReference source) throws SearchParseException {
+		
         XContentParser parser = null;
         try {
             if (source != null) {
@@ -35,11 +47,15 @@ public abstract class AbstractSearchIntoParser implements ISearchIntoParser {
                         SearchParseElement element = getElementParsers().get(
                                 fieldName);
                         if (element == null) {
-                            throw new SearchParseException(context,
-                                    "No parser for element [" + fieldName +
-                                            "]");
+                        	ScriptParseElement scriptElement = scriptElementParsers.get(fieldName);
+                        	if(scriptElement==null){
+                                   throw new SearchParseException(context, "No parser for element [" + fieldName + "]");
+                        	} else {
+                        		scriptElement.parse(parser, context);
+                        	}
+                        } else {
+                            element.parse(parser, context);
                         }
-                        element.parse(parser, context);
                     } else if (token == null) {
                         break;
                     }

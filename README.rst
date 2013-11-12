@@ -137,7 +137,6 @@ indexes)::
     }
     '
 
-
 Exports
 =======
 
@@ -627,6 +626,82 @@ a given query directly into an index::
 An example can be found in the `Search Into DocTest
 <src/test/python/search_into.rst>`_.
 
+
+
+Script Support
+==============
+
+Script support has been added to _import, _searchinto and _reindex endpoints so that you can modify the documents read from dump files 
+on fly before indexing.
+Here is the full scenario:
+- start ES with no index
+- add 3 documents: 
+
+curl -XPUT 'localhost:9200/twitter/tweet/1' -d '
+{
+    "text" : {
+        "message" : "you know for search 1"
+    },
+    "likes": 1
+}'
+
+curl -XPUT 'localhost:9200/twitter/tweet/2' -d '
+{
+    "text" : {
+        "message" : "you know for search 2"
+    },
+    "likes": 2
+}'
+
+curl -XPUT 'localhost:9200/twitter/tweet/3' -d '
+{
+    "text" : {
+        "message" : "you know for search 3"
+    },
+    "likes": 3
+}'
+
+- Verify that you have 3 docs in index and that the likes are: 1, 2 and 3.
+- Export documents onto FS:
+
+curl -X POST 'http://localhost:9200/_export' -d '{
+    "fields": ["_id", "_source", "_version", "_index", "_type"],
+    "output_file": "/tmp/es-data/dump-${index}-${shard}.gz",
+    "compression": "gzip"
+}
+'
+
+- You will find number of gz files, equal to number of your shards in /tmp/es-data/ folder. If you open them, you will
+see that 3 docs are in 3 files, other 2 files are empty.
+
+- now stop ES and delete data folder.
+
+- start ES again import the data with the script that modifies like field.
+ 
+curl -X POST 'http://localhost:9200/_import' -d '{
+    "directory": "/tmp/es-data",
+    "compression": "gzip",
+    "script" : "ctx._source.likes += 1"
+}
+'
+- Verify that you have 3 docs in index and that the likes are: 2, 3 and 4.
+
+- Test _searchinto
+curl -XPOST "http://localhost:9200/twitter/_search_into" -d'
+{
+    "fields": ["_id", "_source", ["_index", "'twitter-new'"]],
+    "script" : "ctx._source.likes += 1"
+}'
+
+verify that you have 3 documents in twitter_new index with likes: 3,4 and 5
+
+- Test _reindex
+curl -XPOST "http://localhost:9200/twitter/_reindex" -d'
+{
+    "script" : "ctx._source.likes += 1"
+}'
+
+verify that you have 3 documents in twitter index with likes: 3,4 and 5
 
 Installation
 ============

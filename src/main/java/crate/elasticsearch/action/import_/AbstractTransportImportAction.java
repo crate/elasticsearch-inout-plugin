@@ -2,6 +2,8 @@ package crate.elasticsearch.action.import_;
 
 import crate.elasticsearch.action.import_.parser.IImportParser;
 import crate.elasticsearch.import_.Importer;
+import crate.elasticsearch.script.ScriptProvider;
+
 import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.action.FailedNodeException;
 import org.elasticsearch.action.support.nodes.TransportNodesOperationAction;
@@ -11,6 +13,7 @@ import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.env.NodeEnvironment;
+import org.elasticsearch.script.ScriptService;
 import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.transport.TransportService;
 
@@ -24,19 +27,28 @@ import static org.elasticsearch.common.collect.Lists.newArrayList;
 public abstract class AbstractTransportImportAction extends TransportNodesOperationAction<ImportRequest, ImportResponse, NodeImportRequest, NodeImportResponse>{
 
     private IImportParser importParser;
+    
+    private ScriptProvider scriptProvider;
 
     private Importer importer;
 
     private String nodePath = "";
+    
+    private final ScriptService scriptService;
 
     @Inject
     public AbstractTransportImportAction(Settings settings, ClusterName clusterName,
                                          ThreadPool threadPool, ClusterService clusterService,
-                                         TransportService transportService, IImportParser importParser, Importer importer, NodeEnvironment nodeEnv) {
+                                         TransportService transportService, 
+                                         ScriptService scriptService,
+                                         ScriptProvider scriptProvider, 
+                                         IImportParser importParser, 
+                                         Importer importer, NodeEnvironment nodeEnv) {
         super(settings, clusterName, threadPool, clusterService, transportService);
         this.importParser = importParser;
+        this.scriptProvider = scriptProvider;
         this.importer = importer;
-
+        this.scriptService=scriptService;
         File[] paths = nodeEnv.nodeDataLocations();
         if (paths.length > 0) {
             nodePath = paths[0].getAbsolutePath();
@@ -110,9 +122,9 @@ public abstract class AbstractTransportImportAction extends TransportNodesOperat
     protected NodeImportResponse nodeOperation(NodeImportRequest request)
             throws ElasticSearchException {
         ImportContext context = new ImportContext(nodePath);
-
         BytesReference source = request.source();
         importParser.parseSource(context, source);
+        scriptProvider.prepareContextForScriptExecution(context, scriptService);
         Importer.Result result = importer.execute(context, request);
         return new NodeImportResponse(clusterService.state().nodes().localNode(), result);
     }

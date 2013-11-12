@@ -3,6 +3,7 @@ package crate.elasticsearch.action.searchinto.parser;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.collect.ImmutableMap;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.index.mapper.FieldMapper;
@@ -13,6 +14,7 @@ import org.elasticsearch.search.fetch.explain.ExplainParseElement;
 import org.elasticsearch.search.query.QueryPhase;
 
 import crate.elasticsearch.action.searchinto.SearchIntoContext;
+import crate.elasticsearch.script.ScriptParser;
 
 /**
  * Parser for payload given to _search_into action.
@@ -20,9 +22,11 @@ import crate.elasticsearch.action.searchinto.SearchIntoContext;
 public class SearchIntoParser extends AbstractSearchIntoParser implements ISearchIntoParser {
 
     private final ImmutableMap<String, SearchParseElement> elementParsers;
+    
 
     @Inject
-    public SearchIntoParser(QueryPhase queryPhase, FetchPhase fetchPhase) {
+    public SearchIntoParser(QueryPhase queryPhase, FetchPhase fetchPhase, ScriptParser scriptParser) {
+    	super(scriptParser);
         Map<String, SearchParseElement> elementParsers = new HashMap<String,
                 SearchParseElement>();
         elementParsers.putAll(queryPhase.parseElements());
@@ -57,5 +61,10 @@ public class SearchIntoParser extends AbstractSearchIntoParser implements ISearc
         return elementParsers;
     }
 
+    @Override
+    public void parseSource(SearchIntoContext context, BytesReference source)
+            throws SearchParseException {
+        super.parseSource(context, source);
+    }
 
 }

@@ -33,6 +33,10 @@ public class ImportBulkListener extends BaseFuture<ImportBulkListener> implement
         counts.failures++;
     }
 
+    public void addDelete() {
+        counts.deletes++;
+    }
+
     public ImportCounts importCounts() {
         return counts;
     }
