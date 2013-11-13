@@ -3,7 +3,7 @@ package crate.elasticsearch.rest.action.admin.export;
 import static org.elasticsearch.rest.RestRequest.Method.POST;
 import static org.elasticsearch.rest.RestStatus.BAD_REQUEST;
 import static org.elasticsearch.rest.RestStatus.OK;
-import static org.elasticsearch.rest.action.support.RestActions.splitTypes;
+import static org.elasticsearch.common.Strings.splitStringByCommaToArray;
 
 import java.io.IOException;
 
@@ -52,7 +52,7 @@ public class RestExportAction extends BaseRestHandler {
     }
 
     public void handleRequest(final RestRequest request, final RestChannel channel) {
-        ExportRequest exportRequest = new ExportRequest(RestActions.splitIndices(request.param("index")));
+        ExportRequest exportRequest = new ExportRequest(splitStringByCommaToArray(request.param("index")));
 
         if (request.hasParam("ignore_indices")) {
             exportRequest.ignoreIndices(IgnoreIndices.fromString(request.param("ignore_indices")));
@@ -79,7 +79,7 @@ public class RestExportAction extends BaseRestHandler {
                 }
             }
             exportRequest.routing(request.param("routing"));
-            exportRequest.types(splitTypes(request.param("type")));
+            exportRequest.types(splitStringByCommaToArray(request.param("type")));
             exportRequest.preference(request.param("preference", "_primary"));
         } catch (Exception e) {
             try {
