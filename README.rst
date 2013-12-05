@@ -630,14 +630,13 @@ An example can be found in the `Search Into DocTest
 
 Installation
 ============
-
-* Clone this repo with git clone
-  git@github.com:crate/elasticsearch-inout-plugin.git
+ 
+* Clone this repo with ``git clone https://github.com/crate/elasticsearch-inout-plugin.git``
 * Checkout the tag (find out via git tag) you want to build with
   (possibly master is not for your elasticsearch version)
-* Run: mvn clean package -DskipTests=true – this does not run any unit
+* Run: ``mvn clean package -DskipTests=true`` – this does not run any unit
   tests, as they take some time. If you want to run them, better run
   mvn clean package
-* Install the plugin: /path/to/elasticsearch/bin/plugin -install
-  elasticsearch-inout-plugin -url
-  file:///$PWD/target/elasticsearch-inout-plugin-$version.jar
+* Install the plugin: ``/path/to/elasticsearch/bin/plugin --install
+  elasticsearch-inout-plugin --url
+  file:///$PWD/target/elasticsearch-inout-plugin-$version.jar``
