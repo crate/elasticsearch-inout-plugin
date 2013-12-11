@@ -5,7 +5,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>crate</groupId>
 	<artifactId>elasticsearch-inout-plugin</artifactId>
-	<version>1.0.0.Beta1</version>
+	<version>1.0.0.Beta2</version>
     <packaging>jar</packaging>
     <description>An Elasticsearch plugin which provides the ability to export and import data by query on server side.</description>
     <scm>
