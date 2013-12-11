@@ -19,7 +19,11 @@ import org.elasticsearch.client.Requests;
 import org.elasticsearch.cluster.metadata.IndexMetaData;
 import org.elasticsearch.cluster.metadata.MappingMetaData;
 import org.elasticsearch.common.collect.ImmutableMap;
+import org.elasticsearch.common.collect.ImmutableOpenMap;
+import org.elasticsearch.common.logging.ESLogger;
+import org.elasticsearch.common.logging.ESLoggerFactory;
 import org.junit.Test;
+
 
 import crate.elasticsearch.action.export.ExportAction;
 import crate.elasticsearch.action.export.ExportRequest;
@@ -31,6 +35,9 @@ import crate.elasticsearch.module.AbstractRestActionTest;
 
 public class RestImportActionTest extends AbstractRestActionTest {
 
+	//private final static Logger logger = Logger.getLogger(RestImportActionTest.class);
+	protected final ESLogger logger = ESLoggerFactory.getLogger(this.getClass().getName());
+	
     /**
      * An import directory must be specified in the post data of the request, otherwise
      * an 'No directory defined' exception is delivered in the output.
@@ -84,17 +91,107 @@ public class RestImportActionTest extends AbstractRestActionTest {
     }
 
     /**
+     * Test import using a script tag to modify field
+     */
+    @Test
+    public void testImportWithScriptElementModifyingField() {
+        String path = getClass().getResource("/importdata/import_2").getPath();
+
+        ImportResponse response = executeImportRequest("test","d","{\"directory\": \"" + path + "\", \"script\": \"ctx._source.name += ' scripted'; \"}");
+        List<Map<String, Object>> imports = getImports(response);
+        Map<String, Object> nodeInfo = imports.get(0);
+        assertTrue(nodeInfo.get("imported_files").toString().matches(
+                "\\[\\{file_name=(.*)/importdata/import_2/import_2.json, successes=4, failures=0\\}\\]"));
+        assertTrue(existsWithField("202", "name", "202 scripted"));
+        assertTrue(existsWithField("203", "name", "203 scripted"));
+        assertTrue(existsWithField("204", "name", "204 scripted"));
+        assertTrue(existsWithField("205", "name", "205 scripted"));
+    }
+
+    /**
+     * Test import using a script tag to add field
+     */
+    @Test
+    public void testImportWithScriptElementAddingField() {
+        String path = getClass().getResource("/importdata/import_2").getPath();
+        ImportResponse response = executeImportRequest("test","d", "{\"directory\": \"" + path + "\", \"script\": \"ctx._source.name2 = ctx._source.name + ' scripted'; \"}");
+        List<Map<String, Object>> imports = getImports(response);
+        Map<String, Object> nodeInfo = imports.get(0);
+        assertTrue(nodeInfo.get("imported_files").toString().matches(
+                "\\[\\{file_name=(.*)/importdata/import_2/import_2.json, successes=4, failures=0\\}\\]"));
+        assertTrue(existsWithField("202", "name", "202"));
+        assertTrue(existsWithField("203", "name", "203"));
+        assertTrue(existsWithField("204", "name", "204"));
+        assertTrue(existsWithField("205", "name", "205"));
+        assertTrue(existsWithField("202", "name2", "202 scripted"));
+        assertTrue(existsWithField("203", "name2", "203 scripted"));
+        assertTrue(existsWithField("204", "name2", "204 scripted"));
+        assertTrue(existsWithField("205", "name2", "205 scripted"));
+    }
+
+    /**
+     * Test import using a script tag to modify timestamp and ttl
+     */
+    @Test
+    public void testImportWithScriptElementModifyingTimestampAndTtl() {
+        esSetup.execute(deleteAll(), createIndex("test").withSettings(
+                fromClassPath("essetup/settings/test_a.json")).withMapping("d",
+                "{\"d\": {\"_timestamp\": {\"enabled\": true, \"store\": \"yes\"}}}"));
+
+        long ts = System.currentTimeMillis();
+        long ttl = 60*60*1000;
+        long tenSecs = 10*1000;
+
+        String path = getClass().getResource("/importdata/import_4").getPath();
+        ImportResponse response = executeImportRequest("{\"directory\": \"" + path + "\",  \"script\": \"ctx._timestamp = "+ts+"L; ctx._ttl = '60m'; \"}");
+        List<Map<String, Object>> imports = getImports(response);
+        assertEquals(1, imports.size());
+        Map<String, Object> nodeInfo = imports.get(0);
+        assertNotNull(nodeInfo.get("node_id"));
+        assertTrue(Long.valueOf(nodeInfo.get("took").toString()) > 0);
+        assertTrue(nodeInfo.get("imported_files").toString().matches(
+                "\\[\\{file_name=(.*)/importdata/import_4/import_4.json, successes=2, failures=0, invalidated=1}]"));
+
+        GetRequestBuilder rb = new GetRequestBuilder(esSetup.client(), "test");
+
+        GetResponse res = rb.setType("d").setId("402").setFields("_ttl", "_timestamp").execute().actionGet();
+        assertEquals(ts, res.getField("_timestamp").getValue());
+        assertTrue(ttl > ((Number)res.getField("_ttl").getValue()).longValue());
+        assertTrue(ttl - ((Number)res.getField("_ttl").getValue()).longValue() < tenSecs);
+
+        res = rb.setType("d").setId("403").setFields("_ttl", "_timestamp").execute().actionGet();
+        assertEquals(ts, res.getField("_timestamp").getValue());
+        assertTrue(ttl > ((Number)res.getField("_ttl").getValue()).longValue());
+        assertTrue(ttl - ((Number)res.getField("_ttl").getValue()).longValue() < tenSecs);
+    }
+
+
+    /**
+     * Test import using a script tag to delete a record
+     */
+    @Test
+    public void testImportWithScriptElementDeletingRecord() {
+        String path = getClass().getResource("/importdata/import_2").getPath();
+        ImportResponse response = executeImportRequest("test","d","{\"directory\": \"" + path + "\", \"script\": \"if (ctx._id == '204') ctx.op = 'delete'; \"}");
+        List<Map<String, Object>> imports = getImports(response);
+        Map<String, Object> nodeInfo = imports.get(0);
+        assertTrue(nodeInfo.get("imported_files").toString().matches(
+                "\\[\\{file_name=(.*)/importdata/import_2/import_2.json, successes=3, failures=0, deletes=1\\}\\]"));
+        assertTrue(existsWithField("202", "name", "202"));
+        assertTrue(existsWithField("203", "name", "203"));
+        assertFalse(exists("204"));
+        assertTrue(existsWithField("205", "name", "205"));
+    }
+
+    /**
      * If the index and/or type are given in the URI, all objects are imported
      * into the given index/type.
      */
     @Test
     public void testImportIntoIndexAndType() {
         String path = getClass().getResource("/importdata/import_2").getPath();
-        ImportRequest request = new ImportRequest();
-        request.index("another_index");
-        request.type("e");
-        request.source("{\"directory\": \"" + path + "\"}");
-        ImportResponse response = esSetup.client().execute(ImportAction.INSTANCE, request).actionGet();
+
+        ImportResponse response = executeImportRequest("another_index", "e", "{\"directory\": \"" + path + "\"}");
 
         List<Map<String, Object>> imports = getImports(response);
         Map<String, Object> nodeInfo = imports.get(0);
@@ -326,8 +423,8 @@ public class RestImportActionTest extends AbstractRestActionTest {
         executeImportRequest("{\"directory\": \"" + path + "\", \"mappings\": true}");
 
         ClusterStateRequest clusterStateRequest = Requests.clusterStateRequest().filteredIndices("index1");
-        ImmutableMap<String, MappingMetaData> mappings = ImmutableMap.copyOf(
-            esSetup.client().admin().cluster().state(clusterStateRequest).actionGet().getState().metaData().index("index1").getMappings());
+        ImmutableOpenMap<String, MappingMetaData> mappings =
+            esSetup.client().admin().cluster().state(clusterStateRequest).actionGet().getState().metaData().index("index1").getMappings();
         assertEquals("{\"1\":{\"_timestamp\":{\"enabled\":true,\"store\":true},\"_ttl\":{\"enabled\":true,\"default\":86400000},\"properties\":{\"name\":{\"type\":\"string\",\"store\":true}}}}",
                 mappings.get("1").source().toString());
     }
@@ -371,6 +468,16 @@ public class RestImportActionTest extends AbstractRestActionTest {
         return res.isExists() && res.getSourceAsMap().get(field).equals(value);
     }
 
+    private boolean exists(String id) {
+        return exists(id, "test", "d");
+    }
+
+    private boolean exists(String id, String index, String type) {
+        GetRequestBuilder rb = new GetRequestBuilder(esSetup.client(), index);
+        GetResponse res = rb.setType(type).setId(id).execute().actionGet();
+        return res.isExists();
+    }
+
     private static List<Map<String, Object>> getImports(ImportResponse resp) {
         return get(resp, "imports");
     }
@@ -395,5 +502,14 @@ public class RestImportActionTest extends AbstractRestActionTest {
         request.source(source);
         return esSetup.client().execute(ImportAction.INSTANCE, request).actionGet();
     }
+
+    private ImportResponse executeImportRequest(String index, String type, String source) {
+        ImportRequest request = new ImportRequest();
+        request.index(index);
+        request.type(type);
+        request.source(source);
+        return esSetup.client().execute(ImportAction.INSTANCE, request).actionGet();
+    }
+
 
 }

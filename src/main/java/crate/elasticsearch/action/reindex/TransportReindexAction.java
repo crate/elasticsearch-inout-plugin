@@ -10,6 +10,7 @@ import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.transport.TransportService;
 
 import crate.elasticsearch.action.searchinto.AbstractTransportSearchIntoAction;
+import crate.elasticsearch.script.ScriptProvider;
 import crate.elasticsearch.searchinto.Writer;
 
 public class TransportReindexAction extends AbstractTransportSearchIntoAction {
@@ -18,9 +19,9 @@ public class TransportReindexAction extends AbstractTransportSearchIntoAction {
     public TransportReindexAction(Settings settings, ThreadPool threadPool,
             ClusterService clusterService, TransportService transportService, CacheRecycler cacheRecycler,
             IndicesService indicesService, ScriptService scriptService,
-            ReindexParser parser, Writer writer) {
+            ScriptProvider scriptProvider, ReindexParser parser, Writer writer) {
         super(settings, threadPool, clusterService, transportService, cacheRecycler, indicesService,
-                scriptService, parser, writer);
+                scriptService, scriptProvider, parser, writer);
     }
 
     @Override
