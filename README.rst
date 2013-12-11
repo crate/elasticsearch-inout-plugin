@@ -706,13 +706,11 @@ verify that you have 3 documents in twitter index with likes: 3,4 and 5
 Installation
 ============
 
-* Clone this repo with git clone
-  git@github.com:crate/elasticsearch-inout-plugin.git
-* Checkout the tag (find out via git tag) you want to build with
-  (possibly master is not for your elasticsearch version)
-* Run: mvn clean package -DskipTests=true – this does not run any unit
+* Clone this repo with git clone ``git@github.com:bremeld/fork-elasticsearch-inout-plugin.git``
+* Checkout the branch or tag that matches your ElasticSearch version
+* Run: ``mvn clean package -DskipTests=true`` – this does not run any unit
   tests, as they take some time. If you want to run them, better run
   mvn clean package
-* Install the plugin: /path/to/elasticsearch/bin/plugin -install
-  elasticsearch-inout-plugin -url
-  file:///$PWD/target/elasticsearch-inout-plugin-$version.jar
+* Install the plugin: ``/path/to/elasticsearch/bin/plugin --install
+  elasticsearch-inout-plugin --url
+  file:///$PWD/target/elasticsearch-inout-plugin-$version.jar``
