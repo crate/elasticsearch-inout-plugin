@@ -32,7 +32,7 @@ import org.elasticsearch.action.index.IndexRequest.OpType;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.Requests;
 import org.elasticsearch.cluster.metadata.IndexMetaData;
-import org.elasticsearch.common.collect.ImmutableMap;
+import org.elasticsearch.common.collect.ImmutableOpenMap;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.inject.Injector;
 import org.elasticsearch.common.settings.ImmutableSettings;
@@ -355,22 +355,22 @@ public class Importer {
 
     private Set<String> getMissingIndexes(Set<String> indexes) {
         try {
-            ImmutableMap<String, IndexMetaData> foundIndices = getIndexMetaData(indexes);
-            indexes.removeAll(foundIndices.keySet());
+            ImmutableOpenMap<String, IndexMetaData> foundIndices = getIndexMetaData(indexes);
+            indexes.remove(foundIndices.keys().toArray(String.class));
         } catch (IndexMissingException e) {
             // all indexes are missing
         }
         return indexes;
     }
 
-    private ImmutableMap<String, IndexMetaData> getIndexMetaData(Set<String> indexes) {
+    private ImmutableOpenMap<String, IndexMetaData> getIndexMetaData(Set<String> indexes) {
         ClusterStateRequest clusterStateRequest = Requests.clusterStateRequest()
                 .filterRoutingTable(true)
                 .filterNodes(true)
                 .filteredIndices(indexes.toArray(new String[indexes.size()]));
         clusterStateRequest.listenerThreaded(false);
         ClusterStateResponse response = client.admin().cluster().state(clusterStateRequest).actionGet();
-        return ImmutableMap.copyOf(response.getState().metaData().indices());
+        return response.getState().metaData().indices();
     }
 
 

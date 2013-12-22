@@ -18,7 +18,7 @@ import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.Requests;
 import org.elasticsearch.cluster.metadata.IndexMetaData;
 import org.elasticsearch.cluster.metadata.MappingMetaData;
-import org.elasticsearch.common.collect.ImmutableMap;
+import org.elasticsearch.common.collect.ImmutableOpenMap;
 import org.junit.Test;
 
 import crate.elasticsearch.action.export.ExportAction;
@@ -326,8 +326,8 @@ public class RestImportActionTest extends AbstractRestActionTest {
         executeImportRequest("{\"directory\": \"" + path + "\", \"mappings\": true}");
 
         ClusterStateRequest clusterStateRequest = Requests.clusterStateRequest().filteredIndices("index1");
-        ImmutableMap<String, MappingMetaData> mappings = ImmutableMap.copyOf(
-            esSetup.client().admin().cluster().state(clusterStateRequest).actionGet().getState().metaData().index("index1").getMappings());
+        ImmutableOpenMap<String, MappingMetaData> mappings = 
+            esSetup.client().admin().cluster().state(clusterStateRequest).actionGet().getState().metaData().index("index1").getMappings();
         assertEquals("{\"1\":{\"_timestamp\":{\"enabled\":true,\"store\":true},\"_ttl\":{\"enabled\":true,\"default\":86400000},\"properties\":{\"name\":{\"type\":\"string\",\"store\":true}}}}",
                 mappings.get("1").source().toString());
     }
