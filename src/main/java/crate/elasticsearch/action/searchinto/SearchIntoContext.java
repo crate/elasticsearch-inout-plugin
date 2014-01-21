@@ -1,6 +1,7 @@
 package crate.elasticsearch.action.searchinto;
 
 import org.elasticsearch.cache.recycler.CacheRecycler;
+import org.elasticsearch.cache.recycler.PageCacheRecycler;
 import org.elasticsearch.common.collect.ImmutableList;
 import org.elasticsearch.common.collect.Lists;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
@@ -46,9 +47,11 @@ public class SearchIntoContext extends DefaultSearchContext implements IScriptCo
     public SearchIntoContext(long id, ShardSearchRequest request,
             SearchShardTarget shardTarget, Engine.Searcher engineSearcher,
             IndexService indexService, IndexShard indexShard,
-            ScriptService scriptService, CacheRecycler cacheRecycler) {
+            ScriptService scriptService,
+            CacheRecycler cacheRecycler, PageCacheRecycler pageRecycler) {
         super(id, request, shardTarget, engineSearcher, indexService,
-                indexShard, scriptService, cacheRecycler);
+                indexShard, scriptService,
+                cacheRecycler, pageRecycler);
         this.executionContext = new HashMap<String, Object>();
     }
 

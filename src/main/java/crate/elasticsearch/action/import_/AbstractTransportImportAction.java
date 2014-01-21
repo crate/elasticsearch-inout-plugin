@@ -4,7 +4,7 @@ import crate.elasticsearch.action.import_.parser.IImportParser;
 import crate.elasticsearch.import_.Importer;
 import crate.elasticsearch.script.ScriptProvider;
 
-import org.elasticsearch.ElasticSearchException;
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.FailedNodeException;
 import org.elasticsearch.action.support.nodes.TransportNodesOperationAction;
 import org.elasticsearch.cluster.ClusterName;
@@ -120,7 +120,7 @@ public abstract class AbstractTransportImportAction extends TransportNodesOperat
 
     @Override
     protected NodeImportResponse nodeOperation(NodeImportRequest request)
-            throws ElasticSearchException {
+            throws ElasticsearchException {
         ImportContext context = new ImportContext(nodePath);
         BytesReference source = request.source();
         importParser.parseSource(context, source);

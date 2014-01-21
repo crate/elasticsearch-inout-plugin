@@ -1,8 +1,8 @@
 package crate.elasticsearch.searchinto;
 
 import crate.elasticsearch.action.searchinto.SearchIntoContext;
-import org.elasticsearch.ElasticSearchException;
-import org.elasticsearch.ElasticSearchIllegalArgumentException;
+import org.elasticsearch.ElasticsearchException;
+import org.elasticsearch.ElasticsearchIllegalArgumentException;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkProcessor;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -171,7 +171,7 @@ public class BulkWriterCollector extends WriterCollector {
     public void close() throws WriterException {
         try {
             bulkProcessor.close();
-        } catch (ElasticSearchException e) {
+        } catch (ElasticsearchException e) {
             closeClient();
             throw new WriterException(context,
                     "BulkListener interrupted on " + "close", e);
@@ -255,7 +255,7 @@ public class BulkWriterCollector extends WriterCollector {
                 }
 
             } catch (Exception e) {
-                throw new ElasticSearchIllegalArgumentException("failed to execute script", e);
+                throw new ElasticsearchIllegalArgumentException("failed to execute script", e);
             }
         }
         

@@ -1,10 +1,10 @@
 package crate.elasticsearch.action.import_.parser;
 
-import org.elasticsearch.ElasticSearchException;
+import org.elasticsearch.ElasticsearchException;
 
 import crate.elasticsearch.action.import_.ImportContext;
 
-public class ImportParseException extends ElasticSearchException {
+public class ImportParseException extends ElasticsearchException {
 
     private static final long serialVersionUID = 910205724931139923L;
 

@@ -3,6 +3,7 @@ package crate.elasticsearch.action.export;
 import crate.elasticsearch.action.export.parser.ExportParser;
 import crate.elasticsearch.export.Exporter;
 import org.elasticsearch.cache.recycler.CacheRecycler;
+import org.elasticsearch.cache.recycler.PageCacheRecycler;
 import org.elasticsearch.cluster.ClusterService;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
@@ -21,10 +22,12 @@ public class TransportExportAction extends AbstractTransportExportAction {
     @Inject
     public TransportExportAction(Settings settings, ThreadPool threadPool, ClusterService clusterService,
                                  TransportService transportService, IndicesService indicesService,
-                                 ScriptService scriptService, CacheRecycler cacheRecycler,
+                                 ScriptService scriptService,
+                                 CacheRecycler cacheRecycler, PageCacheRecycler pageCacheRecycler,
                                  ExportParser exportParser, Exporter exporter, NodeEnvironment nodeEnv) {
         super(settings, threadPool, clusterService, transportService, indicesService, scriptService,
-            cacheRecycler, exportParser, exporter, nodeEnv);
+                cacheRecycler, pageCacheRecycler,
+                exportParser, exporter, nodeEnv);
     }
 
     @Override

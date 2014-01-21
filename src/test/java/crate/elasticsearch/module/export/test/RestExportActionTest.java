@@ -1,9 +1,6 @@
 package crate.elasticsearch.module.export.test;
 
-import static com.github.tlrx.elasticsearch.test.EsSetup.createIndex;
-import static com.github.tlrx.elasticsearch.test.EsSetup.deleteAll;
-import static com.github.tlrx.elasticsearch.test.EsSetup.fromClassPath;
-import static com.github.tlrx.elasticsearch.test.EsSetup.index;
+import static org.elasticsearch.common.io.Streams.copyToStringFromClasspath;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -17,11 +14,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.elasticsearch.client.Client;
+import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.index.VersionType;
 import org.elasticsearch.indices.IndexMissingException;
 import org.junit.Test;
-
-import com.github.tlrx.elasticsearch.test.EsSetup;
 
 import crate.elasticsearch.action.export.ExportAction;
 import crate.elasticsearch.action.export.ExportRequest;
@@ -35,7 +31,7 @@ public class RestExportActionTest extends AbstractRestActionTest {
      */
     @Test
     public void testNoCommandOrFile() throws IOException {
-        ExportResponse response = executeExportRequest("{\"fields\": [\"name\"]}");
+        ExportResponse response = executeExportRequest("users", "{\"fields\": [\"name\"]}");
         assertEquals(2, response.getShardFailures().length);
         assertTrue(response.getShardFailures()[0].reason().contains(
                 "'output_cmd' or 'output_file' has not been defined"));
@@ -48,7 +44,7 @@ public class RestExportActionTest extends AbstractRestActionTest {
      */
     @Test
     public void testNoExportFields() {
-        ExportResponse response = executeExportRequest("{\"output_cmd\": \"cat\"}");
+        ExportResponse response = executeExportRequest("users", "{\"output_cmd\": \"cat\"}");
 
         List<Map<String, Object>> infos = getExports(response);
         assertEquals(0, infos.size());
@@ -64,7 +60,7 @@ public class RestExportActionTest extends AbstractRestActionTest {
      */
     @Test
     public void testBadParserArgument() {
-        ExportResponse response = executeExportRequest(
+        ExportResponse response = executeExportRequest("users",
                 "{\"output_cmd\": \"cat\", \"fields\": [\"name\"], \"badparam\":\"somevalue\"}");
 
         List<Map<String, Object>> infos = getExports(response);
@@ -84,7 +80,7 @@ public class RestExportActionTest extends AbstractRestActionTest {
      */
     @Test
     public void testSingleOutputCommand() {
-        ExportResponse response = executeExportRequest(
+        ExportResponse response = executeExportRequest("users",
                 "{\"output_cmd\": \"cat\", \"fields\": [\"name\"]}");
 
         List<Map<String, Object>> infos = getExports(response);
@@ -100,7 +96,7 @@ public class RestExportActionTest extends AbstractRestActionTest {
      */
     @Test
     public void testOutputCommandList() {
-        ExportResponse response = executeExportRequest(
+        ExportResponse response = executeExportRequest("users",
                 "{\"output_cmd\": [\"/bin/sh\", \"-c\", \"cat\"], \"fields\": [\"name\"]}");
 
         List<Map<String, Object>> infos = getExports(response);
@@ -116,7 +112,7 @@ public class RestExportActionTest extends AbstractRestActionTest {
      */
     @Test
     public void testOutputCommandWithGZIP() {
-        ExportResponse response = executeExportRequest(
+        ExportResponse response = executeExportRequest("users",
                 "{\"output_cmd\": [\"/bin/sh\", \"-c\", \"gunzip\"], \"fields\": [\"name\"], \"compression\": \"gzip\"}");
 
         List<Map<String, Object>> infos = getExports(response);
@@ -140,14 +136,14 @@ public class RestExportActionTest extends AbstractRestActionTest {
      */
     @Test
     public void testOutputFile() {
-        String clusterName = esSetup.client().admin().cluster().prepareHealth().
+        String clusterName = admin().cluster().prepareHealth().
                 setWaitForGreenStatus().execute().actionGet().getClusterName();
         String filename_0 = "/tmp/" + clusterName + ".0.users.export";
         String filename_1 = "/tmp/" + clusterName + ".1.users.export";
         new File(filename_0).delete();
         new File(filename_1).delete();
 
-        ExportResponse response = executeExportRequest(
+        ExportResponse response = executeExportRequest("users",
                 "{\"output_file\": \"/tmp/${cluster}.${shard}.${index}.export\", \"fields\": [\"name\", \"_id\"]}");
 
         List<Map<String, Object>> infos = getExports(response);
@@ -174,14 +170,14 @@ public class RestExportActionTest extends AbstractRestActionTest {
     }
 
     public void testGZIPOutputFile() {
-        String clusterName = esSetup.client().admin().cluster().prepareHealth().
+        String clusterName = admin().cluster().prepareHealth().
                 setWaitForGreenStatus().execute().actionGet().getClusterName();
         String filename_0 = "/tmp/" + clusterName + ".0.users.zipexport.gz";
         String filename_1 = "/tmp/" + clusterName + ".1.users.zipexport.gz";
         new File(filename_0).delete();
         new File(filename_1).delete();
 
-        ExportResponse response = executeExportRequest(
+        ExportResponse response = executeExportRequest("users",
                 "{\"output_file\": \"/tmp/${cluster}.${shard}.${index}.zipexport.gz\", \"fields\": [\"name\", \"_id\"], \"compression\": \"gzip\"}");
 
         List<Map<String, Object>> infos = getExports(response);
@@ -212,7 +208,7 @@ public class RestExportActionTest extends AbstractRestActionTest {
      */
     @Test
     public void testOutputFileAndOutputCommand() {
-        ExportResponse response = executeExportRequest(
+        ExportResponse response = executeExportRequest("users",
                 "{\"output_file\": \"/filename\", \"output_cmd\": \"cat\", \"fields\": [\"name\"]}");
 
         List<Map<String, Object>> infos = getExports(response);
@@ -234,7 +230,7 @@ public class RestExportActionTest extends AbstractRestActionTest {
         String filename = "/tmp/filename-" + System.currentTimeMillis() + "-${index}-${shard}.export";
         int lineCount= 0;
         {
-            ExportResponse response = executeExportRequest("{\"output_file\": \"" + filename +
+            ExportResponse response = executeExportRequest("users", "{\"output_file\": \"" + filename +
                     "\", \"fields\": [\"name\"], \"force_overwrite\": \"false\"}");
 
             List<Map<String, Object>> infos = getExports(response);
@@ -247,14 +243,14 @@ public class RestExportActionTest extends AbstractRestActionTest {
             lineCount = lines.size();
         }
         {
-            ExportResponse response = executeExportRequest("{\"output_file\": \"" + filename +
+            ExportResponse response = executeExportRequest("users", "{\"output_file\": \"" + filename +
                     "\", \"fields\": [\"name\"], \"force_overwrite\": \"false\"}");
 
             List<Map<String, Object>> infos = getExports(response);
             assertEquals(0, infos.size());
         }
         {
-            ExportResponse response = executeExportRequest("{\"output_file\": \"" + filename +
+            ExportResponse response = executeExportRequest("users", "{\"output_file\": \"" + filename +
                     "\", \"fields\": [\"name\"], \"force_overwrite\": \"true\"}");
 
             List<Map<String, Object>> infos = getExports(response);
@@ -274,7 +270,7 @@ public class RestExportActionTest extends AbstractRestActionTest {
      */
     @Test
     public void testExplainCommand() {
-        ExportResponse response = executeExportRequest(
+        ExportResponse response = executeExportRequest("users",
                 "{\"output_cmd\": \"cat\", \"fields\": [\"name\"], \"explain\": \"true\"}");
 
         List<Map<String, Object>> infos = getExports(response);
@@ -294,7 +290,7 @@ public class RestExportActionTest extends AbstractRestActionTest {
         String filename = "/tmp/explain.txt";
         new File(filename).delete();
 
-        executeExportRequest("{\"output_file\": \"" + filename +
+        executeExportRequest("users", "{\"output_file\": \"" + filename +
                 "\", \"fields\": [\"name\"], \"explain\": \"true\"}");
 
         assertFalse(new File(filename).exists());
@@ -305,17 +301,11 @@ public class RestExportActionTest extends AbstractRestActionTest {
      */
     @Test
     public void testWithMultipleNodes() {
-        // Prepare a second node and wait for relocation
-        esSetup2 = new EsSetup();
-        esSetup2.execute(index("users", "d").withSource("{\"name\": \"motorbike\"}"));
-        esSetup2.client().admin().cluster().prepareHealth().setWaitForGreenStatus().
-            setWaitForNodes("2").setWaitForRelocatingShards(0).execute().actionGet();
-
         // Do export request
         String source = "{\"output_cmd\": \"cat\", \"fields\": [\"name\"]}";
         ExportRequest exportRequest = new ExportRequest();
         exportRequest.source(source);
-        ExportResponse response = esSetup2.client().execute(
+        ExportResponse response = cluster().masterClient().execute(
                 ExportAction.INSTANCE, exportRequest).actionGet();
 
         // The two shard results are from different nodes and have no failures
@@ -329,7 +319,7 @@ public class RestExportActionTest extends AbstractRestActionTest {
      */
     @Test
     public void testWithQuery() {
-        ExportResponse response = executeExportRequest(
+        ExportResponse response = executeExportRequest("users",
                 "{\"output_file\": \"/tmp/query-${shard}.json\", \"fields\": [\"name\"], " +
                 "\"query\": {\"match\": {\"name\":\"bus\"}}, \"force_overwrite\": true}");
 
@@ -349,20 +339,20 @@ public class RestExportActionTest extends AbstractRestActionTest {
      */
     @Test
     public void testUnsopportedCompressionFormat() {
-        String clusterName = esSetup.client().admin().cluster().prepareHealth().
+        String clusterName = admin().cluster().prepareHealth().
                 setWaitForGreenStatus().execute().actionGet().getClusterName();
         String filename_0 = "/tmp/" + clusterName + ".0.users.nocompressexport.gz";
         String filename_1 = "/tmp/" + clusterName + ".1.users.nocompressexport.gz";
         new File(filename_0).delete();
         new File(filename_1).delete();
-        ExportResponse response = executeExportRequest(
+        ExportResponse response = executeExportRequest("users",
                 "{\"output_file\": \"/tmp/${cluster}.${shard}.${index}.lzivexport.gz\", \"fields\": [\"name\", \"_id\"], \"compression\": \"LZIV\"}");
 
         assertEquals(2, response.getFailedShards());
-        assertTrue(response.getShardFailures()[0].reason().contains(
+        assertTrue("failed: " + response.getShardFailures()[0].reason(), response.getShardFailures()[0].reason().contains(
                 "Compression format 'lziv' unknown or not supported."));
 
-        ExportResponse response2 = executeExportRequest(
+        ExportResponse response2 = executeExportRequest("users",
                 "{\"output_file\": \"/tmp/${cluster}.${shard}.${index}.nocompressexport.gz\", \"fields\": [\"name\", \"_id\"], \"compression\": \"\"}");
 
         assertEquals(0, response2.getFailedShards());
@@ -374,8 +364,10 @@ public class RestExportActionTest extends AbstractRestActionTest {
      */
     @Test
     public void testVersion() {
-        esSetup.execute(index("users", "d", "2").withSource("{\"name\": \"electric bike\"}"));
-        ExportResponse response = executeExportRequest(
+        index("users", "d", "2", "name", "electric bike");
+        refresh();
+
+        ExportResponse response = executeExportRequest("users",
                 "{\"output_cmd\": \"cat\", \"fields\": [\"_id\", \"_version\", \"_source\"]}");
 
         List<Map<String, Object>> infos = getExports(response);
@@ -391,24 +383,27 @@ public class RestExportActionTest extends AbstractRestActionTest {
      */
     @Test
     public void testExternalVersion() {
-        Client client = esSetup.client();
-        deleteIndex("test");
-        client.admin().indices().prepareCreate("test").execute().actionGet();
-        client.admin().cluster().prepareHealth("test").setWaitForGreenStatus().execute().actionGet();
+        prepareCreate("test").setSettings(ImmutableSettings.builder().put("index.number_of_shards", 3).build()).execute().actionGet();
+        ensureGreen("test");
 
-        client.prepareIndex("test", "type", "1").setSource("field1", "value1_1").setVersion(
+        cluster().masterClient().prepareIndex("test", "type", "1").setSource("field1", "value1_1").setVersion(
                 0).setVersionType(VersionType.EXTERNAL).execute().actionGet();
-        client.admin().indices().prepareRefresh().execute().actionGet();
+        refresh();
 
-        ExportResponse response = executeExportRequest(
+        ExportResponse response = executeExportRequest("test",
                 "{\"output_cmd\": \"cat\", \"fields\": [\"_id\", \"_version\", \"_source\"]}");
 
         List<Map<String, Object>> infos = getExports(response);
         assertEquals(3, infos.size());
+        String findStdOut = "";
+        for (Map<String, Object> one : infos) {
+           if (one.get("stdout") != null) {
+               findStdOut += one.get("stdout").toString();
+           }
+        }
         assertEquals(
                 "{\"_id\":\"1\",\"_version\":0,\"_source\":{\"field1\":\"value1_1\"}}\n",
-                infos.get(0).get("stdout"));
-        deleteIndex("test");
+                findStdOut);
     }
 
     /**
@@ -416,7 +411,7 @@ public class RestExportActionTest extends AbstractRestActionTest {
      */
     @Test
     public void testTimestampNotStored() {
-        ExportResponse response = executeExportRequest(
+        ExportResponse response = executeExportRequest("users",
                 "{\"output_cmd\": \"cat\", \"fields\": [\"_id\", \"_timestamp\"]}");
         List<Map<String, Object>> infos = getExports(response);
         assertEquals("{\"_id\":\"1\"}\n{\"_id\":\"3\"}\n", infos.get(0).get("stdout"));
@@ -428,15 +423,17 @@ public class RestExportActionTest extends AbstractRestActionTest {
      */
     @Test
     public void testTimestampStored(){
-        esSetup.execute(deleteAll(), createIndex("tsstored").withSettings(
-                fromClassPath("essetup/settings/test_a.json")).withMapping("d",
-                        "{\"d\": {\"_timestamp\": {\"enabled\": true, \"store\": \"yes\"}}}"));
-        Client client = esSetup.client();
-        client.prepareIndex("tsstored", "d", "1").setSource(
-                "field1", "value1").setTimestamp("123").execute().actionGet();
-        client.admin().indices().prepareRefresh().execute().actionGet();
+        prepareCreate("tsstored")
+                .setSettings(ImmutableSettings.builder().put("index.number_of_shards", 2).build())
+                .addMapping("d", "{\"d\": {\"_timestamp\": {\"enabled\": true, \"store\": \"yes\"}}}")
+                .execute().actionGet();
+        ensureGreen("tsstored");
 
-        ExportResponse response = executeExportRequest(
+        cluster().masterClient().prepareIndex("tsstored", "d", "1").setSource(
+                "field1", "value1").setTimestamp("123").execute().actionGet();
+        refresh();
+
+        ExportResponse response = executeExportRequest("tsstored",
                 "{\"output_cmd\": \"cat\", \"fields\": [\"_id\", \"_timestamp\"]}");
 
         List<Map<String, Object>> infos = getExports(response);
@@ -447,7 +444,7 @@ public class RestExportActionTest extends AbstractRestActionTest {
      * If _ttl is not enabled in the mapping, the _ttl field is not in the output.
      */
     public void testTTLNotEnabled() {
-        ExportResponse response = executeExportRequest(
+        ExportResponse response = executeExportRequest("users",
                 "{\"output_cmd\": \"cat\", \"fields\": [\"_id\", \"_ttl\"]}");
         List<Map<String, Object>> infos = getExports(response);
         assertEquals("{\"_id\":\"1\"}\n{\"_id\":\"3\"}\n", infos.get(0).get("stdout"));
@@ -459,23 +456,25 @@ public class RestExportActionTest extends AbstractRestActionTest {
      */
     @Test
     public void testTTLEnabled() {
-        esSetup.execute(deleteAll(), createIndex("ttlenabled").withSettings(
-                fromClassPath("essetup/settings/test_a.json")).withMapping("d",
-                        "{\"d\": {\"_ttl\": {\"enabled\": true, \"default\": \"1d\"}}}"));
-        Client client = esSetup.client();
-        client.prepareIndex("ttlenabled", "d", "1").setSource("field1", "value1").execute().actionGet();
-        client.admin().indices().prepareRefresh().execute().actionGet();
+        prepareCreate("ttlenabled")
+                .setSettings(ImmutableSettings.builder().put("index.number_of_shards", 2).build())
+                .addMapping("d", "{\"d\": {\"_ttl\": {\"enabled\": true, \"default\": \"1d\"}}}")
+                .execute().actionGet();
+        ensureGreen("ttlenabled");
+
+        index("ttlenabled", "d", "1", "field1", "value1");
+        refresh();
 
         Date now = new Date();
-        ExportResponse response = executeExportRequest(
+        ExportResponse response = executeExportRequest("ttlenabled",
                 "{\"output_cmd\": \"cat\", \"fields\": [\"_id\", \"_ttl\"]}");
         List<Map<String, Object>> infos = getExports(response);
         String stdout = infos.get(1).get("stdout").toString();
-        assertTrue(stdout.startsWith("{\"_id\":\"1\",\"_ttl\":"));
+        assertTrue("failed: " + stdout, stdout.startsWith("{\"_id\":\"1\",\"_ttl\":"));
         String lsplit  = stdout.substring(18);
         long ttl = Long.valueOf(lsplit.substring(0, lsplit.length() - 2));
         long diff = ttl - now.getTime();
-        assertTrue(diff < 86400000 && diff > 86390000);
+        assertTrue("failed: " + diff, diff < 86400000 && diff > 86390000);
     }
 
 
@@ -484,7 +483,7 @@ public class RestExportActionTest extends AbstractRestActionTest {
      */
     @Test
     public void testIndexAndType() {
-        ExportResponse response = executeExportRequest(
+        ExportResponse response = executeExportRequest("users",
                 "{\"output_cmd\": \"cat\", \"fields\": [\"_id\", \"_type\", \"_index\"]}");
         List<Map<String, Object>> infos = getExports(response);
         assertEquals("{\"_id\":\"2\",\"_type\":\"d\",\"_index\":\"users\"}\n" +
@@ -497,11 +496,10 @@ public class RestExportActionTest extends AbstractRestActionTest {
      */
     @Test
     public void testRouting() {
-        Client client = esSetup.client();
-        client.prepareIndex("users", "d", "1").setSource("field1", "value1").setRouting("2").execute().actionGet();
-        client.admin().indices().prepareRefresh().execute().actionGet();
+        cluster().masterClient().prepareIndex("users", "d", "1").setSource("field1", "value1").setRouting("2").execute().actionGet();
+        refresh();
 
-        ExportResponse response = executeExportRequest(
+        ExportResponse response = executeExportRequest("users",
                 "{\"output_cmd\": \"cat\", \"fields\": [\"_id\", \"_source\", \"_routing\"]}");
         List<Map<String, Object>> infos = getExports(response);
         assertEquals("{\"_id\":\"2\",\"_source\":{\"name\":\"bike\"}}\n" +
@@ -516,12 +514,7 @@ public class RestExportActionTest extends AbstractRestActionTest {
      */
     @Test
     public void testExportRelativeFilename() {
-        esSetup2 = new EsSetup();
-        esSetup2.execute(index("users", "d").withSource("{\"name\": \"motorbike\"}"));
-        esSetup2.client().admin().cluster().prepareHealth().setWaitForGreenStatus().
-            setWaitForNodes("2").setWaitForRelocatingShards(0).execute().actionGet();
-
-        ExportResponse response = executeExportRequest(
+        ExportResponse response = executeExportRequest("users",
                 "{\"output_file\": \"export.${shard}.${index}.json\", \"fields\": [\"name\", \"_id\"], \"force_overwrite\": true}");
 
         List<Map<String, Object>> infos = getExports(response);
@@ -551,7 +544,7 @@ public class RestExportActionTest extends AbstractRestActionTest {
         restrictedFolder.mkdir();
         restrictedFolder.setWritable(false);
 
-        ExportResponse response = executeExportRequest(
+        ExportResponse response = executeExportRequest("users",
                 "{\"output_file\": \"/tmp/testRestricted/export.json\", \"fields\": [\"_id\"]}");
         assertEquals(2, response.getFailedShards());
         assertTrue(response.getShardFailures()[0].reason().contains(
@@ -561,7 +554,7 @@ public class RestExportActionTest extends AbstractRestActionTest {
 
     @Test
     public void testSettings() throws IOException {
-        String clusterName = esSetup.client().admin().cluster().prepareHealth().
+        String clusterName = admin().cluster().prepareHealth().
                 setWaitForGreenStatus().execute().actionGet().getClusterName();
         String filename_0 = "/tmp/" + clusterName + ".0.users.export";
         String filename_1 = "/tmp/" + clusterName + ".1.users.export";
@@ -570,21 +563,21 @@ public class RestExportActionTest extends AbstractRestActionTest {
         new File(filename_0 += ".settings").delete();
         new File(filename_1 += ".settings").delete();
 
-        ExportResponse response = executeExportRequest(
+        ExportResponse response = executeExportRequest("users",
                 "{\"output_file\": \"/tmp/${cluster}.${shard}.${index}.export\", \"fields\": [\"name\", \"_id\"], \"settings\": true}");
 
         List<Map<String, Object>> infos = getExports(response);
         assertEquals(2, infos.size());
         String settings_0 = new BufferedReader(new FileReader(new File(filename_0))).readLine();
-        assertTrue(settings_0.matches("\\{\"users\":\\{\"settings\":\\{\"index.number_of_replicas\":\"0\",\"index.number_of_shards\":\"2\",\"index.version.created\":\"(.*)\"\\}\\}\\}"));
+        assertTrue("failed: " + settings_0, settings_0.contains("index.number_of_shards\":\"2\""));
         String settings_1 = new BufferedReader(new FileReader(new File(filename_1))).readLine();
-        assertTrue(settings_1.matches("\\{\"users\":\\{\"settings\":\\{\"index.number_of_replicas\":\"0\",\"index.number_of_shards\":\"2\",\"index.version.created\":\"(.*)\"\\}\\}\\}"));
+        assertTrue("failed: " + settings_1, settings_1.contains("index.number_of_shards\":\"2\""));
     }
 
     @Test
     public void testSettingsFileExists() throws IOException {
         testSettings();
-        ExportResponse response = executeExportRequest(
+        ExportResponse response = executeExportRequest("users",
                 "{\"output_file\": \"/tmp/${cluster}.${shard}.${index}.export\", \"fields\": [\"name\", \"_id\"], \"settings\": true}");
         List<Map<String, Object>> infos = getExports(response);
         assertEquals(0, infos.size());
@@ -595,7 +588,7 @@ public class RestExportActionTest extends AbstractRestActionTest {
 
     @Test
     public void testSettingsWithOutputCmd() {
-        ExportResponse response = executeExportRequest(
+        ExportResponse response = executeExportRequest("users",
                 "{\"output_cmd\": \"cat\", \"fields\": [\"name\", \"_id\"], \"settings\": true}");
         List<Map<String, Object>> infos = getExports(response);
         assertEquals(0, infos.size());
@@ -603,7 +596,7 @@ public class RestExportActionTest extends AbstractRestActionTest {
     }
 
     public void testMappings() throws IOException {
-        String clusterName = esSetup.client().admin().cluster().prepareHealth().
+        String clusterName = admin().cluster().prepareHealth().
                 setWaitForGreenStatus().execute().actionGet().getClusterName();
         String filename_0 = "/tmp/" + clusterName + ".0.users.export";
         String filename_1 = "/tmp/" + clusterName + ".1.users.export";
@@ -612,21 +605,21 @@ public class RestExportActionTest extends AbstractRestActionTest {
         new File(filename_0 += ".mapping").delete();
         new File(filename_1 += ".mapping").delete();
 
-        ExportResponse response = executeExportRequest(
+        ExportResponse response = executeExportRequest("users",
                 "{\"output_file\": \"/tmp/${cluster}.${shard}.${index}.export\", \"fields\": [\"name\", \"_id\"], \"mappings\": true}");
 
         List<Map<String, Object>> infos = getExports(response);
         assertEquals(2, infos.size());
         String mappings_0 = new BufferedReader(new FileReader(new File(filename_0))).readLine();
-        assertEquals("{\"users\":{\"d\":{\"properties\":{\"name\":{\"type\":\"string\",\"index\":\"not_analyzed\",\"store\":true,\"omit_norms\":true,\"index_options\":\"docs\"}}}}}", mappings_0);
+        assertEquals("{\"users\":{\"d\":{\"properties\":{\"name\":{\"type\":\"string\",\"index\":\"not_analyzed\",\"store\":true,\"norms\":{\"enabled\":false},\"index_options\":\"docs\"}}}}}", mappings_0);
         String mappings_1 = new BufferedReader(new FileReader(new File(filename_1))).readLine();
-        assertEquals("{\"users\":{\"d\":{\"properties\":{\"name\":{\"type\":\"string\",\"index\":\"not_analyzed\",\"store\":true,\"omit_norms\":true,\"index_options\":\"docs\"}}}}}", mappings_1);
+        assertEquals("{\"users\":{\"d\":{\"properties\":{\"name\":{\"type\":\"string\",\"index\":\"not_analyzed\",\"store\":true,\"norms\":{\"enabled\":false},\"index_options\":\"docs\"}}}}}", mappings_1);
     }
 
     @Test
     public void testMappingsFileExists() throws IOException {
         testMappings();
-        ExportResponse response = executeExportRequest(
+        ExportResponse response = executeExportRequest("users",
                 "{\"output_file\": \"/tmp/${cluster}.${shard}.${index}.export\", \"fields\": [\"name\", \"_id\"], \"mappings\": true}");
         List<Map<String, Object>> infos = getExports(response);
         assertEquals(0, infos.size());
@@ -637,21 +630,11 @@ public class RestExportActionTest extends AbstractRestActionTest {
 
     @Test
     public void testMappingsWithOutputCmd() {
-        ExportResponse response = executeExportRequest(
+        ExportResponse response = executeExportRequest("users",
                 "{\"output_cmd\": \"cat\", \"fields\": [\"name\", \"_id\"], \"mappings\": true}");
         List<Map<String, Object>> infos = getExports(response);
         assertEquals(0, infos.size());
         assertTrue(response.getShardFailures()[0].reason().contains("Parse Failure [Parameter 'mappings' requires usage of 'output_file']]"));
-    }
-
-
-    private boolean deleteIndex(String name) {
-        try {
-            esSetup.client().admin().indices().prepareDelete(name).execute().actionGet();
-        } catch (IndexMissingException e) {
-            return false;
-        }
-        return true;
     }
 
     private static List<Map<String, Object>> getExports(ExportResponse resp) {
@@ -671,10 +654,10 @@ public class RestExportActionTest extends AbstractRestActionTest {
      *
      * @param source
      */
-    private ExportResponse executeExportRequest(String source) {
-        ExportRequest exportRequest = new ExportRequest();
+    private ExportResponse executeExportRequest(String index, String source) {
+        ExportRequest exportRequest = new ExportRequest(index);
         exportRequest.source(source);
-        return esSetup.client().execute(ExportAction.INSTANCE, exportRequest).actionGet();
+        return cluster().masterClient().execute(ExportAction.INSTANCE, exportRequest).actionGet();
     }
 
     /**

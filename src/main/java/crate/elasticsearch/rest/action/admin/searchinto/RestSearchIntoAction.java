@@ -8,7 +8,7 @@ import java.io.IOException;
 
 import org.elasticsearch.action.Action;
 import org.elasticsearch.action.ActionListener;
-import org.elasticsearch.action.support.IgnoreIndices;
+import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.action.support.broadcast.BroadcastOperationThreading;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.Strings;
@@ -16,6 +16,7 @@ import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.rest.BaseRestHandler;
 import org.elasticsearch.rest.RestChannel;
 import org.elasticsearch.rest.RestController;
@@ -57,10 +58,19 @@ public class RestSearchIntoAction extends BaseRestHandler {
         SearchIntoRequest searchIntoRequest = new SearchIntoRequest(
                 Strings.splitStringByCommaToArray(request.param("index")));
 
-        if (request.hasParam("ignore_indices")) {
-            searchIntoRequest.ignoreIndices(IgnoreIndices.fromString(
-                    request.param(
-                            "ignore_indices")));
+        if (request.hasParam("ignore_unavailable") ||
+                request.hasParam("allow_no_indices") ||
+                request.hasParam("expand_wildcards")) {
+            IndicesOptions iopt = IndicesOptions.fromRequest(request, IndicesOptions.lenient());
+            searchIntoRequest.indicesOptions(iopt);
+        }
+        else if (request.hasParam("ignore_indices")) {
+            if (request.param("ignore_indices").equalsIgnoreCase("missing")) {
+                searchIntoRequest.indicesOptions(IndicesOptions.lenient());
+            }
+            else {
+                searchIntoRequest.indicesOptions(IndicesOptions.strict());
+            }
         }
         searchIntoRequest.listenerThreaded(false);
         try {
@@ -82,8 +92,7 @@ public class RestSearchIntoAction extends BaseRestHandler {
                 if (source != null) {
                     searchIntoRequest.source(source);
                 } else {
-                    BytesReference querySource = RestActions.parseQuerySource(
-                            request);
+                    BytesReference querySource = RestActions.parseQuerySource(request).buildAsBytes(XContentType.JSON);
                     if (querySource != null) {
                         searchIntoRequest.source(querySource, false);
                     }
