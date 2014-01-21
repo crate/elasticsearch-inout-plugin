@@ -47,10 +47,10 @@ Now a new index with the same content was created::
 
 
     >>> post("/newindex/_flush")
-    {"ok":true,"_shards":{"total":1,"successful":1,"failed":0}}
+    {"_shards":{"total":1,"successful":1,"failed":0}}
 
     >>> post("/newindex/_refresh")
-    {"ok":true,"_shards":{"total":1,"successful":1,"failed":0}}
+    {"_shards":{"total":1,"successful":1,"failed":0}}
 
 
     >>> get("/newindex/_search?pretty=1")
@@ -71,12 +71,13 @@ To copy one index to another cluster set the option ``targetNodes`` in
 the payload. The value of the option might be given as a single value in
 the format <hostname>:<port> or as a list of such values.
 
-Initially, the second cluster does not contain any indizes::
+Initially, the second cluster does not contain any indices::
 
     >>> node2.get("/_status?pretty=1")
     {
       ...
       "indices" : { }
+      ...
     }
 
     >>> payload = {"fields":["_id", "_source"],
@@ -113,10 +114,10 @@ Now the new index with the same content was created in the other
 cluster::
 
     >>> node2.post("/users/_flush")
-    {"ok":true,"_shards":{"total":1,"successful":1,"failed":0}}
+    {"_shards":{"total":2,"successful":2,"failed":0}}
 
     >>> node2.post("/users/_refresh")
-    {"ok":true,"_shards":{"total":1,"successful":1,"failed":0}}
+    {"_shards":{"total":2,"successful":2,"failed":0}}
 
     >>> node2.get("/users/_search?pretty=1")
     {..."hits" : {

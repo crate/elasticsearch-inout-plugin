@@ -39,6 +39,9 @@ public class NodeImportResponse extends NodeOperationResponse implements ToXCont
             if (counts.invalid > 0) {
                 builder.field(Fields.INVALIDATED, counts.invalid);
             }
+            if (counts.deletes > 0) {
+                builder.field(Fields.DELETES, counts.deletes);
+            }
             builder.endObject();
         }
         builder.endArray();
@@ -58,6 +61,7 @@ public class NodeImportResponse extends NodeOperationResponse implements ToXCont
             counts.successes = in.readInt();
             counts.failures = in.readInt();
             counts.invalid = in.readInt();
+            counts.deletes = in.readInt();
             result.importCounts.add(counts);
         }
     }
@@ -72,6 +76,7 @@ public class NodeImportResponse extends NodeOperationResponse implements ToXCont
             out.writeInt(counts.successes);
             out.writeInt(counts.failures);
             out.writeInt(counts.invalid);
+            out.writeInt(counts.deletes);
         }
     }
 
@@ -89,5 +94,6 @@ public class NodeImportResponse extends NodeOperationResponse implements ToXCont
         static final XContentBuilderString SUCCESSES = new XContentBuilderString("successes");
         static final XContentBuilderString FAILURES = new XContentBuilderString("failures");
         static final XContentBuilderString INVALIDATED = new XContentBuilderString("invalidated");
+        static final XContentBuilderString DELETES = new XContentBuilderString("deletes");
     }
 }

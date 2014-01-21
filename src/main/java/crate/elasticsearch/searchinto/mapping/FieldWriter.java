@@ -3,7 +3,7 @@ package crate.elasticsearch.searchinto.mapping;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.elasticsearch.ElasticSearchException;
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.common.collect.ImmutableMap;
 import org.elasticsearch.common.collect.MapBuilder;
 import org.elasticsearch.index.mapper.internal.IdFieldMapper;
@@ -83,14 +83,14 @@ public class FieldWriter {
                 if (o == null) {
                     o = new HashMap<String, Object>();
                 } else if (!(o instanceof Map)) {
-                    throw new ElasticSearchException("Error on rewriting objects: Mixed objects and values");
+                    throw new ElasticsearchException("Error on rewriting objects: Mixed objects and values");
                 }
                 Map<String, Object> sub = (Map<String, Object>) o;
                 writeMap(sub, value, parts[1]);
                 root.put(parts[0], sub);
             } else {
                 if (((Map<String, Object>) root).get(part) instanceof Map) {
-                    throw new ElasticSearchException("Error on rewriting objects: Mixed objects and values");
+                    throw new ElasticsearchException("Error on rewriting objects: Mixed objects and values");
                 }
                 root.put(part, value);
             }

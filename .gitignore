@@ -9,3 +9,5 @@
 /target/
 /sandbox/
 /logs/
+/bin/
+/*.class

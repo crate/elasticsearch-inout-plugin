@@ -137,7 +137,6 @@ indexes)::
     }
     '
 
-
 Exports
 =======
 
@@ -515,7 +514,7 @@ The JSON response of an import may look like this::
 .. hint::
 
     - ``imports``: List of successful imports
-    - ``node_id'': The node id where the import happened
+    - ``node_id``: The node id where the import happened
     - ``took``: Operation time of all imports on the node in milliseconds
     - ``imported_files``: List of imported files in the import directory of the node's file system
     - ``file_name``: File name of the handled file
@@ -532,7 +531,7 @@ Dump
 The idea behind dump is to export all relevant data to recreate the
 cluster as it was at the time of the dump.
 
-The basic usage of the endpoint is:
+The basic usage of the endpoint is::
 
     curl -X POST 'http://localhost:9200/_dump'
 
@@ -568,7 +567,7 @@ Restore
 =======
 
 Dumped data is intended to get restored. This can be done by the _restore
-endpoint:
+endpoint::
 
     curl -X POST 'http://localhost:9200/_restore'
 
@@ -624,20 +623,88 @@ a given query directly into an index::
         "fields": ["_id", "_source", ["_index", "'newindex'"]]
     }'
 
-An example can be found in the `Search Into DocTest
-<src/test/python/search_into.rst>`_.
+An example can be found in the `Search Into DocTest <src/test/python/search_into.rst>`_.
 
+
+
+Script Support
+==============
+
+Script support has been added to ``_import``, ``_searchinto`` and ``_reindex`` endpoints so that you can modify the documents read from dump files
+on fly before indexing.
+
+Here is the full scenario (start ES empty, add 3 documents)::
+
+    curl -XPUT 'localhost:9200/twitter/tweet/1' -d '
+    {
+        "text" : {
+            "message" : "you know for search 1"
+        },
+        "likes": 1
+    }'
+
+    curl -XPUT 'localhost:9200/twitter/tweet/2' -d '
+    {
+        "text" : {
+            "message" : "you know for search 2"
+        },
+        "likes": 2
+    }'
+
+    curl -XPUT 'localhost:9200/twitter/tweet/3' -d '
+    {
+        "text" : {
+            "message" : "you know for search 3"
+        },
+        "likes": 3
+    }'
+
+Verify that you have 3 docs in index and that the likes are: 1, 2 and 3.  Export documents onto file system::
+
+    curl -X POST 'http://localhost:9200/_export' -d '{
+        "fields": ["_id", "_source", "_version", "_index", "_type"],
+        "output_file": "/tmp/es-data/dump-${index}-${shard}.gz",
+        "compression": "gzip"
+    }'
+
+You will find number of gz files, equal to number of your shards in ``/tmp/es-data/`` folder. If you open them, you will
+see that 3 docs are in 3 files, other 2 files are empty.  Now stop ES and delete data folder.  Start ES again import the
+data with the script that modifies like field::
+
+    curl -X POST 'http://localhost:9200/_import' -d '{
+        "directory": "/tmp/es-data",
+        "compression": "gzip",
+        "script" : "ctx._source.likes += 1"
+    }'
+
+Verify that you have 3 docs in index and that the likes are: 2, 3 and 4.
+
+Test ``_searchinto``::
+
+    curl -XPOST "http://localhost:9200/twitter/_search_into" -d'
+    {
+        "fields": ["_id", "_source", ["_index", "'twitter-new'"]],
+        "script" : "ctx._source.likes += 1"
+    }'
+
+verify that you have 3 documents in twitter_new index with likes: 3,4 and 5
+
+Test ``_reindex``::
+
+    curl -XPOST "http://localhost:9200/twitter/_reindex" -d'
+    {
+        "script" : "ctx._source.likes += 1"
+    }'
+
+verify that you have 3 documents in twitter index with likes: 3,4 and 5
 
 Installation
 ============
 
-* Clone this repo with git clone
-  git@github.com:crate/elasticsearch-inout-plugin.git
-* Checkout the tag (find out via git tag) you want to build with
-  (possibly master is not for your elasticsearch version)
-* Run: mvn clean package -DskipTests=true – this does not run any unit
+* Clone this repo with git clone ``git@github.com:bremeld/fork-elasticsearch-inout-plugin.git``
+* Checkout the branch or tag that matches your ElasticSearch version
+* Run: ``mvn clean package -DskipTests=true`` – this does not run any unit
   tests, as they take some time. If you want to run them, better run
   mvn clean package
-* Install the plugin: /path/to/elasticsearch/bin/plugin -install
-  elasticsearch-inout-plugin -url
-  file:///$PWD/target/elasticsearch-inout-plugin-$version.jar
+* Install the plugin: ``/path/to/elasticsearch/bin/plugin --install elasticsearch-inout-plugin --url
+  file:///$PWD/target/elasticsearch-inout-plugin-$version.jar``

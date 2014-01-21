@@ -3,19 +3,20 @@ package crate.elasticsearch.rest.action.admin.export;
 import static org.elasticsearch.rest.RestRequest.Method.POST;
 import static org.elasticsearch.rest.RestStatus.BAD_REQUEST;
 import static org.elasticsearch.rest.RestStatus.OK;
-import static org.elasticsearch.rest.action.support.RestActions.splitTypes;
 
 import java.io.IOException;
 
 import org.elasticsearch.action.Action;
 import org.elasticsearch.action.ActionListener;
-import org.elasticsearch.action.support.IgnoreIndices;
+import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.action.support.broadcast.BroadcastOperationThreading;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.rest.BaseRestHandler;
 import org.elasticsearch.rest.RestChannel;
 import org.elasticsearch.rest.RestController;
@@ -52,10 +53,21 @@ public class RestExportAction extends BaseRestHandler {
     }
 
     public void handleRequest(final RestRequest request, final RestChannel channel) {
-        ExportRequest exportRequest = new ExportRequest(RestActions.splitIndices(request.param("index")));
+        ExportRequest exportRequest = new ExportRequest(Strings.splitStringByCommaToArray(request.param("index")));
 
-        if (request.hasParam("ignore_indices")) {
-            exportRequest.ignoreIndices(IgnoreIndices.fromString(request.param("ignore_indices")));
+        if (request.hasParam("ignore_unavailable") ||
+            request.hasParam("allow_no_indices") ||
+            request.hasParam("expand_wildcards")) {
+            IndicesOptions iopt = IndicesOptions.fromRequest(request, IndicesOptions.lenient());
+            exportRequest.indicesOptions(iopt);
+        }
+        else if (request.hasParam("ignore_indices")) {
+            if (request.param("ignore_indices").equalsIgnoreCase("missing")) {
+                exportRequest.indicesOptions(IndicesOptions.lenient());
+            }
+            else {
+                exportRequest.indicesOptions(IndicesOptions.strict());
+            }
         }
         exportRequest.listenerThreaded(false);
         try {
@@ -72,14 +84,14 @@ public class RestExportAction extends BaseRestHandler {
                 if (source != null) {
                     exportRequest.source(source);
                 } else {
-                    BytesReference querySource = RestActions.parseQuerySource(request);
+                    BytesReference querySource = RestActions.parseQuerySource(request).buildAsBytes(XContentType.JSON);
                     if (querySource != null) {
                         exportRequest.source(querySource, false);
                     }
                 }
             }
             exportRequest.routing(request.param("routing"));
-            exportRequest.types(splitTypes(request.param("type")));
+            exportRequest.types(Strings.splitStringByCommaToArray(request.param("type")));
             exportRequest.preference(request.param("preference", "_primary"));
         } catch (Exception e) {
             try {

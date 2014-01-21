@@ -4,12 +4,14 @@ import crate.elasticsearch.export.Output;
 import crate.elasticsearch.export.OutputCommand;
 import crate.elasticsearch.export.OutputFile;
 import org.elasticsearch.cache.recycler.CacheRecycler;
+import org.elasticsearch.cache.recycler.PageCacheRecycler;
 import org.elasticsearch.cluster.ClusterName;
 import org.elasticsearch.index.engine.Engine;
 import org.elasticsearch.index.service.IndexService;
 import org.elasticsearch.index.shard.service.IndexShard;
 import org.elasticsearch.script.ScriptService;
 import org.elasticsearch.search.SearchShardTarget;
+import org.elasticsearch.search.internal.DefaultSearchContext;
 import org.elasticsearch.search.internal.SearchContext;
 import org.elasticsearch.search.internal.ShardSearchRequest;
 
@@ -20,7 +22,7 @@ import java.util.List;
 /**
  * Container class for export specific informations.
  */
-public class ExportContext extends SearchContext {
+public class ExportContext extends DefaultSearchContext {
 
     private static final String VAR_SHARD = "${shard}";
     private static final String VAR_INDEX = "${index}";
@@ -37,8 +39,11 @@ public class ExportContext extends SearchContext {
 
     public ExportContext(long id, ShardSearchRequest request, SearchShardTarget shardTarget,
                          Engine.Searcher engineSearcher, IndexService indexService, IndexShard indexShard,
-                         ScriptService scriptService, CacheRecycler cacheRecycler, String nodePath) {
-        super(id, request, shardTarget, engineSearcher, indexService, indexShard, scriptService, cacheRecycler);
+                         ScriptService scriptService,
+                         CacheRecycler cacheRecycler, PageCacheRecycler pageRecycler,
+                         String nodePath) {
+        super(id, request, shardTarget, engineSearcher, indexService, indexShard, scriptService,
+                cacheRecycler, pageRecycler);
         this.nodePath = nodePath;
     }
 

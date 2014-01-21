@@ -1,59 +1,104 @@
 package crate.elasticsearch.module;
 
-import static com.github.tlrx.elasticsearch.test.EsSetup.createIndex;
-import static com.github.tlrx.elasticsearch.test.EsSetup.deleteAll;
-import static com.github.tlrx.elasticsearch.test.EsSetup.fromClassPath;
+import crate.elasticsearch.plugin.inout.InOutPlugin;
+import org.elasticsearch.action.get.GetResponse;
+import org.elasticsearch.common.settings.ImmutableSettings;
+import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.xcontent.ToXContent;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentFactory;
+import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.test.ElasticsearchIntegrationTest;
+import org.junit.Before;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
 
-import junit.framework.TestCase;
-
-import org.elasticsearch.common.xcontent.ToXContent;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
-import org.elasticsearch.common.xcontent.XContentType;
-import org.junit.After;
-import org.junit.Before;
-
-import com.github.tlrx.elasticsearch.test.EsSetup;
+import static org.elasticsearch.common.settings.ImmutableSettings.settingsBuilder;
+import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 /**
  * Abstract base class for the plugin's rest action tests. Sets up the client
  * and delivers some base functionality needed for all tests.
  */
-public abstract class AbstractRestActionTest extends TestCase {
+@ElasticsearchIntegrationTest.ClusterScope(scope = ElasticsearchIntegrationTest.Scope.SUITE, numNodes = 2)
+public abstract class AbstractRestActionTest extends ElasticsearchIntegrationTest {
 
-    protected EsSetup esSetup, esSetup2;
-
-    @Before
-    public void setUp() {
-        esSetup = new EsSetup();
-        esSetup.execute(deleteAll(), createIndex("users").withSettings(
-                fromClassPath("essetup/settings/test_a.json")).withMapping("d",
-                        fromClassPath("essetup/mappings/test_a.json")).withData(
-                                fromClassPath("essetup/data/test_a.json")));
-        esSetup.client().admin().indices().prepareRefresh("users").execute();
+    @Override
+    protected Settings nodeSettings(int nodeOrdinal) {
+        Settings settings = ImmutableSettings.settingsBuilder()
+                .put(super.nodeSettings(nodeOrdinal))
+                .put("plugin.types", InOutPlugin.class.getName())
+                .put("index.number_of_shards", defaultShardCount())
+                .put("index.number_of_replicas", 0)
+                .put("http.enabled", false)
+                .build();
+        return settings;
     }
 
-    @After
-    public void tearDown() {
-        esSetup.terminate();
-        if (esSetup2 != null) {
-            esSetup2.terminate();
+    @Override
+    public Settings indexSettings() {
+        return settingsBuilder().put("index.number_of_shards", defaultShardCount()).put("index.number_of_replicas", 0).build();
+    }
+
+    public void setupTestIndexLikeUsers(String indexName, int shards, boolean loadTestData) throws IOException {
+        prepareCreate(indexName).setSettings(settingsBuilder().put("index.number_of_shards", shards).put("index.number_of_replicas", 0))
+                .addMapping("d", jsonBuilder().startObject()
+                        .startObject("d")
+                        .startObject("properties")
+                        .startObject("name")
+                        .field("type", "string")
+                        .field("index", "not_analyzed")
+                        .field("store", "yes")
+                        .endObject()
+                        .endObject()
+                        .endObject())
+                .execute().actionGet();
+        ensureGreen(indexName);
+
+        if (loadTestData) {
+            index(indexName, "d", "1", "name", "car");
+            index(indexName, "d", "2", "name", "bike");
+            index(indexName, "d", "3", "name", "train");
+            index(indexName, "d", "4", "name", "bus");
         }
+        refresh();
+        waitForRelocation();
+
+    }
+
+    public void setupTestIndexLikeUsers(String indexName, boolean loadTestData) throws IOException {
+        setupTestIndexLikeUsers(indexName, defaultShardCount(), loadTestData);
+    }
+
+    protected int defaultShardCount() {
+        return 2;
+    }
+
+    protected int defaultNodeCount() {
+        return 2;
+    }
+
+
+    @Before
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+        cluster().ensureAtLeastNumNodes(defaultNodeCount());
+        cluster().ensureAtMostNumNodes(defaultNodeCount());
+        setupTestIndexLikeUsers("users", defaultShardCount(), true);
+    }
+
+    protected final GetResponse get(String index, String type, String id, String... fields) {
+        return client().prepareGet(index, type, id).setFields(fields).execute().actionGet();
     }
 
     /**
      * Convert an XContent object to a Java map
+     *
      * @param toXContent
      * @return
      * @throws IOException
@@ -63,15 +108,6 @@ public abstract class AbstractRestActionTest extends TestCase {
         toXContent.toXContent(builder, ToXContent.EMPTY_PARAMS);
         return XContentFactory.xContent(XContentType.JSON).createParser(
                 builder.string()).mapOrderedAndClose();
-    }
-
-    /**
-     * Set up a second node and wait for green status
-     */
-    protected void setUpSecondNode() {
-        esSetup2 = new EsSetup();
-        esSetup2.execute(deleteAll());
-        esSetup2.client().admin().cluster().prepareHealth().setWaitForGreenStatus().execute().actionGet();
     }
 
     /**

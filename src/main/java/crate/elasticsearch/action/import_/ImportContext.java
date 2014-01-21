@@ -1,9 +1,15 @@
 package crate.elasticsearch.action.import_;
 
 import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Pattern;
 
-public class ImportContext {
+import org.elasticsearch.script.ExecutableScript;
+
+import crate.elasticsearch.script.IScriptContext;
+
+public class ImportContext implements IScriptContext{
 
     private String nodePath;
     private boolean compression;
@@ -11,12 +17,19 @@ public class ImportContext {
     private Pattern file_pattern;
     private boolean mappings = false;
     private boolean settings = false;
-
-    public ImportContext(String nodePath) {
+    private String scriptString;
+    private String scriptLang;
+    private Map<String, Object> scriptParams;
+    private Map<String, Object> executionContext;
+    private ExecutableScript executableScript;
+    
+	public ImportContext(String nodePath) {
+		super();
         this.nodePath = nodePath;
+        this.executionContext = new HashMap<String, Object>();
     }
 
-    public boolean compression() {
+	public boolean compression() {
         return compression;
     }
 
@@ -60,4 +73,59 @@ public class ImportContext {
     public void settings(boolean settings) {
         this.settings = settings;
     }
+    
+
+
+    @Override
+    public String scriptString() {
+        return scriptString;
+    }
+
+    @Override
+    public void scriptString(String scriptString) {
+        this.scriptString = scriptString;
+    }
+
+    @Override
+    public String scriptLang() {
+        return scriptLang;
+    }
+
+    @Override
+    public void scriptLang(String scriptLang) {
+        this.scriptLang = scriptLang;
+    }
+
+    @Override
+    public Map<String, Object> scriptParams() {
+        return scriptParams;
+    }
+
+    @Override
+    public void scriptParams(Map<String, Object> scriptParams) {
+        this.scriptParams = scriptParams;
+    }
+
+   
+    @Override
+    public void executableScript(ExecutableScript executableScript) {
+        this.executableScript = executableScript;
+    }
+
+   
+    @Override
+    public void executionContext(Map<String, Object> executionContext) {
+        this.executionContext = executionContext;
+    }
+
+    @Override
+	public Map<String, Object> executionContext() {
+		return executionContext;
+	}
+
+    @Override
+	public ExecutableScript executableScript() {
+		return executableScript;
+	}
+    
 }

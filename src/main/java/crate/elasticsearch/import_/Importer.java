@@ -20,8 +20,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
-import org.elasticsearch.ElasticSearchException;
-import org.elasticsearch.ElasticSearchParseException;
+import crate.elasticsearch.action.import_.ImportContext;
+import crate.elasticsearch.action.import_.NodeImportRequest;
+import org.elasticsearch.ElasticsearchException;
+import org.elasticsearch.ElasticsearchIllegalArgumentException;
+import org.elasticsearch.ElasticsearchParseException;
 import org.elasticsearch.action.admin.cluster.state.ClusterStateRequest;
 import org.elasticsearch.action.admin.cluster.state.ClusterStateResponse;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
@@ -32,7 +35,9 @@ import org.elasticsearch.action.index.IndexRequest.OpType;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.Requests;
 import org.elasticsearch.cluster.metadata.IndexMetaData;
-import org.elasticsearch.common.collect.ImmutableMap;
+import org.elasticsearch.common.collect.ImmutableOpenMap;
+import org.elasticsearch.common.collect.Tuple;
+import org.elasticsearch.common.hppc.cursors.ObjectCursor;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.inject.Injector;
 import org.elasticsearch.common.settings.ImmutableSettings;
@@ -43,6 +48,7 @@ import org.elasticsearch.common.unit.ByteSizeValue;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
+import org.elasticsearch.common.xcontent.XContentHelper;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.XContentParser.Token;
 import org.elasticsearch.common.xcontent.XContentType;
@@ -56,9 +62,6 @@ import org.elasticsearch.index.mapper.internal.TimestampFieldMapper;
 import org.elasticsearch.index.mapper.internal.TypeFieldMapper;
 import org.elasticsearch.indices.IndexAlreadyExistsException;
 import org.elasticsearch.indices.IndexMissingException;
-
-import crate.elasticsearch.action.import_.ImportContext;
-import crate.elasticsearch.action.import_.NodeImportRequest;
 
 public class Importer {
 
@@ -124,13 +127,13 @@ public class Importer {
                 }
             }
             } catch (Exception e) {
-                throw new ElasticSearchException("::" ,e);
+                throw new ElasticsearchException("::" ,e);
             }
             // import data according to the given data file pattern
             for (File file : files) {
                 String fileName = file.getName();
                 if (!fileName.endsWith(".mapping") && !fileName.endsWith(".settings")) {
-                    ImportCounts counts = handleFile(file, index, type, bulkSize, context.compression());
+                    ImportCounts counts = handleFile(file, index, type, bulkSize, context);
                     if (counts != null) {
                         result.importCounts.add(counts);
                     }
@@ -141,7 +144,7 @@ public class Importer {
         return result;
     }
 
-    private ImportCounts handleFile(File file, String index, String type, int bulkSize, boolean compression) {
+    private ImportCounts handleFile(File file, String index, String type, int bulkSize, ImportContext context) {
         if (file.isFile() && file.canRead()) {
             ImportBulkListener bulkListener = new ImportBulkListener(file.getAbsolutePath());
             BulkProcessor bulkProcessor = BulkProcessor.builder(client, bulkListener)
@@ -152,7 +155,7 @@ public class Importer {
                     .build();
             try {
                 BufferedReader r;
-                if (compression) {
+                if (context.compression()) {
                     GZIPInputStream is = new GZIPInputStream(new FileInputStream(file));
                     r = new BufferedReader(new InputStreamReader(is));
                 } else {
@@ -162,27 +165,32 @@ public class Importer {
                 while ((line = r.readLine()) != null) {
                     IndexRequest indexRequest;
                     try {
-                        indexRequest = parseObject(line);
+                        indexRequest = parseObject(line, context);
+                        if (indexRequest == null) {
+                            bulkListener.addDelete();
+                            continue;
+                        }
+                    } catch (ExpiredObjectException e) {
+                        bulkListener.addInvalid();
+                        continue;
                     } catch (ObjectImportException e) {
                         bulkListener.addFailure();
                         continue;
                     }
-                    if (indexRequest != null) {
-                        indexRequest.opType(OpType.INDEX);
-                        if (index != null) {
-                            indexRequest.index(index);
-                        }
-                        if (type != null) {
-                            indexRequest.type(type);
-                        }
-                        if (indexRequest.type() != null && indexRequest.index() != null) {
-                            bulkProcessor.add(indexRequest);
-                        } else {
-                            bulkListener.addFailure();
-                        }
-                    } else {
-                        bulkListener.addInvalid();
+
+                    indexRequest.opType(OpType.INDEX);
+                    if (index != null) {
+                        indexRequest.index(index);
                     }
+                    if (type != null) {
+                        indexRequest.type(type);
+                    }
+                    if (indexRequest.type() != null && indexRequest.index() != null) {
+                        bulkProcessor.add(indexRequest);
+                    } else {
+                        bulkListener.addFailure();
+                    }
+
                 }
             } catch (FileNotFoundException e) {
                 // Ignore not existing files, actually they should exist, as they are filtered before.
@@ -200,7 +208,7 @@ public class Importer {
         return null;
     }
 
-    private IndexRequest parseObject(String line) throws ObjectImportException {
+    private IndexRequest parseObject(String line, ImportContext importContext) throws ObjectImportException, ExpiredObjectException {
         XContentParser parser = null;
         try {
             IndexRequest indexRequest = new IndexRequest();
@@ -247,12 +255,66 @@ public class Importer {
                     indexRequest.ttl(ttl);
                 } else {
                     // object is invalid, do not import
-                    return null;
+                    throw new ExpiredObjectException();
                 }
             }
-            indexRequest.source(sourceBuilder);
+            
+            if(importContext.scriptString()!=null){
+                Tuple<XContentType, Map<String, Object>> sourceAndContent = XContentHelper.convertToMap(sourceBuilder.bytes(), true);
+                importContext.executionContext().clear();
+                importContext.executionContext().put("_index", indexRequest.index());
+                importContext.executionContext().put("_type", indexRequest.type());
+                importContext.executionContext().put("_id", indexRequest.id());
+                importContext.executionContext().put("_version", indexRequest.version());
+                importContext.executionContext().put("_source", sourceAndContent.v2());
+                importContext.executionContext().put("_routing", indexRequest.routing());
+                importContext.executionContext().put("_parent", indexRequest.parent());
+                importContext.executionContext().put("_timestamp", indexRequest.timestamp());
+                importContext.executionContext().put("_ttl", indexRequest.ttl());
+
+                try {
+                    importContext.executableScript().setNextVar("ctx", importContext.executionContext());
+                    importContext.executableScript().run();
+                    // we need to unwrap the ctx...
+                    importContext.executionContext().putAll((Map<String, Object>) importContext.executableScript().unwrap(importContext.executionContext()));
+                    indexRequest.source(sourceAndContent.v2());
+
+                    String operation = (String) importContext.executionContext().get("op");
+                    if (!(operation == null || "index".equals(operation)))  {
+                        return null;
+                    }
+
+                    Object fetchedTimestamp = importContext.executionContext().get("_timestamp");
+                    if (fetchedTimestamp != null) {
+                        if (fetchedTimestamp instanceof String) {
+                            indexRequest.timestamp(String.valueOf(TimeValue.parseTimeValue((String) fetchedTimestamp, null).millis()));
+                        } else {
+                            indexRequest.timestamp(fetchedTimestamp.toString());
+                        }
+                    }
+                    Object fetchedTTL = importContext.executionContext().get("_ttl");
+                    if (fetchedTTL != null) {
+                        Long newTtl = -1L;
+                        if (fetchedTTL instanceof Number) {
+                             newTtl = ((Number) fetchedTTL).longValue();
+
+                        } else {
+                            newTtl = TimeValue.parseTimeValue((String) fetchedTTL, null).millis();
+                        }
+                        if (newTtl > 0) {
+                            indexRequest.ttl(newTtl);
+                        }
+                    }
+
+                } catch (Exception e) {
+                    throw new ElasticsearchIllegalArgumentException("failed to execute script", e);
+                }
+               } else {
+                   indexRequest.source(sourceBuilder);
+                }
+
             return indexRequest;
-        } catch (ElasticSearchParseException e) {
+        } catch (ElasticsearchParseException e) {
             throw new ObjectImportException(e);
         } catch (IOException e) {
             throw new ObjectImportException(e);
@@ -355,22 +417,25 @@ public class Importer {
 
     private Set<String> getMissingIndexes(Set<String> indexes) {
         try {
-            ImmutableMap<String, IndexMetaData> foundIndices = getIndexMetaData(indexes);
-            indexes.removeAll(foundIndices.keySet());
+            ImmutableOpenMap<String, IndexMetaData> foundIndices = getIndexMetaData(indexes);
+            for (ObjectCursor<String> oneIndex : foundIndices.keys()) {
+                indexes.remove(oneIndex.value);
+            }
         } catch (IndexMissingException e) {
             // all indexes are missing
         }
         return indexes;
     }
 
-    private ImmutableMap<String, IndexMetaData> getIndexMetaData(Set<String> indexes) {
+    private ImmutableOpenMap<String, IndexMetaData> getIndexMetaData(Set<String> indexes) {
         ClusterStateRequest clusterStateRequest = Requests.clusterStateRequest()
-                .filterRoutingTable(true)
-                .filterNodes(true)
-                .filteredIndices(indexes.toArray(new String[indexes.size()]));
+                .routingTable(false)
+                .nodes(false)
+                .metaData(true)
+                .indices(indexes.toArray(new String[indexes.size()]));
         clusterStateRequest.listenerThreaded(false);
         ClusterStateResponse response = client.admin().cluster().state(clusterStateRequest).actionGet();
-        return ImmutableMap.copyOf(response.getState().metaData().indices());
+        return response.getState().metaData().indices();
     }
 
 
@@ -388,7 +453,7 @@ public class Importer {
         return map;
     }
 
-    class MappingImportException extends ElasticSearchException {
+    class MappingImportException extends ElasticsearchException {
 
         private static final long serialVersionUID = 683146198427799700L;
 
@@ -401,7 +466,7 @@ public class Importer {
         }
     }
 
-    class SettingsImportException extends ElasticSearchException {
+    class SettingsImportException extends ElasticsearchException {
 
         private static final long serialVersionUID = -3697101419212831353L;
 
@@ -414,7 +479,7 @@ public class Importer {
         }
     }
 
-    class ObjectImportException extends ElasticSearchException {
+    class ObjectImportException extends ElasticsearchException {
 
         private static final long serialVersionUID = 2405764408378929056L;
 
@@ -422,6 +487,15 @@ public class Importer {
             super("Object could not be imported.", cause);
         }
    }
+
+    class ExpiredObjectException extends ElasticsearchException {
+
+        private static final long serialVersionUID = 2445764408399929056L;
+
+        public ExpiredObjectException() {
+            super("Object TTL expired, could not be imported.");
+        }
+    }
 
     public static class Result {
         public List<ImportCounts> importCounts = new ArrayList<Importer.ImportCounts>();
@@ -433,6 +507,7 @@ public class Importer {
         public int successes = 0;
         public int failures = 0;
         public int invalid = 0;
+        public int deletes = 0;
     }
 
 }

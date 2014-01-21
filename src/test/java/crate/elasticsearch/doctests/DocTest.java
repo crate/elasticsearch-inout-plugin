@@ -1,14 +1,15 @@
 package crate.elasticsearch.doctests;
 
-import static com.github.tlrx.elasticsearch.test.EsSetup.createIndex;
-import static com.github.tlrx.elasticsearch.test.EsSetup.deleteAll;
-import static com.github.tlrx.elasticsearch.test.EsSetup.fromClassPath;
+import crate.elasticsearch.plugin.inout.InOutPlugin;
 import junit.framework.TestCase;
 
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.test.ElasticsearchIntegrationTest;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
 import org.python.core.Py;
 import org.python.core.PyArray;
 import org.python.core.PyList;
@@ -16,14 +17,25 @@ import org.python.core.PyString;
 import org.python.core.PySystemState;
 import org.python.util.PythonInterpreter;
 
-public class DocTest extends TestCase {
+import java.io.IOException;
 
-    StoreEsSetup esSetup, esSetup2;
+import static org.elasticsearch.common.io.Streams.copyToBytesFromClasspath;
+import static org.elasticsearch.common.io.Streams.copyToStringFromClasspath;
+import static org.elasticsearch.common.settings.ImmutableSettings.settingsBuilder;
+import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
+
+@ElasticsearchIntegrationTest.ClusterScope(scope = ElasticsearchIntegrationTest.Scope.SUITE, numNodes = 2)
+public class DocTest extends ElasticsearchIntegrationTest {
 
     private static final String PY_TEST = "src/test/python/tests.py";
 
     private PythonInterpreter interp;
     private PySystemState sys;
+
+    static {
+        System.setProperty("python.cachedir.skip", "true");
+        System.setProperty("python.console.encoding", "UTF-8");
+    }
 
     private void resetInterpreter() {
         interp = new PythonInterpreter(null, new PySystemState());
@@ -42,43 +54,61 @@ public class DocTest extends TestCase {
         execFile(PY_TEST, name);
     }
 
+    @Override
+    protected Settings nodeSettings(int nodeOrdinal) {
+        Settings settings = ImmutableSettings.settingsBuilder()
+                .put(super.nodeSettings(nodeOrdinal))
+                .put("plugin.types", InOutPlugin.class.getName())
+                .put("index.number_of_shards", 1)
+                .put("index.number_of_replicas", 0)
+                .put("gateway.type", "local")
+                .put("http.port", 9200 + nodeOrdinal)
+                .put("force.http.enabled", true)
+                .build();
+        return settings;
+    }
+
     @Before
-    public void setUp() {
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+
         if (interp == null) {
             resetInterpreter();
         }
-        Settings s1 = ImmutableSettings.settingsBuilder()
-                .put("cluster.name", "a")
-                .put("node.local", false)
-                .build();
 
-        esSetup = new StoreEsSetup(s1);
-        esSetup.execute(deleteAll(), createIndex("users").withSettings(
-                fromClassPath("essetup/settings/test_a.json")).withMapping("d",
-                fromClassPath("essetup/mappings/test_a.json")).withData(
-                fromClassPath("essetup/data/test_a.json")));
-        esSetup.client().admin().indices().prepareRefresh("users").execute().actionGet();
+        cluster().ensureAtLeastNumNodes(2);
+        cluster().ensureAtMostNumNodes(2);
+        prepareCreate("users", 1, settingsBuilder().put("index.number_of_shards", 2).put("index.number_of_replicas", 0))
+                .addMapping("d", jsonBuilder().startObject()
+                        .startObject("d")
+                        .startObject("properties")
+                        .startObject("name")
+                        .field("type", "string")
+                        .field("index", "not_analyzed")
+                        .field("store", "yes")
+                        .endObject()
+                        .endObject()
+                        .endObject())
+                .execute().actionGet();
+        ensureGreen("users");
 
-        Settings s2 = ImmutableSettings.settingsBuilder()
-                .put("cluster.name", "b")
-                .put("node.local", false)
-                .build();
-        esSetup2 = new StoreEsSetup(s2);
-        esSetup2.execute(deleteAll());
+        index("users", "d", "1", "name", "car");
+        index("users", "d", "2", "name", "bike");
+        index("users", "d", "3", "name", "train");
+        index("users", "d", "4", "name", "bus");
+
+        refresh();
+        waitForRelocation();
     }
 
-    @After
-    public void tearDown() {
-        esSetup.terminate();
-        if (esSetup2 != null) {
-            esSetup2.terminate();
-        }
-    }
-
+    @Test
+    @Ignore("need a second cluster for this test to run")
     public void testSearchInto() throws Exception {
         execDocFile("search_into.rst");
     }
 
+    @Test
     public void testReindex() throws Exception {
         execDocFile("reindex.rst");
     }
