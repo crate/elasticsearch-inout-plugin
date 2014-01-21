@@ -9,6 +9,7 @@ import org.elasticsearch.client.Requests;
 import org.elasticsearch.cluster.metadata.IndexMetaData;
 import org.elasticsearch.cluster.metadata.MappingMetaData;
 import org.elasticsearch.cluster.metadata.MetaData;
+import org.elasticsearch.common.hppc.cursors.ObjectCursor;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.inject.Injector;
 import org.elasticsearch.common.logging.ESLogger;
@@ -159,10 +160,10 @@ public class Exporter {
                 builder.startObject(indexMetaData.index(), XContentBuilder.FieldCaseConversion.NONE);
                 Set<String> types = new HashSet<String>(Arrays.asList(context.types()));
                 boolean noTypes = types.isEmpty();
-                for (MappingMetaData mappingMetaData : indexMetaData.mappings().values()) {
-                    if (noTypes || types.contains(mappingMetaData.type())) {
-                        builder.field(mappingMetaData.type());
-                        builder.map(mappingMetaData.sourceAsMap());
+                for (ObjectCursor<MappingMetaData> mappingMetaData : indexMetaData.mappings().values()) {
+                    if (noTypes || types.contains(mappingMetaData.value.type())) {
+                        builder.field(mappingMetaData.value.type());
+                        builder.map(mappingMetaData.value.sourceAsMap());
                     }
                 }
                 builder.endObject();

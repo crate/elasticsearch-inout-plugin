@@ -54,7 +54,7 @@ be closed first and then reopened::
     >>> post("/test/_close", {})
     {"ok":true,"acknowledged":true}
     >>> put("/test/_settings", {"analysis": {"analyzer": {"myan": {"type": "stop", "stopwords": ["nice"]}}}})
-    {"ok":true}
+    {"ok":true,"acknowledged":true}
     >>> post("/test/_open", {})
     {"ok":true,"acknowledged":true}
     >>> refresh()
